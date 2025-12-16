@@ -1,0 +1,162 @@
+.stat-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--primary-500), var(--primary-700));
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+/* Color Variants */
+.stat-card-primary::before {
+    background: linear-gradient(180deg, var(--primary-500), var(--primary-700));
+}
+
+.stat-card-success::before {
+    background: linear-gradient(180deg, var(--success-500), var(--success-700));
+}
+
+.stat-card-warning::before {
+    background: linear-gradient(180deg, var(--warning-500), var(--warning-700));
+}
+
+.stat-card-danger::before {
+    background: linear-gradient(180deg, var(--danger-500), var(--danger-700));
+}
+
+/* Reduced styling */
+.stat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    background: var(--primary-50);
+    position: relative;
+    color: var(--primary-600);
+}
+
+.stat-card-primary .stat-icon {
+    background: var(--primary-50);
+    color: var(--primary-600);
+}
+
+.stat-card-success .stat-icon {
+    background: var(--success-50);
+    color: var(--success-600);
+}
+
+.stat-card-warning .stat-icon {
+    background: var(--warning-50);
+    color: var(--warning-600);
+}
+
+.stat-card-danger .stat-icon {
+    background: var(--danger-50);
+    color: var(--danger-600);
+}
+
+[data-theme="dark"] .stat-icon {
+    background: rgba(14, 165, 233, 0.1);
+}
+
+[data-theme="dark"] .stat-card-success .stat-icon {
+    background: rgba(34, 197, 94, 0.1);
+}
+
+[data-theme="dark"] .stat-card-warning .stat-icon {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+[data-theme="dark"] .stat-card-danger .stat-icon {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.stat-trend.positive {
+    color: var(--success-600);
+}
+
+.stat-trend.negative {
+    color: var(--danger-600);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .stat-card {
+        padding: var(--spacing-sm);
+    }
+
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+    }
+}
