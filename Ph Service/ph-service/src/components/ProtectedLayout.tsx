@@ -7,21 +7,21 @@ import { AppProvider } from '@/context/AppContext';
 import Header from '@/components/Header';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, loading } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
-        if (!isLoading) {
+        if (!loading) {
             if (!isAuthenticated && pathname !== '/login') {
                 router.push('/login');
             } else if (isAuthenticated && pathname === '/login') {
                 router.push('/');
             }
         }
-    }, [isAuthenticated, isLoading, pathname, router]);
+    }, [isAuthenticated, loading, pathname, router]);
 
-    if (isLoading) {
+    if (loading) {
         return (
             <div style={{ height: '100vh', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
                 <div style={{ width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>

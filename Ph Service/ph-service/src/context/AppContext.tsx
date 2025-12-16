@@ -1,6 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from './AuthContext';
 import {
     Convenio,
     Boleto,
@@ -102,6 +104,9 @@ interface AppContextType {
     // Theme
     theme: 'light' | 'dark';
     toggleTheme: () => void;
+
+    // Loading state
+    isLoading: boolean;
 }
 
 // ===========================
@@ -111,10 +116,219 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // ===========================
+// HELPER: Convert DB row to TypeScript type (snake_case -> camelCase)
+// ===========================
+
+function dbToConvenio(row: any): Convenio {
+    return {
+        id: row.id,
+        empresaCliente: row.empresa_cliente,
+        tipoFechamento: row.tipo_fechamento,
+        periodoReferencia: row.periodo_referencia,
+        dataFechamento: new Date(row.data_fechamento),
+        valorBoleto: parseFloat(row.valor_boleto),
+        banco: row.banco,
+        dataVencimento: new Date(row.data_vencimento),
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        statusPagamento: row.status_pagamento,
+        notaFiscal: row.nota_fiscal,
+        enviadoPara: row.enviado_para,
+        observacoes: row.observacoes,
+        anexos: row.anexos || [],
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToBoleto(row: any): Boleto {
+    return {
+        id: row.id,
+        cliente: row.cliente,
+        valor: parseFloat(row.valor),
+        banco: row.banco,
+        dataVencimento: new Date(row.data_vencimento),
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        statusPagamento: row.status_pagamento,
+        observacoes: row.observacoes,
+        convenioId: row.convenio_id,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToCaixaEntry(row: any): CaixaEntry {
+    return {
+        id: row.id,
+        tipo: row.tipo,
+        descricao: row.descricao,
+        valor: parseFloat(row.valor),
+        formaPagamento: row.forma_pagamento,
+        data: new Date(row.data),
+        categoria: row.categoria,
+        observacoes: row.observacoes,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToSaida(row: any): Saida {
+    return {
+        id: row.id,
+        descricao: row.descricao,
+        categoria: row.categoria,
+        valor: parseFloat(row.valor),
+        formaPagamento: row.forma_pagamento,
+        data: new Date(row.data),
+        fornecedor: row.fornecedor,
+        observacoes: row.observacoes,
+        anexos: row.anexos || [],
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToVale(row: any): Vale {
+    return {
+        id: row.id,
+        funcionario: row.funcionario,
+        valor: parseFloat(row.valor),
+        data: new Date(row.data),
+        motivo: row.motivo,
+        status: row.status,
+        valorPago: row.valor_pago ? parseFloat(row.valor_pago) : undefined,
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        observacoes: row.observacoes,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToMarmita(row: any): Marmita {
+    return {
+        id: row.id,
+        cliente: row.cliente,
+        tamanho: row.tamanho,
+        quantidade: row.quantidade,
+        valorUnitario: row.valor_unitario ? parseFloat(row.valor_unitario) : undefined,
+        valorTotal: parseFloat(row.valor_total),
+        dataEntrega: new Date(row.data_entrega),
+        formaPagamento: row.forma_pagamento,
+        statusRecebimento: row.status_recebimento,
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        observacoes: row.observacoes,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToPagamentoFuncionario(row: any): PagamentoFuncionario {
+    return {
+        id: row.id,
+        funcionario: row.funcionario,
+        cargoFuncao: row.cargo_funcao,
+        valor: parseFloat(row.valor),
+        descontos: row.descontos ? parseFloat(row.descontos) : undefined,
+        formaPagamento: row.forma_pagamento,
+        statusPagamento: row.status_pagamento,
+        dataPagamento: new Date(row.data_pagamento),
+        observacoes: row.observacoes,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToOutroServico(row: any): OutroServico {
+    return {
+        id: row.id,
+        tipo: row.tipo,
+        cliente: row.cliente,
+        descricao: row.descricao,
+        valor: parseFloat(row.valor),
+        formaPagamento: row.forma_pagamento,
+        data: new Date(row.data),
+        statusPagamento: row.status_pagamento,
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        observacoes: row.observacoes,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToFuncionario(row: any): Funcionario {
+    return {
+        id: row.id,
+        nome: row.nome,
+        cargo: row.cargo,
+        telefone: row.telefone,
+        dataAdmissao: row.data_admissao ? new Date(row.data_admissao) : undefined,
+        salarioBase: row.salario_base ? parseFloat(row.salario_base) : undefined,
+        ativo: row.ativo,
+        dataDemissao: row.data_demissao ? new Date(row.data_demissao) : undefined,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToCliente(row: any): Cliente {
+    return {
+        id: row.id,
+        nome: row.nome,
+        tipo: row.tipo,
+        telefone: row.telefone,
+        endereco: row.endereco,
+        ativo: row.ativo,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToFechamentoCaixa(row: any): FechamentoCaixa {
+    return {
+        id: row.id,
+        data: new Date(row.data),
+        funcionario: row.funcionario,
+        turno: row.turno,
+        entradas: {
+            dinheiro: parseFloat(row.entradas_dinheiro) || 0,
+            pix: parseFloat(row.entradas_pix) || 0,
+            credito: parseFloat(row.entradas_credito) || 0,
+            debito: parseFloat(row.entradas_debito) || 0,
+            alimentacao: parseFloat(row.entradas_alimentacao) || 0,
+        },
+        saidas: parseFloat(row.saidas) || 0,
+        observacoes: row.observacoes,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+function dbToFornecedor(row: any): Fornecedor {
+    return {
+        id: row.id,
+        nome: row.nome,
+        contato: row.contato,
+        categoria: row.categoria,
+        ativo: row.ativo,
+        observacoes: row.observacoes,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at),
+    };
+}
+
+// Helper to format date for Supabase
+function formatDate(date: Date | undefined): string | null {
+    if (!date) return null;
+    return date instanceof Date ? date.toISOString().split('T')[0] : date;
+}
+
+// ===========================
 // PROVIDER COMPONENT
 // ===========================
 
 export function AppProvider({ children }: { children: ReactNode }) {
+    const { user } = useAuth();
+    const supabase = createClient();
+
     // State
     const [convenios, setConvenios] = useState<Convenio[]>([]);
     const [boletos, setBoletos] = useState<Boleto[]>([]);
@@ -129,224 +343,643 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [fechamentosCaixa, setFechamentosCaixa] = useState<FechamentoCaixa[]>([]);
     const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Loading State
-    const [isLoaded, setIsLoaded] = useState(false);
+    // ===========================
+    // LOAD DATA FROM SUPABASE
+    // ===========================
 
-    // Load data from API (DB) on mount
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                const res = await fetch('/api/database');
-                if (!res.ok) throw new Error('Failed to fetch DB');
-                const apiData = await res.json();
-
-                // Helper para migrar se API vazio
-                const getMigrated = (key: string, apiValue: any[]) => {
-                    // Se a API tem dados, usa eles.
-                    if (apiValue && apiValue.length > 0) return apiValue;
-
-                    // Se não tem, tenta pegar do localStorage antigo para não perder nada.
-                    if (typeof window !== 'undefined') {
-                        const local = localStorage.getItem(key);
-                        if (local) {
-                            try {
-                                const parsed = JSON.parse(local);
-                                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-                            } catch (e) { }
-                        }
-                    }
-                    return apiValue || [];
-                };
-
-                setConvenios(getMigrated('convenios', apiData.convenios));
-                setBoletos(getMigrated('boletos', apiData.boletos));
-                setCaixaEntries(getMigrated('caixa', apiData.caixa));
-                setSaidas(getMigrated('saidas', apiData.saidas));
-                setVales(getMigrated('vales', apiData.vales));
-                setMarmitas(getMigrated('marmitas', apiData.marmitas));
-                setFolhaPagamento(getMigrated('folhaPagamento', apiData.folhaPagamento));
-                setOutrosServicos(getMigrated('outrosServicos', apiData.outrosServicos));
-                setFuncionarios(getMigrated('funcionarios', apiData.funcionarios));
-                setClientes(getMigrated('clientes', apiData.clientes));
-                setFechamentosCaixa(getMigrated('fechamentosCaixa', apiData.fechamentosCaixa));
-                setFornecedores(getMigrated('fornecedores', apiData.fornecedores));
-
-                // Theme Logic
-                let themeToUse = apiData.theme || 'light';
-                if (typeof window !== 'undefined') {
-                    const localTheme = localStorage.getItem('theme');
-                    if (localTheme && !apiData.theme) themeToUse = localTheme;
-                }
-
-                setTheme(themeToUse as 'light' | 'dark');
-                document.documentElement.setAttribute('data-theme', themeToUse);
-
-                setIsLoaded(true);
-            } catch (error) {
-                console.error('Error loading data from API:', error);
-            }
-        };
-
-        loadData();
-    }, []);
-
-    // Sync Helper
-    const sync = (payload: any) => {
-        if (!isLoaded) return;
-        fetch('/api/database', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).catch(err => console.error('Sync failed', err));
-    };
-
-    // Save data whenever it changes (only if loaded)
-    useEffect(() => { if (isLoaded) sync({ collection: 'convenios', data: convenios }); }, [convenios, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'boletos', data: boletos }); }, [boletos, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'caixa', data: caixaEntries }); }, [caixaEntries, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'saidas', data: saidas }); }, [saidas, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'vales', data: vales }); }, [vales, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'marmitas', data: marmitas }); }, [marmitas, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'folhaPagamento', data: folhaPagamento }); }, [folhaPagamento, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'outrosServicos', data: outrosServicos }); }, [outrosServicos, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'funcionarios', data: funcionarios }); }, [funcionarios, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'clientes', data: clientes }); }, [clientes, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'fechamentosCaixa', data: fechamentosCaixa }); }, [fechamentosCaixa, isLoaded]);
-    useEffect(() => { if (isLoaded) sync({ collection: 'fornecedores', data: fornecedores }); }, [fornecedores, isLoaded]);
-
-    useEffect(() => {
-        if (isLoaded) {
-            sync({ theme });
-            document.documentElement.setAttribute('data-theme', theme);
+    const loadAllData = useCallback(async () => {
+        if (!user) {
+            setIsLoading(false);
+            return;
         }
-    }, [theme, isLoaded]);
 
-    // Helper function to generate IDs
-    const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        setIsLoading(true);
 
-    // CRUD Operations - Convênios
-    const addConvenio = (convenio: Omit<Convenio, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newConvenio: Convenio = { ...convenio, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setConvenios(prev => [...prev, newConvenio]);
-    };
-    const updateConvenio = (id: string, updates: Partial<Convenio>) => {
-        setConvenios(prev => prev.map(c => c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c));
-    };
-    const deleteConvenio = (id: string) => { setConvenios(prev => prev.filter(c => c.id !== id)); };
+        try {
+            // Load all tables in parallel
+            const [
+                convRes, bolRes, caixaRes, saidaRes, valeRes, marmitaRes,
+                folhaRes, servicoRes, funcRes, clienteRes, fechRes, fornRes, prefRes
+            ] = await Promise.all([
+                supabase.from('convenios').select('*'),
+                supabase.from('boletos').select('*'),
+                supabase.from('caixa').select('*'),
+                supabase.from('saidas').select('*'),
+                supabase.from('vales').select('*'),
+                supabase.from('marmitas').select('*'),
+                supabase.from('folha_pagamento').select('*'),
+                supabase.from('outros_servicos').select('*'),
+                supabase.from('funcionarios').select('*'),
+                supabase.from('clientes').select('*'),
+                supabase.from('fechamentos_caixa').select('*'),
+                supabase.from('fornecedores').select('*'),
+                supabase.from('user_preferences').select('*').eq('id', user.id).single(),
+            ]);
 
-    // CRUD Operations - Boletos
-    const addBoleto = (boleto: Omit<Boleto, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newBoleto: Boleto = { ...boleto, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setBoletos(prev => [...prev, newBoleto]);
-    };
-    const updateBoleto = (id: string, updates: Partial<Boleto>) => {
-        setBoletos(prev => prev.map(b => b.id === id ? { ...b, ...updates, updatedAt: new Date() } : b));
-    };
-    const deleteBoleto = (id: string) => { setBoletos(prev => prev.filter(b => b.id !== id)); };
+            setConvenios((convRes.data || []).map(dbToConvenio));
+            setBoletos((bolRes.data || []).map(dbToBoleto));
+            setCaixaEntries((caixaRes.data || []).map(dbToCaixaEntry));
+            setSaidas((saidaRes.data || []).map(dbToSaida));
+            setVales((valeRes.data || []).map(dbToVale));
+            setMarmitas((marmitaRes.data || []).map(dbToMarmita));
+            setFolhaPagamento((folhaRes.data || []).map(dbToPagamentoFuncionario));
+            setOutrosServicos((servicoRes.data || []).map(dbToOutroServico));
+            setFuncionarios((funcRes.data || []).map(dbToFuncionario));
+            setClientes((clienteRes.data || []).map(dbToCliente));
+            setFechamentosCaixa((fechRes.data || []).map(dbToFechamentoCaixa));
+            setFornecedores((fornRes.data || []).map(dbToFornecedor));
 
-    // CRUD Operations - Caixa
-    const addCaixaEntry = (entry: Omit<CaixaEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newEntry: CaixaEntry = { ...entry, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setCaixaEntries(prev => [...prev, newEntry]);
-    };
-    const updateCaixaEntry = (id: string, updates: Partial<CaixaEntry>) => {
-        setCaixaEntries(prev => prev.map(e => e.id === id ? { ...e, ...updates, updatedAt: new Date() } : e));
-    };
-    const deleteCaixaEntry = (id: string) => { setCaixaEntries(prev => prev.filter(e => e.id !== id)); };
+            // Load theme preference
+            if (prefRes.data?.theme) {
+                setTheme(prefRes.data.theme as 'light' | 'dark');
+                document.documentElement.setAttribute('data-theme', prefRes.data.theme);
+            }
 
-    // CRUD Operations - Saídas
-    const addSaida = (saida: Omit<Saida, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newSaida: Saida = { ...saida, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setSaidas(prev => [...prev, newSaida]);
-    };
-    const updateSaida = (id: string, updates: Partial<Saida>) => {
-        setSaidas(prev => prev.map(s => s.id === id ? { ...s, ...updates, updatedAt: new Date() } : s));
-    };
-    const deleteSaida = (id: string) => { setSaidas(prev => prev.filter(s => s.id !== id)); };
+        } catch (error) {
+            console.error('Error loading data from Supabase:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user, supabase]);
 
-    // CRUD Operations - Vales
-    const addVale = (vale: Omit<Vale, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newVale: Vale = { ...vale, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setVales(prev => [...prev, newVale]);
-    };
-    const updateVale = (id: string, updates: Partial<Vale>) => {
-        setVales(prev => prev.map(v => v.id === id ? { ...v, ...updates, updatedAt: new Date() } : v));
-    };
-    const deleteVale = (id: string) => { setVales(prev => prev.filter(v => v.id !== id)); };
+    useEffect(() => {
+        loadAllData();
+    }, [loadAllData]);
 
-    // CRUD Operations - Marmitas
-    const addMarmita = (marmita: Omit<Marmita, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newMarmita: Marmita = { ...marmita, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setMarmitas(prev => [...prev, newMarmita]);
-    };
-    const updateMarmita = (id: string, updates: Partial<Marmita>) => {
-        setMarmitas(prev => prev.map(m => m.id === id ? { ...m, ...updates, updatedAt: new Date() } : m));
-    };
-    const deleteMarmita = (id: string) => { setMarmitas(prev => prev.filter(m => m.id !== id)); };
+    // ===========================
+    // CRUD OPERATIONS - CONVÊNIOS
+    // ===========================
 
-    // CRUD Operations - Folha de Pagamento
-    const addPagamentoFuncionario = (pagamento: Omit<PagamentoFuncionario, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newPagamento: PagamentoFuncionario = { ...pagamento, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setFolhaPagamento(prev => [...prev, newPagamento]);
-    };
-    const updatePagamentoFuncionario = (id: string, updates: Partial<PagamentoFuncionario>) => {
-        setFolhaPagamento(prev => prev.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p));
-    };
-    const deletePagamentoFuncionario = (id: string) => { setFolhaPagamento(prev => prev.filter(p => p.id !== id)); };
+    const addConvenio = async (convenio: Omit<Convenio, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('convenios').insert({
+            user_id: user.id,
+            empresa_cliente: convenio.empresaCliente,
+            tipo_fechamento: convenio.tipoFechamento,
+            periodo_referencia: convenio.periodoReferencia,
+            data_fechamento: formatDate(convenio.dataFechamento),
+            valor_boleto: convenio.valorBoleto,
+            banco: convenio.banco,
+            data_vencimento: formatDate(convenio.dataVencimento),
+            data_pagamento: formatDate(convenio.dataPagamento),
+            status_pagamento: convenio.statusPagamento,
+            nota_fiscal: convenio.notaFiscal,
+            enviado_para: convenio.enviadoPara,
+            observacoes: convenio.observacoes,
+            anexos: convenio.anexos,
+        }).select().single();
 
-    // CRUD Operations - Outros Serviços
-    const addOutroServico = (servico: Omit<OutroServico, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newServico: OutroServico = { ...servico, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setOutrosServicos(prev => [...prev, newServico]);
+        if (!error && data) {
+            setConvenios(prev => [...prev, dbToConvenio(data)]);
+        }
     };
-    const updateOutroServico = (id: string, updates: Partial<OutroServico>) => {
-        setOutrosServicos(prev => prev.map(s => s.id === id ? { ...s, ...updates, updatedAt: new Date() } : s));
-    };
-    const deleteOutroServico = (id: string) => { setOutrosServicos(prev => prev.filter(s => s.id !== id)); };
 
-    // CRUD Operations - Funcionários
-    const addFuncionario = (funcionario: Omit<Funcionario, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newFuncionario: Funcionario = { ...funcionario, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setFuncionarios(prev => [...prev, newFuncionario]);
-    };
-    const updateFuncionario = (id: string, updates: Partial<Funcionario>) => {
-        setFuncionarios(prev => prev.map(f => f.id === id ? { ...f, ...updates, updatedAt: new Date() } : f));
-    }
-    const deleteFuncionario = (id: string) => { setFuncionarios(prev => prev.filter(f => f.id !== id)); };
+    const updateConvenio = async (id: string, updates: Partial<Convenio>) => {
+        const updateData: any = {};
+        if (updates.empresaCliente !== undefined) updateData.empresa_cliente = updates.empresaCliente;
+        if (updates.tipoFechamento !== undefined) updateData.tipo_fechamento = updates.tipoFechamento;
+        if (updates.periodoReferencia !== undefined) updateData.periodo_referencia = updates.periodoReferencia;
+        if (updates.dataFechamento !== undefined) updateData.data_fechamento = formatDate(updates.dataFechamento);
+        if (updates.valorBoleto !== undefined) updateData.valor_boleto = updates.valorBoleto;
+        if (updates.banco !== undefined) updateData.banco = updates.banco;
+        if (updates.dataVencimento !== undefined) updateData.data_vencimento = formatDate(updates.dataVencimento);
+        if (updates.dataPagamento !== undefined) updateData.data_pagamento = formatDate(updates.dataPagamento);
+        if (updates.statusPagamento !== undefined) updateData.status_pagamento = updates.statusPagamento;
+        if (updates.notaFiscal !== undefined) updateData.nota_fiscal = updates.notaFiscal;
+        if (updates.enviadoPara !== undefined) updateData.enviado_para = updates.enviadoPara;
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+        if (updates.anexos !== undefined) updateData.anexos = updates.anexos;
+        updateData.updated_at = new Date().toISOString();
 
-    // CRUD Operations - Clientes
-    const addCliente = (cliente: Omit<Cliente, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newCliente: Cliente = { ...cliente, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setClientes(prev => [...prev, newCliente]);
+        const { data, error } = await supabase.from('convenios').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setConvenios(prev => prev.map(c => c.id === id ? dbToConvenio(data) : c));
+        }
     };
-    const updateCliente = (id: string, updates: Partial<Cliente>) => {
-        setClientes(prev => prev.map(c => c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c));
+
+    const deleteConvenio = async (id: string) => {
+        const { error } = await supabase.from('convenios').delete().eq('id', id);
+        if (!error) {
+            setConvenios(prev => prev.filter(c => c.id !== id));
+        }
     };
-    const deleteCliente = (id: string) => { setClientes(prev => prev.filter(c => c.id !== id)); };
 
-    // CRUD Operations - Fechamentos Caixa
-    const addFechamentoCaixa = (fechamento: Omit<FechamentoCaixa, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newFechamento: FechamentoCaixa = { ...fechamento, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setFechamentosCaixa(prev => [...prev, newFechamento]);
+    // ===========================
+    // CRUD OPERATIONS - BOLETOS
+    // ===========================
+
+    const addBoleto = async (boleto: Omit<Boleto, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('boletos').insert({
+            user_id: user.id,
+            cliente: boleto.cliente,
+            valor: boleto.valor,
+            banco: boleto.banco,
+            data_vencimento: formatDate(boleto.dataVencimento),
+            data_pagamento: formatDate(boleto.dataPagamento),
+            status_pagamento: boleto.statusPagamento,
+            observacoes: boleto.observacoes,
+            convenio_id: boleto.convenioId,
+        }).select().single();
+
+        if (!error && data) {
+            setBoletos(prev => [...prev, dbToBoleto(data)]);
+        }
     };
-    const updateFechamentoCaixa = (id: string, updates: Partial<FechamentoCaixa>) => {
-        setFechamentosCaixa(prev => prev.map(f => f.id === id ? { ...f, ...updates, updatedAt: new Date() } : f));
-    }
-    const deleteFechamentoCaixa = (id: string) => { setFechamentosCaixa(prev => prev.filter(f => f.id !== id)); };
 
-    // CRUD Operations - Fornecedores
-    const addFornecedor = (fornecedor: Omit<Fornecedor, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newFornecedor: Fornecedor = { ...fornecedor, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-        setFornecedores(prev => [...prev, newFornecedor]);
+    const updateBoleto = async (id: string, updates: Partial<Boleto>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.cliente !== undefined) updateData.cliente = updates.cliente;
+        if (updates.valor !== undefined) updateData.valor = updates.valor;
+        if (updates.banco !== undefined) updateData.banco = updates.banco;
+        if (updates.dataVencimento !== undefined) updateData.data_vencimento = formatDate(updates.dataVencimento);
+        if (updates.dataPagamento !== undefined) updateData.data_pagamento = formatDate(updates.dataPagamento);
+        if (updates.statusPagamento !== undefined) updateData.status_pagamento = updates.statusPagamento;
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+
+        const { data, error } = await supabase.from('boletos').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setBoletos(prev => prev.map(b => b.id === id ? dbToBoleto(data) : b));
+        }
     };
-    const updateFornecedor = (id: string, updates: Partial<Fornecedor>) => {
-        setFornecedores(prev => prev.map(f => f.id === id ? { ...f, ...updates, updatedAt: new Date() } : f));
-    }
-    const deleteFornecedor = (id: string) => { setFornecedores(prev => prev.filter(f => f.id !== id)); };
 
+    const deleteBoleto = async (id: string) => {
+        const { error } = await supabase.from('boletos').delete().eq('id', id);
+        if (!error) {
+            setBoletos(prev => prev.filter(b => b.id !== id));
+        }
+    };
 
-    // Analytics
+    // ===========================
+    // CRUD OPERATIONS - CAIXA
+    // ===========================
+
+    const addCaixaEntry = async (entry: Omit<CaixaEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('caixa').insert({
+            user_id: user.id,
+            tipo: entry.tipo,
+            descricao: entry.descricao,
+            valor: entry.valor,
+            forma_pagamento: entry.formaPagamento,
+            data: formatDate(entry.data),
+            categoria: entry.categoria,
+            observacoes: entry.observacoes,
+        }).select().single();
+
+        if (!error && data) {
+            setCaixaEntries(prev => [...prev, dbToCaixaEntry(data)]);
+        }
+    };
+
+    const updateCaixaEntry = async (id: string, updates: Partial<CaixaEntry>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.tipo !== undefined) updateData.tipo = updates.tipo;
+        if (updates.descricao !== undefined) updateData.descricao = updates.descricao;
+        if (updates.valor !== undefined) updateData.valor = updates.valor;
+        if (updates.formaPagamento !== undefined) updateData.forma_pagamento = updates.formaPagamento;
+        if (updates.data !== undefined) updateData.data = formatDate(updates.data);
+        if (updates.categoria !== undefined) updateData.categoria = updates.categoria;
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+
+        const { data, error } = await supabase.from('caixa').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setCaixaEntries(prev => prev.map(e => e.id === id ? dbToCaixaEntry(data) : e));
+        }
+    };
+
+    const deleteCaixaEntry = async (id: string) => {
+        const { error } = await supabase.from('caixa').delete().eq('id', id);
+        if (!error) {
+            setCaixaEntries(prev => prev.filter(e => e.id !== id));
+        }
+    };
+
+    // ===========================
+    // CRUD OPERATIONS - SAÍDAS
+    // ===========================
+
+    const addSaida = async (saida: Omit<Saida, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('saidas').insert({
+            user_id: user.id,
+            descricao: saida.descricao,
+            categoria: saida.categoria,
+            valor: saida.valor,
+            forma_pagamento: saida.formaPagamento,
+            data: formatDate(saida.data),
+            fornecedor: saida.fornecedor,
+            observacoes: saida.observacoes,
+            anexos: saida.anexos,
+        }).select().single();
+
+        if (!error && data) {
+            setSaidas(prev => [...prev, dbToSaida(data)]);
+        }
+    };
+
+    const updateSaida = async (id: string, updates: Partial<Saida>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.descricao !== undefined) updateData.descricao = updates.descricao;
+        if (updates.categoria !== undefined) updateData.categoria = updates.categoria;
+        if (updates.valor !== undefined) updateData.valor = updates.valor;
+        if (updates.formaPagamento !== undefined) updateData.forma_pagamento = updates.formaPagamento;
+        if (updates.data !== undefined) updateData.data = formatDate(updates.data);
+        if (updates.fornecedor !== undefined) updateData.fornecedor = updates.fornecedor;
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+        if (updates.anexos !== undefined) updateData.anexos = updates.anexos;
+
+        const { data, error } = await supabase.from('saidas').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setSaidas(prev => prev.map(s => s.id === id ? dbToSaida(data) : s));
+        }
+    };
+
+    const deleteSaida = async (id: string) => {
+        const { error } = await supabase.from('saidas').delete().eq('id', id);
+        if (!error) {
+            setSaidas(prev => prev.filter(s => s.id !== id));
+        }
+    };
+
+    // ===========================
+    // CRUD OPERATIONS - VALES
+    // ===========================
+
+    const addVale = async (vale: Omit<Vale, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('vales').insert({
+            user_id: user.id,
+            funcionario: vale.funcionario,
+            valor: vale.valor,
+            data: formatDate(vale.data),
+            motivo: vale.motivo,
+            status: vale.status,
+            valor_pago: vale.valorPago,
+            data_pagamento: formatDate(vale.dataPagamento),
+            observacoes: vale.observacoes,
+        }).select().single();
+
+        if (!error && data) {
+            setVales(prev => [...prev, dbToVale(data)]);
+        }
+    };
+
+    const updateVale = async (id: string, updates: Partial<Vale>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.funcionario !== undefined) updateData.funcionario = updates.funcionario;
+        if (updates.valor !== undefined) updateData.valor = updates.valor;
+        if (updates.data !== undefined) updateData.data = formatDate(updates.data);
+        if (updates.motivo !== undefined) updateData.motivo = updates.motivo;
+        if (updates.status !== undefined) updateData.status = updates.status;
+        if (updates.valorPago !== undefined) updateData.valor_pago = updates.valorPago;
+        if (updates.dataPagamento !== undefined) updateData.data_pagamento = formatDate(updates.dataPagamento);
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+
+        const { data, error } = await supabase.from('vales').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setVales(prev => prev.map(v => v.id === id ? dbToVale(data) : v));
+        }
+    };
+
+    const deleteVale = async (id: string) => {
+        const { error } = await supabase.from('vales').delete().eq('id', id);
+        if (!error) {
+            setVales(prev => prev.filter(v => v.id !== id));
+        }
+    };
+
+    // ===========================
+    // CRUD OPERATIONS - MARMITAS
+    // ===========================
+
+    const addMarmita = async (marmita: Omit<Marmita, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('marmitas').insert({
+            user_id: user.id,
+            cliente: marmita.cliente,
+            tamanho: marmita.tamanho,
+            quantidade: marmita.quantidade,
+            valor_unitario: marmita.valorUnitario,
+            valor_total: marmita.valorTotal,
+            data_entrega: formatDate(marmita.dataEntrega),
+            forma_pagamento: marmita.formaPagamento,
+            status_recebimento: marmita.statusRecebimento,
+            data_pagamento: formatDate(marmita.dataPagamento),
+            observacoes: marmita.observacoes,
+        }).select().single();
+
+        if (!error && data) {
+            setMarmitas(prev => [...prev, dbToMarmita(data)]);
+        }
+    };
+
+    const updateMarmita = async (id: string, updates: Partial<Marmita>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.cliente !== undefined) updateData.cliente = updates.cliente;
+        if (updates.tamanho !== undefined) updateData.tamanho = updates.tamanho;
+        if (updates.quantidade !== undefined) updateData.quantidade = updates.quantidade;
+        if (updates.valorUnitario !== undefined) updateData.valor_unitario = updates.valorUnitario;
+        if (updates.valorTotal !== undefined) updateData.valor_total = updates.valorTotal;
+        if (updates.dataEntrega !== undefined) updateData.data_entrega = formatDate(updates.dataEntrega);
+        if (updates.formaPagamento !== undefined) updateData.forma_pagamento = updates.formaPagamento;
+        if (updates.statusRecebimento !== undefined) updateData.status_recebimento = updates.statusRecebimento;
+        if (updates.dataPagamento !== undefined) updateData.data_pagamento = formatDate(updates.dataPagamento);
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+
+        const { data, error } = await supabase.from('marmitas').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setMarmitas(prev => prev.map(m => m.id === id ? dbToMarmita(data) : m));
+        }
+    };
+
+    const deleteMarmita = async (id: string) => {
+        const { error } = await supabase.from('marmitas').delete().eq('id', id);
+        if (!error) {
+            setMarmitas(prev => prev.filter(m => m.id !== id));
+        }
+    };
+
+    // ===========================
+    // CRUD OPERATIONS - FOLHA PAGAMENTO
+    // ===========================
+
+    const addPagamentoFuncionario = async (pagamento: Omit<PagamentoFuncionario, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('folha_pagamento').insert({
+            user_id: user.id,
+            funcionario: pagamento.funcionario,
+            cargo_funcao: pagamento.cargoFuncao,
+            valor: pagamento.valor,
+            descontos: pagamento.descontos,
+            forma_pagamento: pagamento.formaPagamento,
+            status_pagamento: pagamento.statusPagamento,
+            data_pagamento: formatDate(pagamento.dataPagamento),
+            observacoes: pagamento.observacoes,
+        }).select().single();
+
+        if (!error && data) {
+            setFolhaPagamento(prev => [...prev, dbToPagamentoFuncionario(data)]);
+        }
+    };
+
+    const updatePagamentoFuncionario = async (id: string, updates: Partial<PagamentoFuncionario>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.funcionario !== undefined) updateData.funcionario = updates.funcionario;
+        if (updates.cargoFuncao !== undefined) updateData.cargo_funcao = updates.cargoFuncao;
+        if (updates.valor !== undefined) updateData.valor = updates.valor;
+        if (updates.descontos !== undefined) updateData.descontos = updates.descontos;
+        if (updates.formaPagamento !== undefined) updateData.forma_pagamento = updates.formaPagamento;
+        if (updates.statusPagamento !== undefined) updateData.status_pagamento = updates.statusPagamento;
+        if (updates.dataPagamento !== undefined) updateData.data_pagamento = formatDate(updates.dataPagamento);
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+
+        const { data, error } = await supabase.from('folha_pagamento').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setFolhaPagamento(prev => prev.map(p => p.id === id ? dbToPagamentoFuncionario(data) : p));
+        }
+    };
+
+    const deletePagamentoFuncionario = async (id: string) => {
+        const { error } = await supabase.from('folha_pagamento').delete().eq('id', id);
+        if (!error) {
+            setFolhaPagamento(prev => prev.filter(p => p.id !== id));
+        }
+    };
+
+    // ===========================
+    // CRUD OPERATIONS - OUTROS SERVIÇOS
+    // ===========================
+
+    const addOutroServico = async (servico: Omit<OutroServico, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('outros_servicos').insert({
+            user_id: user.id,
+            tipo: servico.tipo,
+            cliente: servico.cliente,
+            descricao: servico.descricao,
+            valor: servico.valor,
+            forma_pagamento: servico.formaPagamento,
+            data: formatDate(servico.data),
+            status_pagamento: servico.statusPagamento,
+            data_pagamento: formatDate(servico.dataPagamento),
+            observacoes: servico.observacoes,
+        }).select().single();
+
+        if (!error && data) {
+            setOutrosServicos(prev => [...prev, dbToOutroServico(data)]);
+        }
+    };
+
+    const updateOutroServico = async (id: string, updates: Partial<OutroServico>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.tipo !== undefined) updateData.tipo = updates.tipo;
+        if (updates.cliente !== undefined) updateData.cliente = updates.cliente;
+        if (updates.descricao !== undefined) updateData.descricao = updates.descricao;
+        if (updates.valor !== undefined) updateData.valor = updates.valor;
+        if (updates.formaPagamento !== undefined) updateData.forma_pagamento = updates.formaPagamento;
+        if (updates.data !== undefined) updateData.data = formatDate(updates.data);
+        if (updates.statusPagamento !== undefined) updateData.status_pagamento = updates.statusPagamento;
+        if (updates.dataPagamento !== undefined) updateData.data_pagamento = formatDate(updates.dataPagamento);
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+
+        const { data, error } = await supabase.from('outros_servicos').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setOutrosServicos(prev => prev.map(s => s.id === id ? dbToOutroServico(data) : s));
+        }
+    };
+
+    const deleteOutroServico = async (id: string) => {
+        const { error } = await supabase.from('outros_servicos').delete().eq('id', id);
+        if (!error) {
+            setOutrosServicos(prev => prev.filter(s => s.id !== id));
+        }
+    };
+
+    // ===========================
+    // CRUD OPERATIONS - FUNCIONÁRIOS
+    // ===========================
+
+    const addFuncionario = async (funcionario: Omit<Funcionario, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('funcionarios').insert({
+            user_id: user.id,
+            nome: funcionario.nome,
+            cargo: funcionario.cargo,
+            telefone: funcionario.telefone,
+            data_admissao: formatDate(funcionario.dataAdmissao),
+            salario_base: funcionario.salarioBase,
+            ativo: funcionario.ativo,
+            data_demissao: formatDate(funcionario.dataDemissao),
+        }).select().single();
+
+        if (!error && data) {
+            setFuncionarios(prev => [...prev, dbToFuncionario(data)]);
+        }
+    };
+
+    const updateFuncionario = async (id: string, updates: Partial<Funcionario>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.nome !== undefined) updateData.nome = updates.nome;
+        if (updates.cargo !== undefined) updateData.cargo = updates.cargo;
+        if (updates.telefone !== undefined) updateData.telefone = updates.telefone;
+        if (updates.dataAdmissao !== undefined) updateData.data_admissao = formatDate(updates.dataAdmissao);
+        if (updates.salarioBase !== undefined) updateData.salario_base = updates.salarioBase;
+        if (updates.ativo !== undefined) updateData.ativo = updates.ativo;
+        if (updates.dataDemissao !== undefined) updateData.data_demissao = formatDate(updates.dataDemissao);
+
+        const { data, error } = await supabase.from('funcionarios').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setFuncionarios(prev => prev.map(f => f.id === id ? dbToFuncionario(data) : f));
+        }
+    };
+
+    const deleteFuncionario = async (id: string) => {
+        const { error } = await supabase.from('funcionarios').delete().eq('id', id);
+        if (!error) {
+            setFuncionarios(prev => prev.filter(f => f.id !== id));
+        }
+    };
+
+    // ===========================
+    // CRUD OPERATIONS - CLIENTES
+    // ===========================
+
+    const addCliente = async (cliente: Omit<Cliente, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('clientes').insert({
+            user_id: user.id,
+            nome: cliente.nome,
+            tipo: cliente.tipo,
+            telefone: cliente.telefone,
+            endereco: cliente.endereco,
+            ativo: cliente.ativo,
+        }).select().single();
+
+        if (!error && data) {
+            setClientes(prev => [...prev, dbToCliente(data)]);
+        }
+    };
+
+    const updateCliente = async (id: string, updates: Partial<Cliente>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.nome !== undefined) updateData.nome = updates.nome;
+        if (updates.tipo !== undefined) updateData.tipo = updates.tipo;
+        if (updates.telefone !== undefined) updateData.telefone = updates.telefone;
+        if (updates.endereco !== undefined) updateData.endereco = updates.endereco;
+        if (updates.ativo !== undefined) updateData.ativo = updates.ativo;
+
+        const { data, error } = await supabase.from('clientes').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setClientes(prev => prev.map(c => c.id === id ? dbToCliente(data) : c));
+        }
+    };
+
+    const deleteCliente = async (id: string) => {
+        const { error } = await supabase.from('clientes').delete().eq('id', id);
+        if (!error) {
+            setClientes(prev => prev.filter(c => c.id !== id));
+        }
+    };
+
+    // ===========================
+    // CRUD OPERATIONS - FECHAMENTOS CAIXA
+    // ===========================
+
+    const addFechamentoCaixa = async (fechamento: Omit<FechamentoCaixa, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('fechamentos_caixa').insert({
+            user_id: user.id,
+            data: formatDate(fechamento.data),
+            funcionario: fechamento.funcionario,
+            turno: fechamento.turno,
+            entradas_dinheiro: fechamento.entradas.dinheiro,
+            entradas_pix: fechamento.entradas.pix,
+            entradas_credito: fechamento.entradas.credito,
+            entradas_debito: fechamento.entradas.debito,
+            entradas_alimentacao: fechamento.entradas.alimentacao,
+            saidas: fechamento.saidas,
+            observacoes: fechamento.observacoes,
+        }).select().single();
+
+        if (!error && data) {
+            setFechamentosCaixa(prev => [...prev, dbToFechamentoCaixa(data)]);
+        }
+    };
+
+    const updateFechamentoCaixa = async (id: string, updates: Partial<FechamentoCaixa>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.data !== undefined) updateData.data = formatDate(updates.data);
+        if (updates.funcionario !== undefined) updateData.funcionario = updates.funcionario;
+        if (updates.turno !== undefined) updateData.turno = updates.turno;
+        if (updates.entradas?.dinheiro !== undefined) updateData.entradas_dinheiro = updates.entradas.dinheiro;
+        if (updates.entradas?.pix !== undefined) updateData.entradas_pix = updates.entradas.pix;
+        if (updates.entradas?.credito !== undefined) updateData.entradas_credito = updates.entradas.credito;
+        if (updates.entradas?.debito !== undefined) updateData.entradas_debito = updates.entradas.debito;
+        if (updates.entradas?.alimentacao !== undefined) updateData.entradas_alimentacao = updates.entradas.alimentacao;
+        if (updates.saidas !== undefined) updateData.saidas = updates.saidas;
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+
+        const { data, error } = await supabase.from('fechamentos_caixa').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setFechamentosCaixa(prev => prev.map(f => f.id === id ? dbToFechamentoCaixa(data) : f));
+        }
+    };
+
+    const deleteFechamentoCaixa = async (id: string) => {
+        const { error } = await supabase.from('fechamentos_caixa').delete().eq('id', id);
+        if (!error) {
+            setFechamentosCaixa(prev => prev.filter(f => f.id !== id));
+        }
+    };
+
+    // ===========================
+    // CRUD OPERATIONS - FORNECEDORES
+    // ===========================
+
+    const addFornecedor = async (fornecedor: Omit<Fornecedor, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!user) return;
+        const { data, error } = await supabase.from('fornecedores').insert({
+            user_id: user.id,
+            nome: fornecedor.nome,
+            contato: fornecedor.contato,
+            categoria: fornecedor.categoria,
+            ativo: fornecedor.ativo,
+            observacoes: fornecedor.observacoes,
+        }).select().single();
+
+        if (!error && data) {
+            setFornecedores(prev => [...prev, dbToFornecedor(data)]);
+        }
+    };
+
+    const updateFornecedor = async (id: string, updates: Partial<Fornecedor>) => {
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (updates.nome !== undefined) updateData.nome = updates.nome;
+        if (updates.contato !== undefined) updateData.contato = updates.contato;
+        if (updates.categoria !== undefined) updateData.categoria = updates.categoria;
+        if (updates.ativo !== undefined) updateData.ativo = updates.ativo;
+        if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
+
+        const { data, error } = await supabase.from('fornecedores').update(updateData).eq('id', id).select().single();
+        if (!error && data) {
+            setFornecedores(prev => prev.map(f => f.id === id ? dbToFornecedor(data) : f));
+        }
+    };
+
+    const deleteFornecedor = async (id: string) => {
+        const { error } = await supabase.from('fornecedores').delete().eq('id', id);
+        if (!error) {
+            setFornecedores(prev => prev.filter(f => f.id !== id));
+        }
+    };
+
+    // ===========================
+    // ANALYTICS
+    // ===========================
+
     const getDashboardStats = (): DashboardStats => {
         // 1. Receitas
         const entradasCaixaLegacy = caixaEntries.filter(e => e.tipo === 'entrada').reduce((sum, e) => sum + e.valor, 0);
@@ -377,13 +1010,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...boletos.filter(b => b.statusPagamento !== 'pago' && new Date(b.dataVencimento) < hoje),
         ].reduce((sum, item) => sum + ('valorBoleto' in item ? item.valorBoleto : item.valor), 0);
 
-        // 4. Saldo em Caixa (Apenas Dinheiro/Movimentação Imediata)
+        // 4. Saldo em Caixa
         const saidasCaixaLegacy = caixaEntries.filter(e => e.tipo === 'saida').reduce((sum, e) => sum + e.valor, 0);
         const saidasFechamento = fechamentosCaixa.reduce((sum, f) => sum + f.saidas, 0);
 
         const saldoCaixa = totalRecebido - (saidasCaixaLegacy + saidasFechamento);
 
-        // 5. Total Despesas Globais
+        // 5. Total Despesas
         const despesasModulo = saidas.reduce((sum, s) => sum + s.valor, 0);
         const totalFolha = folhaPagamento.reduce((sum, p) => sum + p.valor, 0);
 
@@ -394,8 +1027,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { totalRecebido, totalAReceber, totalVencido, saldoCaixa, totalDespesas, totalVales, totalFolha };
     };
 
-    // Theme
-    const toggleTheme = () => { setTheme(prev => prev === 'light' ? 'dark' : 'light'); };
+    // ===========================
+    // THEME
+    // ===========================
+
+    const toggleTheme = async () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+        document.documentElement.setAttribute('data-theme', newTheme);
+
+        if (user) {
+            await supabase.from('user_preferences').upsert({
+                id: user.id,
+                theme: newTheme,
+                updated_at: new Date().toISOString(),
+            });
+        }
+    };
+
+    // ===========================
+    // CONTEXT VALUE
+    // ===========================
 
     const value: AppContextType = {
         convenios, boletos, caixaEntries, saidas, vales, marmitas, folhaPagamento, outrosServicos, funcionarios, clientes, fechamentosCaixa, fornecedores,
@@ -412,6 +1064,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addFechamentoCaixa, updateFechamentoCaixa, deleteFechamentoCaixa,
         addFornecedor, updateFornecedor, deleteFornecedor,
         getDashboardStats, theme, toggleTheme,
+        isLoading,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

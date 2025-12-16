@@ -1,66 +1,85 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-
-interface User {
-    username: string;
-    role: 'adm' | 'gerente';
-}
 
 interface AuthContextType {
     user: User | null;
-    login: (u: string, p: string) => boolean;
-    logout: () => void;
+    session: Session | null;
+    loading: boolean;
     isAuthenticated: boolean;
-    isLoading: boolean;
+    signInWithGoogle: () => Promise<void>;
+    signOut: () => Promise<void>;
+    // Legacy compatibility
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [session, setSession] = useState<Session | null>(null);
+    const [loading, setLoading] = useState(true);
+    const supabase = createClient();
     const router = useRouter();
 
-    // Persist login state
     useEffect(() => {
-        const storedUser = localStorage.getItem('ph_user');
-        if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error("Failed to parse user session");
-            }
-        }
-        setIsLoading(false);
-    }, []);
+        // Get initial session
+        const getSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+        };
 
-    const login = (u: string, p: string) => {
-        // Hardcoded credentials
-        if (u === 'adm' && p === '123') {
-            const userData: User = { username: 'Administrador', role: 'adm' };
-            setUser(userData);
-            localStorage.setItem('ph_user', JSON.stringify(userData));
-            return true;
+        getSession();
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                setSession(session);
+                setUser(session?.user ?? null);
+                setLoading(false);
+            }
+        );
+
+        return () => subscription.unsubscribe();
+    }, [supabase.auth]);
+
+    const signInWithGoogle = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+        if (error) {
+            console.error('Error signing in with Google:', error);
+            throw error;
         }
-        if (u === 'adm2' && p === '123') {
-            const userData: User = { username: 'Gerente', role: 'gerente' };
-            setUser(userData);
-            localStorage.setItem('ph_user', JSON.stringify(userData));
-            return true;
-        }
-        return false;
     };
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('ph_user');
+    const signOut = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error('Error signing out:', error);
+            throw error;
+        }
         router.push('/login');
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, isLoading }}>
+        <AuthContext.Provider value={{
+            user,
+            session,
+            loading,
+            isAuthenticated: !!user,
+            signInWithGoogle,
+            signOut,
+            logout: signOut, // Legacy compatibility
+        }}>
             {children}
         </AuthContext.Provider>
     );
