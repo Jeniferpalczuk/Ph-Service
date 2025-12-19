@@ -1,0 +1,281 @@
+/* Base Layout */
+.modern-page {
+    animation: fadeIn var(--transition-base);
+    padding: 2rem;
+    background: #f8fafc;
+    min-height: 100vh;
+}
+
+/* Header Section */
+.modern-header {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    border: 1px solid #f1f5f9;
+}
+
+.modern-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.modern-header-subtitle {
+    font-size: 1rem;
+    color: #64748b;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modern-header-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.modern-header-badges {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.modern-badge-summary {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modern-badge-summary.success {
+    background: #ecfdf5;
+    color: #10b981;
+}
+
+.modern-badge-summary.warning {
+    background: #fffbeb;
+    color: #f59e0b;
+}
+
+.modern-badge-summary.danger {
+    background: #fdf2f2;
+    color: #ef4444;
+}
+
+.modern-badge-summary.info {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.modern-badge-summary.neutral {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.btn-modern-primary {
+    background: #0ea5e9;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);
+}
+
+.btn-modern-primary:hover {
+    background: #0284c7;
+    transform: translateY(-2px);
+}
+
+/* Filters Bar */
+.modern-filters-container {
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    border: 1px solid #f1f5f9;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.modern-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 200px;
+}
+
+.modern-filter-group label {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modern-filter-group select,
+.modern-filter-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 0.95rem;
+    color: #1e293b;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.modern-filter-group select:focus,
+.modern-filter-group input:focus {
+    border-color: #0ea5e9;
+    background: #ffffff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* Table Management */
+.modern-table-container {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f5f9;
+    overflow: hidden;
+}
+
+.modern-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.modern-table th {
+    background: #f8fafc;
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.modern-table td {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+.modern-table tr:hover td {
+    background: #f1f5f9;
+}
+
+.col-highlight {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.col-money {
+    color: #10b981;
+    font-weight: 700;
+}
+
+.col-money-negative {
+    color: #ef4444;
+    font-weight: 700;
+}
+
+.modern-status-badge {
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Footer & Pagination */
+.modern-footer {
+    padding: 1.5rem;
+    background: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.modern-footer-totals {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.modern-total-item {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.modern-total-item b {
+    color: #0f172a;
+    font-weight: 800;
+    margin-left: 0.5rem;
+}
+
+.modern-pagination {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.modern-per-page {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.btn-modern-icon {
+    background: #f1f5f9;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.btn-modern-icon:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}

@@ -1,16 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Boleto, PaymentStatus } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import '../convenios/convenios.css';
+import '../shared-modern.css';
 
 export default function BoletosPage() {
     const { user } = useAuth();
-    const { boletos, addBoleto, updateBoleto, deleteBoleto } = useApp();
+    const { boletos, addBoleto, updateBoleto, deleteBoleto, fornecedores } = useApp();
     const [showModal, setShowModal] = useState(false);
     const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
+
+    // Filter States
+    const [filterCliente, setFilterCliente] = useState('');
+    const [filterBanco, setFilterBanco] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('all');
 
     const [formData, setFormData] = useState({
         cliente: '',
@@ -72,85 +77,135 @@ export default function BoletosPage() {
         setShowModal(true);
     };
 
-    const handleDelete = (id: string, e?: React.MouseEvent) => {
-        e?.stopPropagation();
+    const handleDelete = (id: string) => {
         if (confirm('Tem certeza que deseja excluir este boleto?')) {
             deleteBoleto(id);
         }
     };
 
-    const totalValor = boletos.reduce((sum, b) => sum + b.valor, 0);
-    const totalPago = boletos.filter(b => b.statusPagamento === 'pago').reduce((sum, b) => sum + b.valor, 0);
-    const totalPendente = boletos.filter(b => b.statusPagamento !== 'pago').reduce((sum, b) => sum + b.valor, 0);
+    const bancos = useMemo(() => Array.from(new Set(boletos.map(b => b.banco))), [boletos]);
+
+    const filteredBoletos = useMemo(() => {
+        return boletos
+            .filter(b => {
+                const matchesCliente = b.cliente.toLowerCase().includes(filterCliente.toLowerCase());
+                const matchesBanco = filterBanco === 'all' || b.banco === filterBanco;
+                const matchesStatus = filterStatus === 'all' || b.statusPagamento === filterStatus;
+                return matchesCliente && matchesBanco && matchesStatus;
+            })
+            .sort((a, b) => new Date(b.dataVencimento).getTime() - new Date(a.dataVencimento).getTime());
+    }, [boletos, filterCliente, filterBanco, filterStatus]);
+
+    const totalValor = filteredBoletos.reduce((sum, b) => sum + b.valor, 0);
+    const totalPago = filteredBoletos.filter(b => b.statusPagamento === 'pago').length;
+    const totalPendente = filteredBoletos.filter(b => b.statusPagamento !== 'pago').length;
 
     return (
-        <div className="convenios-page">
-            <div className="page-header">
-                <div className="header-stats">
-                    <div className="stat-item">
-                        <span className="stat-label">Total</span>
-                        <span className="stat-value">R$ {totalValor.toFixed(2)}</span>
+        <div className="modern-page">
+            <div className="modern-header">
+                <div className="modern-header-info">
+                    <div className="modern-header-subtitle">Gestão de Boletos</div>
+                    <div className="modern-header-title">
+                        R$ {totalValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Pago</span>
-                        <span className="stat-value text-success">R$ {totalPago.toFixed(2)}</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Pendente</span>
-                        <span className="stat-value text-warning">R$ {totalPendente.toFixed(2)}</span>
+                    <div className="modern-header-badges">
+                        <div className="modern-badge-summary success">
+                            <span>✅</span> {totalPago} pagos
+                        </div>
+                        <div className="modern-badge-summary warning">
+                            <span>🕒</span> {totalPendente} pendentes
+                        </div>
+                        {(filterCliente || filterBanco !== 'all' || filterStatus !== 'all') && (
+                            <button className="modern-badge-summary neutral" onClick={() => {
+                                setFilterCliente('');
+                                setFilterBanco('all');
+                                setFilterStatus('all');
+                            }} style={{ border: 'none', cursor: 'pointer' }}>
+                                🧹 Limpar Filtros
+                            </button>
+                        )}
                     </div>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                <button className="btn-modern-primary" onClick={() => setShowModal(true)}>
                     ➕ Novo Boleto
                 </button>
             </div>
 
-            <div className="table-container card">
-                <table>
+            <div className="modern-filters-container">
+                <div className="modern-filter-group">
+                    <label>👤 Cliente:</label>
+                    <input
+                        type="text"
+                        placeholder="Pesquisar cliente..."
+                        value={filterCliente}
+                        onChange={e => setFilterCliente(e.target.value)}
+                    />
+                </div>
+                <div className="modern-filter-group">
+                    <label>🏦 Banco:</label>
+                    <select value={filterBanco} onChange={e => setFilterBanco(e.target.value)}>
+                        <option value="all">Todos os Bancos</option>
+                        {bancos.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                </div>
+                <div className="modern-filter-group">
+                    <label>🔄 Status:</label>
+                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                        <option value="all">Status: Todos</option>
+                        <option value="pago">Pago</option>
+                        <option value="pendente">Pendente</option>
+                        <option value="vencido">Vencido</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className="modern-table-container">
+                <table className="modern-table">
                     <thead>
                         <tr>
-                            <th>Cliente</th>
-                            <th>Banco</th>
-                            <th>Valor</th>
-                            <th>Vencimento</th>
-                            <th>Pagamento</th>
-                            <th>Status</th>
-                            <th>Ações</th>
+                            <th>CLIENTE</th>
+                            <th>BANCO</th>
+                            <th>VALOR</th>
+                            <th>VENCIMENTO</th>
+                            <th>PAGAMENTO</th>
+                            <th>STATUS</th>
+                            <th style={{ textAlign: 'right' }}>AÇÕES</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {boletos.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} className="text-center">
-                                    Nenhum boleto registrado
-                                </td>
-                            </tr>
+                        {filteredBoletos.length === 0 ? (
+                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Nenhum boleto encontrado.</td></tr>
                         ) : (
-                            boletos.map((boleto) => (
+                            filteredBoletos.map((boleto) => (
                                 <tr key={boleto.id}>
-                                    <td className="font-semibold">{boleto.cliente}</td>
+                                    <td className="col-highlight">{boleto.cliente}</td>
                                     <td>{boleto.banco}</td>
-                                    <td className="font-semibold">R$ {boleto.valor.toFixed(2)}</td>
+                                    <td className="col-money">R$ {boleto.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                     <td>{new Date(boleto.dataVencimento).toLocaleDateString('pt-BR')}</td>
                                     <td>{boleto.dataPagamento ? new Date(boleto.dataPagamento).toLocaleDateString('pt-BR') : '-'}</td>
                                     <td>
-                                        <span className={`badge ${boleto.statusPagamento === 'pago' ? 'badge-success' : 'badge-warning'}`}>
-                                            {boleto.statusPagamento === 'pago' ? 'Pago' : 'Pendente'}
+                                        <span className={`modern-status-badge ${boleto.statusPagamento === 'pago' ? 'pago' : 'pendente'}`}
+                                            style={{
+                                                backgroundColor: boleto.statusPagamento === 'pago' ? '#d1fae5' : '#fef3c7',
+                                                color: boleto.statusPagamento === 'pago' ? '#065f46' : '#92400e'
+                                            }}>
+                                            {boleto.statusPagamento}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <button className="btn-icon" onClick={() => handleEdit(boleto)}>✏️</button>
-                                            {user?.role === 'adm' && (
-                                                <button className="btn-icon" onClick={(e) => handleDelete(boleto.id, e)}>🗑️</button>
-                                            )}
-                                        </div>
+                                    <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                        <button className="btn-modern-icon" onClick={() => handleEdit(boleto)}>✏️</button>
+                                        <button className="btn-modern-icon" onClick={() => handleDelete(boleto.id)}>🗑️</button>
                                     </td>
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </table>
+                <div className="modern-footer">
+                    <div className="modern-footer-totals">
+                        <div className="modern-total-item">Total: <b>R$ {totalValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b></div>
+                    </div>
+                </div>
             </div>
 
             {showModal && (
@@ -163,89 +218,60 @@ export default function BoletosPage() {
                         <form onSubmit={handleSubmit} className="modal-form">
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>Cliente *</label>
+                                    <label>Cliente (Fornecedor) *</label>
                                     <input
-                                        type="text"
                                         required
+                                        list="fornecedores-list"
                                         value={formData.cliente}
                                         onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
+                                        placeholder="Selecione ou digite..."
                                     />
+                                    <datalist id="fornecedores-list">
+                                        {fornecedores.filter(f => f.ativo).map(f => (
+                                            <option key={f.id} value={f.nome}>{f.nome}</option>
+                                        ))}
+                                    </datalist>
                                 </div>
                                 <div className="form-group">
                                     <label>Banco *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.banco}
-                                        onChange={(e) => setFormData({ ...formData, banco: e.target.value })}
-                                    />
+                                    <input required value={formData.banco} onChange={(e) => setFormData({ ...formData, banco: e.target.value })} />
                                 </div>
                             </div>
 
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Valor *</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0.00"
-                                        required
-                                        value={formData.valor}
-                                        onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                                    />
+                                    <input type="number" step="0.01" required value={formData.valor} onChange={(e) => setFormData({ ...formData, valor: e.target.value })} />
                                 </div>
                                 <div className="form-group">
                                     <label>Data de Vencimento *</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={formData.dataVencimento}
-                                        onChange={(e) => setFormData({ ...formData, dataVencimento: e.target.value })}
-                                    />
+                                    <input type="date" required value={formData.dataVencimento} onChange={(e) => setFormData({ ...formData, dataVencimento: e.target.value })} />
                                 </div>
                             </div>
 
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Data de Pagamento</label>
-                                    <input
-                                        type="date"
-                                        value={formData.dataPagamento}
-                                        onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })}
-                                    />
+                                    <input type="date" value={formData.dataPagamento} onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })} />
                                 </div>
                                 <div className="form-group">
                                     <label>Status *</label>
-                                    <select
-                                        required
-                                        value={formData.statusPagamento}
-                                        onChange={(e) => setFormData({ ...formData, statusPagamento: e.target.value as PaymentStatus })}
-                                    >
+                                    <select required value={formData.statusPagamento} onChange={(e) => setFormData({ ...formData, statusPagamento: e.target.value as PaymentStatus })}>
                                         <option value="pendente">Pendente</option>
                                         <option value="pago">Pago</option>
                                         <option value="vencido">Vencido</option>
-                                        <option value="parcial">Parcial</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div className="form-group">
                                 <label>Observações</label>
-                                <textarea
-                                    rows={3}
-                                    value={formData.observacoes}
-                                    onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                                />
+                                <textarea rows={3} value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} />
                             </div>
 
                             <div className="modal-actions">
-                                <button type="button" className="btn btn-secondary" onClick={resetForm}>
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="btn btn-primary">
-                                    {editingBoleto ? 'Atualizar' : 'Salvar'}
-                                </button>
+                                <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary">{editingBoleto ? 'Atualizar' : 'Salvar'}</button>
                             </div>
                         </form>
                     </div>

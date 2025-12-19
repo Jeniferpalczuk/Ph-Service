@@ -11,6 +11,8 @@ interface AuthContextType {
     loading: boolean;
     isAuthenticated: boolean;
     signInWithGoogle: () => Promise<void>;
+    signInWithEmail: (email: string, password: string) => Promise<void>;
+    updatePassword: (password: string) => Promise<void>;
     signOut: () => Promise<void>;
     // Legacy compatibility
     logout: () => Promise<void>;
@@ -61,6 +63,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const signInWithEmail = async (email: string, password: string) => {
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+        if (error) {
+            console.error('Error signing in with email:', error);
+            throw error;
+        }
+        router.push('/');
+    };
+
+    const updatePassword = async (password: string) => {
+        const { error } = await supabase.auth.updateUser({
+            password: password
+        });
+        if (error) {
+            console.error('Error updating password:', error);
+            throw error;
+        }
+        alert('Senha atualizada com sucesso!');
+    };
+
     const signOut = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) {
@@ -77,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             loading,
             isAuthenticated: !!user,
             signInWithGoogle,
+            signInWithEmail,
+            updatePassword,
             signOut,
             logout: signOut, // Legacy compatibility
         }}>

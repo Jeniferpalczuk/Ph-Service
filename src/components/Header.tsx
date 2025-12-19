@@ -13,21 +13,21 @@ export default function Header() {
 
     const menuItems = [
         { icon: '📊', label: 'Dashboard', href: '/' },
-        { icon: '🤝', label: 'Convênios', href: '/convenios' },
-        { icon: '🧾', label: 'Boletos', href: '/boletos' },
+        { icon: '💛', label: 'Convênios', href: '/convenios' },
+        { icon: '📄', label: 'Boletos', href: '/boletos' },
         { icon: '💰', label: 'Caixa', href: '/caixa' },
         { icon: '📤', label: 'Saídas', href: '/saidas' },
         { icon: '💵', label: 'Vales', href: '/vales' },
         { icon: '🍱', label: 'Marmitas', href: '/marmitas' },
         { icon: '👥', label: 'Folha', href: '/folha-pagamento' },
-        { icon: '📒', label: 'Cadastros', href: '/cadastros' },
+        { icon: '📂', label: 'Cadastros', href: '/cadastros' },
     ];
 
     return (
         <header className="header">
             <div className="header-container">
                 <div className="logo-section">
-                    <img src="/logo.png" alt="PH Service Logo" className="logo-image" />
+                    <img src="/logo.png" alt="PH Service" className="logo-image" />
                 </div>
 
                 <nav className="header-nav">
@@ -36,7 +36,6 @@ export default function Header() {
                             key={item.href}
                             href={item.href}
                             className={`nav-item ${pathname === item.href ? 'active' : ''}`}
-                            title={item.label}
                         >
                             <span className="nav-icon">{item.icon}</span>
                             <span className="nav-label">{item.label}</span>
@@ -45,23 +44,9 @@ export default function Header() {
                 </nav>
 
                 <div className="header-actions">
-                    <button
-                        className="theme-toggle-btn"
-                        onClick={toggleTheme}
-                        aria-label="Toggle theme"
-                        title="Alternar Tema"
-                    >
-                        {theme === 'light' ? '🌙' : '☀️'}
-                    </button>
-
-                    <button
-                        className="nav-item logout-btn"
-                        onClick={logout}
-                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%', color: 'var(--text-secondary)' }}
-                        title="Sair do Sistema"
-                    >
-                        <span className="nav-icon">🚪</span>
-                        <span className="nav-label" style={{ marginLeft: '0.75rem' }}>Sair</span>
+                    <button className="logout-btn" onClick={logout}>
+                        <span className="logout-icon">🚪</span>
+                        <span className="logout-label">Sair</span>
                     </button>
                 </div>
             </div>

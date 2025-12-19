@@ -1,0 +1,327 @@
+.folha-page {
+    animation: fadeIn var(--transition-base);
+    padding: 2rem;
+    background: #f8fafc;
+    min-height: 100vh;
+}
+
+/* Header Section */
+.folha-header {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    border: 1px solid #f1f5f9;
+}
+
+.folha-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.folha-header-subtitle {
+    font-size: 1rem;
+    color: #64748b;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.folha-header-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.folha-header-badges {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.folha-badge-summary {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.folha-badge-summary.pagos {
+    background: #ecfdf5;
+    color: #10b981;
+}
+
+.folha-badge-summary.pendentes {
+    background: #fffbeb;
+    color: #f59e0b;
+}
+
+.folha-badge-summary.descontos {
+    background: #fdf2f2;
+    color: #ef4444;
+}
+
+.btn-novo-pagamento {
+    background: #0ea5e9;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);
+}
+
+.btn-novo-pagamento:hover {
+    background: #0284c7;
+    transform: translateY(-2px);
+}
+
+/* Filters Bar */
+.folha-filters-container {
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    border: 1px solid #f1f5f9;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.filter-group label {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group select,
+.filter-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 0.95rem;
+    color: #1e293b;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    border-color: #0ea5e9;
+    background: #ffffff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* Table Management */
+.folha-table-container {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f5f9;
+    overflow: hidden;
+}
+
+.folha-modern-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.folha-modern-table th {
+    background: #f8fafc;
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.folha-modern-table td {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+.folha-modern-table tr:last-child td {
+    border-bottom: none;
+}
+
+.folha-modern-table tr:hover td {
+    background: #f1f5f9;
+}
+
+/* Specific Columns */
+.col-funcionario {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.col-valor {
+    color: #10b981;
+    font-weight: 700;
+}
+
+.col-descontos {
+    color: #64748b;
+    font-weight: 600;
+}
+
+.folha-status-badge {
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+}
+
+.folha-status-badge.pago {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.folha-status-badge.pendente {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+/* Footer Section */
+.folha-footer {
+    padding: 1.5rem;
+    background: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f1f5f9;
+}
+
+.folha-footer-totals {
+    display: flex;
+    gap: 2rem;
+}
+
+.total-item {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.total-item b {
+    color: #0f172a;
+    font-weight: 800;
+    margin-left: 0.5rem;
+}
+
+.total-item b.green {
+    color: #10b981;
+}
+
+.total-item b.red {
+    color: #ef4444;
+}
+
+/* Pagination & Per Page */
+.folha-pagination {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.per-page-select {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #64748b;
+    background: #ffffff;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-page {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #64748b;
+}
+
+.btn-page:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.btn-page.active {
+    background: #0ea5e9;
+    color: white;
+    border-color: #0ea5e9;
+}
+
+/* Dropdown Actions */
+.folha-actions-dropdown {
+    position: relative;
+}
+
+.btn-actions-trigger {
+    background: #f1f5f9;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.btn-actions-trigger:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
