@@ -33,15 +33,27 @@ export default function ConveniosPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        const [yF, mF, dF] = formData.dataFechamento.split('-').map(Number);
+        const dataFechAjustada = new Date(yF, mF - 1, dF, 12, 0, 0);
+
+        const [yV, mV, dV] = formData.dataVencimento.split('-').map(Number);
+        const dataVencAjustada = new Date(yV, mV - 1, dV, 12, 0, 0);
+
+        let dataPagAjustada = undefined;
+        if (formData.dataPagamento) {
+            const [yP, mP, dP] = formData.dataPagamento.split('-').map(Number);
+            dataPagAjustada = new Date(yP, mP - 1, dP, 12, 0, 0);
+        }
+
         const convenioData = {
             empresaCliente: formData.empresaCliente,
             tipoFechamento: formData.tipoFechamento,
             periodoReferencia: formData.periodoReferencia,
-            dataFechamento: new Date(formData.dataFechamento),
+            dataFechamento: dataFechAjustada,
             valorBoleto: parseFloat(formData.valorBoleto),
             banco: formData.banco,
-            dataVencimento: new Date(formData.dataVencimento),
-            dataPagamento: formData.dataPagamento ? new Date(formData.dataPagamento) : undefined,
+            dataVencimento: dataVencAjustada,
+            dataPagamento: dataPagAjustada,
             statusPagamento: formData.statusPagamento,
             notaFiscal: formData.notaFiscal || undefined,
             enviadoPara: formData.enviadoPara || undefined,
@@ -59,20 +71,15 @@ export default function ConveniosPage() {
     };
 
     const resetForm = () => {
-        setFormData({
+        setFormData(prev => ({
+            ...prev,
             empresaCliente: '',
-            tipoFechamento: 'mensal',
-            periodoReferencia: '',
-            dataFechamento: '',
             valorBoleto: '',
-            banco: '',
-            dataVencimento: '',
-            dataPagamento: '',
             statusPagamento: 'pendente',
             notaFiscal: '',
             enviadoPara: '',
             observacoes: '',
-        });
+        }));
         setEditingConvenio(null);
         setShowModal(false);
     };

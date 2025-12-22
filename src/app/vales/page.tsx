@@ -30,14 +30,14 @@ export default function ValesPage() {
     });
 
     const resetForm = () => {
-        setFormData({
+        setFormData(prev => ({
+            ...prev,
             funcionario: '',
             valor: '',
-            data: new Date().toISOString().split('T')[0],
             motivo: '',
             status: 'aberto',
             observacoes: ''
-        });
+        }));
         setEditingItem(null);
         setShowModal(false);
     };
@@ -63,10 +63,13 @@ export default function ValesPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        const [y, m, d] = formData.data.split('-').map(Number);
+        const dataAjustada = new Date(y, m - 1, d, 12, 0, 0);
+
         const payload = {
             funcionario: formData.funcionario,
             valor: parseFloat(formData.valor),
-            data: new Date(formData.data),
+            data: dataAjustada,
             motivo: formData.motivo,
             status: formData.status,
             observacoes: formData.observacoes

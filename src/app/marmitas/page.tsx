@@ -29,13 +29,13 @@ export default function MarmitasPage() {
     });
 
     const resetForm = () => {
-        setFormData({
-            dataEntrega: new Date().toISOString().split('T')[0],
+        setFormData(prev => ({
+            ...prev,
             qtdP: '', unitP: '', totalP: '',
             qtdM: '', unitM: '', totalM: '',
             qtdG: '', unitG: '', totalG: '',
             qtdPF: '', unitPF: '', totalPF: ''
-        });
+        }));
         setShowModal(false);
     };
 

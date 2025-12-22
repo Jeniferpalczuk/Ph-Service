@@ -38,7 +38,18 @@ export default function CadastrosPage() {
     const handleFuncSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const demissao = funcData.dataDemissao ? new Date(funcData.dataDemissao) : undefined;
+        let admissao = undefined;
+        if (funcData.dataAdmissao) {
+            const [yA, mA, dA] = funcData.dataAdmissao.split('-').map(Number);
+            admissao = new Date(yA, mA - 1, dA, 12, 0, 0);
+        }
+
+        let demissao = undefined;
+        if (funcData.dataDemissao) {
+            const [yD, mD, dD] = funcData.dataDemissao.split('-').map(Number);
+            demissao = new Date(yD, mD - 1, dD, 12, 0, 0);
+        }
+
         // Se tem data de demissão, considera inativo
         const isAtivo = !funcData.dataDemissao;
 
@@ -47,7 +58,7 @@ export default function CadastrosPage() {
             cargo: funcData.cargo,
             telefone: funcData.telefone,
             salarioBase: parseFloat(funcData.salarioBase) || 0,
-            dataAdmissao: funcData.dataAdmissao ? new Date(funcData.dataAdmissao) : undefined,
+            dataAdmissao: admissao,
             dataDemissao: demissao,
             ativo: isAtivo
         };

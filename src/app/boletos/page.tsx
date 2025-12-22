@@ -103,12 +103,21 @@ export default function BoletosPage() {
                 addBoleto(boletoData);
             });
         } else {
+            const [yV, mV, dV] = formData.dataVencimento.split('-').map(Number);
+            const vencAjustada = new Date(yV, mV - 1, dV, 12, 0, 0);
+
+            let pagAjustada = undefined;
+            if (formData.dataPagamento) {
+                const [yP, mP, dP] = formData.dataPagamento.split('-').map(Number);
+                pagAjustada = new Date(yP, mP - 1, dP, 12, 0, 0);
+            }
+
             const boletoData = {
                 cliente: formData.cliente,
                 valor: parseFloat(formData.valor),
                 banco: formData.banco,
-                dataVencimento: new Date(formData.dataVencimento),
-                dataPagamento: formData.dataPagamento ? new Date(formData.dataPagamento) : undefined,
+                dataVencimento: vencAjustada,
+                dataPagamento: pagAjustada,
                 statusPagamento: formData.statusPagamento,
                 observacoes: formData.observacoes || undefined,
             };
@@ -124,15 +133,13 @@ export default function BoletosPage() {
     };
 
     const resetForm = () => {
-        setFormData({
+        setFormData(prev => ({
+            ...prev,
             cliente: '',
             valor: '',
-            banco: '',
-            dataVencimento: '',
-            dataPagamento: '',
             statusPagamento: 'pendente',
             observacoes: '',
-        });
+        }));
         setEditingBoleto(null);
         setShowModal(false);
         setIsParcelado(false);

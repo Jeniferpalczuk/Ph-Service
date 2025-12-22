@@ -45,15 +45,13 @@ export default function SaidasPage() {
     const pagamentos: PaymentMethod[] = ['dinheiro', 'pix', 'cartao_credito', 'cartao_debito', 'boleto', 'transferencia'];
 
     const resetForm = () => {
-        setFormData({
+        setFormData(prev => ({
+            ...prev,
             descricao: '',
             valor: '',
-            data: new Date().toISOString().split('T')[0],
-            categoria: 'outros' as ExpenseCategory,
-            formaPagamento: 'dinheiro' as PaymentMethod,
             fornecedor: '',
             observacoes: '',
-        });
+        }));
         setEditingSaida(null);
         setShowModal(false);
     };
