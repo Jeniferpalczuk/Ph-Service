@@ -327,57 +327,130 @@ export default function ValesPage() {
             </div>
 
             {showModal && (
-                <div className="modal-overlay" onClick={resetForm}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>{editingItem ? 'Editar Vale' : 'Novo Vale'}</h2>
-                            <button className="modal-close" onClick={resetForm}>✕</button>
+                <div className="modal-overlay animate-fade-in" onClick={resetForm} style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '2rem'
+                }}>
+                    <div className="modal-content animate-scale-in" onClick={e => e.stopPropagation()} style={{
+                        background: '#ffffff',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '600px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        padding: 0
+                    }}>
+                        <div className="modal-header" style={{
+                            padding: '1.5rem 2rem', borderBottom: '1px solid #f1f5f9',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            background: 'linear-gradient(to right, #f8fafc, #ffffff)',
+                            borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
+                            position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)'
+                        }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                                    {editingItem ? 'Editar' : 'Novo'} Vale
+                                </h2>
+                                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>
+                                    Registre um adiantamento para o funcionário
+                                </p>
+                            </div>
+                            <button className="btn-modern-icon" onClick={resetForm} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
                         </div>
-                        <form onSubmit={handleSubmit} className="modal-form">
-                            <div className="form-group">
-                                <label>Funcionário *</label>
-                                <select required value={formData.funcionario} onChange={e => setFormData({ ...formData, funcionario: e.target.value })}>
-                                    <option value="">Selecione...</option>
-                                    {funcionarios.filter(f => f.ativo).length > 0 ? (
-                                        funcionarios.filter(f => f.ativo).map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)
-                                    ) : (
-                                        <option value="" disabled>Nenhum funcionário ativo</option>
-                                    )}
+
+                        <form onSubmit={handleSubmit} className="modal-form" style={{ padding: '2rem' }}>
+                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Funcionário *</label>
+                                <select
+                                    required
+                                    value={formData.funcionario}
+                                    onChange={e => setFormData({ ...formData, funcionario: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                >
+                                    <option value="">Selecione um funcionário...</option>
+                                    {funcionarios.filter(f => f.ativo).map(f => (
+                                        <option key={f.id} value={f.nome}>{f.nome}</option>
+                                    ))}
                                 </select>
                             </div>
 
-                            <div className="form-row">
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label>Valor (R$) *</label>
-                                    <input type="number" step="0.01" min="0" placeholder="0.00" required value={formData.valor} onChange={e => setFormData({ ...formData, valor: e.target.value })} />
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Valor *</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#94a3b8' }}>R$</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            required
+                                            value={formData.valor}
+                                            onChange={e => setFormData({ ...formData, valor: e.target.value })}
+                                            style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700, color: '#0ea5e9' }}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="form-group">
-                                    <label>Data *</label>
-                                    <input type="date" required value={formData.data} onChange={e => setFormData({ ...formData, data: e.target.value })} />
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data *</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={formData.data}
+                                        onChange={e => setFormData({ ...formData, data: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                    />
                                 </div>
                             </div>
 
-                            <div className="form-group">
-                                <label>Motivo</label>
-                                <input required placeholder="Ex: Adiantamento, Remédio" value={formData.motivo} onChange={e => setFormData({ ...formData, motivo: e.target.value })} />
+                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Motivo *</label>
+                                <input
+                                    required
+                                    value={formData.motivo}
+                                    onChange={e => setFormData({ ...formData, motivo: e.target.value })}
+                                    placeholder="Ex: Adiantamento Quinzenal"
+                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                />
                             </div>
 
-                            <div className="form-group">
-                                <label>Status</label>
-                                <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as ValeStatus })}>
-                                    <option value="aberto">Aberto (A descontar)</option>
-                                    <option value="quitado">Quitado / Descontado</option>
+                            <div className="form-group" style={{ marginBottom: '2rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Status *</label>
+                                <select
+                                    required
+                                    value={formData.status}
+                                    onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                >
+                                    <option value="aberto">Aberto</option>
+                                    <option value="marcado_desconto">Marcado para Desconto</option>
+                                    <option value="quitado">Quitado</option>
                                 </select>
                             </div>
 
-                            <div className="form-group">
-                                <label>Observações</label>
-                                <textarea rows={2} value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} />
-                            </div>
-
-                            <div className="modal-actions">
-                                <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Salvar</button>
+                            <div className="modal-actions" style={{
+                                display: 'flex', gap: '1rem', padding: '1.5rem 2rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', margin: '0 -2rem -2rem -2rem'
+                            }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={resetForm}
+                                    style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b' }}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)' }}
+                                >
+                                    {editingItem ? 'Atualizar Vale' : 'Salvar Vale'}
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -251,36 +251,85 @@ export default function ConveniosPage() {
 
             {/* Modal */}
             {showModal && (
-                <div className="modal-overlay" onClick={resetForm}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>{editingConvenio ? 'Editar Convênio' : 'Novo Convênio'}</h2>
-                            <button className="modal-close" onClick={resetForm}>✕</button>
+                <div className="modal-overlay animate-fade-in" onClick={resetForm} style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 1000,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '2rem'
+                }}>
+                    <div className="modal-content animate-scale-in" onClick={(e) => e.stopPropagation()} style={{
+                        background: '#ffffff',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '700px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        padding: 0
+                    }}>
+                        <div className="modal-header" style={{
+                            padding: '1.5rem 2rem',
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: 'linear-gradient(to right, #f8fafc, #ffffff)',
+                            borderTopLeftRadius: '24px',
+                            borderTopRightRadius: '24px',
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 10,
+                            backdropFilter: 'blur(10px)'
+                        }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                                    {editingConvenio ? 'Editar' : 'Novo'} Convênio
+                                </h2>
+                                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>
+                                    Preencha as informações do fechamento
+                                </p>
+                            </div>
+                            <button className="btn-modern-icon" onClick={resetForm} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
                         </div>
-                        <form onSubmit={handleSubmit} className="modal-form">
-                            <div className="form-row">
+
+                        <form onSubmit={handleSubmit} className="modal-form" style={{ padding: '2rem' }}>
+                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>
+                                    Empresa/Cliente *
+                                </label>
+                                <select
+                                    required
+                                    value={formData.empresaCliente}
+                                    onChange={(e) => setFormData({ ...formData, empresaCliente: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                >
+                                    <option value="">Selecione um cliente...</option>
+                                    {clientes.filter(c => c.ativo).map(c => (
+                                        <option key={c.id} value={c.nome}>{c.nome} ({c.tipo === 'empresa' ? 'Empresa' : 'PF'})</option>
+                                    ))}
+                                </select>
+                                <small style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.5rem', display: 'block' }}>
+                                    💡 Cadastre novos clientes em Cadastros → Clientes
+                                </small>
+                            </div>
+
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label>Empresa/Cliente *</label>
-                                    <select
-                                        required
-                                        value={formData.empresaCliente}
-                                        onChange={(e) => setFormData({ ...formData, empresaCliente: e.target.value })}
-                                    >
-                                        <option value="">Selecione um cliente...</option>
-                                        {clientes.filter(c => c.ativo).map(c => (
-                                            <option key={c.id} value={c.nome}>{c.nome} ({c.tipo === 'empresa' ? 'Empresa' : 'PF'})</option>
-                                        ))}
-                                    </select>
-                                    <small style={{ color: '#64748b', fontSize: '0.75rem' }}>
-                                        💡 Cadastre novos clientes em Cadastros → Clientes
-                                    </small>
-                                </div>
-                                <div className="form-group">
-                                    <label>Tipo de Fechamento *</label>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Tipo de Fechamento *</label>
                                     <select
                                         required
                                         value={formData.tipoFechamento}
                                         onChange={(e) => setFormData({ ...formData, tipoFechamento: e.target.value as ClosingType })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
                                     >
                                         <option value="mensal">Mensal</option>
                                         <option value="quinzenal">Quinzenal</option>
@@ -288,81 +337,79 @@ export default function ConveniosPage() {
                                         <option value="personalizado">Personalizado</option>
                                     </select>
                                 </div>
-                            </div>
-
-                            <div className="form-row">
                                 <div className="form-group">
-                                    <label>Período de Referência *</label>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Período de Referência *</label>
                                     <input
                                         type="text"
                                         required
                                         placeholder="Ex: Janeiro/2024"
                                         value={formData.periodoReferencia}
                                         onChange={(e) => setFormData({ ...formData, periodoReferencia: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
                                     />
                                 </div>
+                            </div>
+
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label>Data do Fechamento *</label>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data do Fechamento *</label>
                                     <input
                                         type="date"
                                         required
                                         value={formData.dataFechamento}
                                         onChange={(e) => setFormData({ ...formData, dataFechamento: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
                                     />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Valor do Boleto *</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#94a3b8' }}>R$</span>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="0.00"
+                                            required
+                                            value={formData.valorBoleto}
+                                            onChange={(e) => setFormData({ ...formData, valorBoleto: e.target.value })}
+                                            style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700, color: '#0ea5e9' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="form-row">
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label>Valor do Boleto *</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0.00"
-                                        required
-                                        value={formData.valorBoleto}
-                                        onChange={(e) => setFormData({ ...formData, valorBoleto: e.target.value })}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Banco *</label>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Banco *</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.banco}
                                         onChange={(e) => setFormData({ ...formData, banco: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
                                     />
                                 </div>
-                            </div>
-
-                            <div className="form-row">
                                 <div className="form-group">
-                                    <label>Data de Vencimento *</label>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data de Vencimento *</label>
                                     <input
                                         type="date"
                                         required
                                         value={formData.dataVencimento}
                                         onChange={(e) => setFormData({ ...formData, dataVencimento: e.target.value })}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Data de Pagamento</label>
-                                    <input
-                                        type="date"
-                                        value={formData.dataPagamento}
-                                        onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
                                     />
                                 </div>
                             </div>
 
-                            <div className="form-row">
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label>Status do Pagamento *</label>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Status do Pagamento *</label>
                                     <select
                                         required
                                         value={formData.statusPagamento}
                                         onChange={(e) => setFormData({ ...formData, statusPagamento: e.target.value as PaymentStatus })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
                                     >
                                         <option value="pendente">Pendente</option>
                                         <option value="pago">Pago</option>
@@ -371,39 +418,69 @@ export default function ConveniosPage() {
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label>Nota Fiscal</label>
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data de Pagamento</label>
                                     <input
-                                        type="text"
-                                        value={formData.notaFiscal}
-                                        onChange={(e) => setFormData({ ...formData, notaFiscal: e.target.value })}
+                                        type="date"
+                                        value={formData.dataPagamento}
+                                        onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
                                     />
                                 </div>
                             </div>
 
-                            <div className="form-group">
-                                <label>Enviado Para</label>
-                                <input
-                                    type="text"
-                                    value={formData.enviadoPara}
-                                    onChange={(e) => setFormData({ ...formData, enviadoPara: e.target.value })}
-                                />
+                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                <div className="form-group">
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Nota Fiscal</label>
+                                    <input
+                                        type="text"
+                                        value={formData.notaFiscal}
+                                        onChange={(e) => setFormData({ ...formData, notaFiscal: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Enviado Para</label>
+                                    <input
+                                        type="text"
+                                        value={formData.enviadoPara}
+                                        onChange={(e) => setFormData({ ...formData, enviadoPara: e.target.value })}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                    />
+                                </div>
                             </div>
 
-                            <div className="form-group">
-                                <label>Observações</label>
+                            <div className="form-group" style={{ marginBottom: '2rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Observações</label>
                                 <textarea
                                     rows={3}
                                     value={formData.observacoes}
                                     onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', resize: 'vertical' }}
                                 />
                             </div>
 
-                            <div className="modal-actions">
-                                <button type="button" className="btn btn-secondary" onClick={resetForm}>
+                            <div className="modal-actions" style={{
+                                display: 'flex',
+                                gap: '1rem',
+                                padding: '1.5rem 2rem',
+                                background: '#f8fafc',
+                                borderTop: '1px solid #f1f5f9',
+                                margin: '0 -2rem -2rem -2rem'
+                            }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={resetForm}
+                                    style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b' }}
+                                >
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn btn-primary">
-                                    {editingConvenio ? 'Atualizar' : 'Salvar'}
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)' }}
+                                >
+                                    {editingConvenio ? 'Atualizar Convênio' : 'Salvar Convênio'}
                                 </button>
                             </div>
                         </form>

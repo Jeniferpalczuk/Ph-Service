@@ -236,18 +236,42 @@ export default function MarmitasPage() {
             </div>
 
             {selectedDateDetails && dailySummary[selectedDateDetails] && (
-                <div className="modal-overlay" onClick={() => setSelectedDateDetails(null)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px' }}>
-                        <div className="modal-header">
+                <div className="modal-overlay animate-fade-in" onClick={() => setSelectedDateDetails(null)} style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '2rem'
+                }}>
+                    <div className="modal-content animate-scale-in" onClick={e => e.stopPropagation()} style={{
+                        background: '#ffffff',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '750px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        padding: 0
+                    }}>
+                        <div className="modal-header" style={{
+                            padding: '1.5rem 2rem', borderBottom: '1px solid #f1f5f9',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            background: 'linear-gradient(to right, #f8fafc, #ffffff)',
+                            borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
+                            position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)'
+                        }}>
                             <div>
-                                <h3 style={{ margin: 0 }}>Detalhes: {selectedDateDetails}</h3>
-                                <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
-                                    Faturamento: <b>{dailySummary[selectedDateDetails].totalFin.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>Vendas: {selectedDateDetails}</h3>
+                                <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
+                                    Detalhamento por tamanho • Total do Dia: <b style={{ color: '#10b981' }}>{dailySummary[selectedDateDetails].totalFin.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>
                                 </p>
                             </div>
-                            <button className="modal-close" onClick={() => setSelectedDateDetails(null)}>✕</button>
+                            <button className="btn-modern-icon" onClick={() => setSelectedDateDetails(null)} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
                         </div>
-                        <div className="modern-table-container">
+                        <div className="modern-table-container" style={{ margin: '1rem', border: '1px solid #f1f5f9' }}>
                             <table className="modern-table">
                                 <thead>
                                     <tr>
@@ -272,7 +296,7 @@ export default function MarmitasPage() {
                                             <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                                 <button className="btn-modern-icon" onClick={() => openEditModal(item)}>✏️</button>
                                                 {user?.role === 'adm' && (
-                                                    <button className="btn-modern-icon" onClick={() => handleDelete(item.id)}>🗑️</button>
+                                                    <button className="btn-modern-icon" onClick={() => handleDelete(item.id)} style={{ color: '#ef4444' }}>🗑️</button>
                                                 )}
                                             </td>
                                         </tr>
@@ -280,46 +304,80 @@ export default function MarmitasPage() {
                                 </tbody>
                             </table>
                         </div>
+                        <div style={{ padding: '1.5rem 2rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', textAlign: 'right' }}>
+                            <button className="btn btn-secondary" onClick={() => setSelectedDateDetails(null)} style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', fontWeight: 700 }}>Fechar</button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {showModal && (
-                <div className="modal-overlay" onClick={resetForm}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '850px' }}>
-                        <div className="modal-header">
+                <div className="modal-overlay animate-fade-in" onClick={resetForm} style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '2rem'
+                }}>
+                    <div className="modal-content animate-scale-in" onClick={e => e.stopPropagation()} style={{
+                        background: '#ffffff',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '850px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        padding: 0
+                    }}>
+                        <div className="modal-header" style={{
+                            padding: '1.5rem 2rem', borderBottom: '1px solid #f1f5f9',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            background: 'linear-gradient(to right, #f8fafc, #ffffff)',
+                            borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
+                            position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)'
+                        }}>
                             <div>
-                                <h2 style={{ margin: 0 }}>Lançar Vendas</h2>
-                                <p style={{ color: '#64748b', marginTop: '0.25rem' }}>Informe as quantidades vendidas por tamanho.</p>
+                                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>Lançar Vendas</h2>
+                                <p style={{ color: '#64748b', marginTop: '4px', fontSize: '0.85rem' }}>Informe as quantidades vendidas por tamanho.</p>
                             </div>
-                            <button className="modal-close" onClick={resetForm}>✕</button>
+                            <button className="btn-modern-icon" onClick={resetForm} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
                         </div>
-                        <form onSubmit={handleSubmit}>
-                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label>Data da Venda</label>
-                                <input type="date" required value={formData.dataEntrega} onChange={e => setFormData({ ...formData, dataEntrega: e.target.value })} />
+                        <form onSubmit={handleSubmit} style={{ padding: '2rem' }}>
+                            <div className="form-group" style={{ marginBottom: '2rem', maxWidth: '300px' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data da Venda</label>
+                                <input type="date" required value={formData.dataEntrega} onChange={e => setFormData({ ...formData, dataEntrega: e.target.value })} style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }} />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
                                 {['P', 'M', 'G', 'PF'].map(type => (
-                                    <div key={type} style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#94a3b8', marginBottom: '1rem' }}>{type}</div>
-                                        <div className="form-group"><label>Qtd</label>
-                                            <input type="number" min="0" placeholder="0" value={(formData as any)[`qtd${type}`]} onChange={e => handleCalcChange('qtd', e.target.value, type as any)} />
+                                    <div key={type} style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '20px', border: '1px solid #e2e8f0', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#94a3b8', marginBottom: '1.25rem', display: 'flex', justifyContent: 'baseline', gap: '0.5rem' }}>
+                                            {type} <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#cbd5e1', textTransform: 'uppercase' }}>{type === 'PF' ? 'Prato Feito' : 'Marmita'}</span>
                                         </div>
-                                        <div className="form-group"><label>Unitário (R$)</label>
-                                            <input type="number" step="0.01" value={(formData as any)[`unit${type}`]} onChange={e => handleCalcChange('unit', e.target.value, type as any)} />
+                                        <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Qtd</label>
+                                            <input type="number" min="0" placeholder="0" value={(formData as any)[`qtd${type}`]} onChange={e => handleCalcChange('qtd', e.target.value, type as any)} style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 800 }} />
                                         </div>
-                                        <div className="form-group"><label>Total</label>
-                                            <input type="number" step="0.01" value={(formData as any)[`total${type}`]} readOnly style={{ background: '#f1f5f9', fontWeight: 800 }} />
+                                        <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Unitário (R$)</label>
+                                            <input type="number" step="0.01" value={(formData as any)[`unit${type}`]} onChange={e => handleCalcChange('unit', e.target.value, type as any)} style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Total</label>
+                                            <input type="number" step="0.01" value={(formData as any)[`total${type}`]} readOnly style={{ background: '#ffffff', fontWeight: 900, color: '#10b981', border: '2px solid #10b981', width: '100%', padding: '0.6rem 0.75rem', borderRadius: '10px', fontSize: '1rem' }} />
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="modal-actions" style={{ marginTop: '2rem' }}>
-                                <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Salvar Vendas</button>
+                            <div className="modal-actions" style={{
+                                display: 'flex', gap: '1rem', padding: '1.5rem 2rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', margin: '2rem -2rem -2rem -2rem'
+                            }}>
+                                <button type="button" className="btn btn-secondary" onClick={resetForm} style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff' }}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)' }}>Salvar Lote de Vendas</button>
                             </div>
                         </form>
                     </div>
@@ -327,44 +385,77 @@ export default function MarmitasPage() {
             )}
 
             {showEditModal && editingItem && (
-                <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-                        <div className="modal-header">
-                            <h3>Editar: {editingItem.tamanho}</h3>
-                            <button className="modal-close" onClick={() => setShowEditModal(false)}>✕</button>
+                <div className="modal-overlay animate-fade-in" onClick={() => setShowEditModal(false)} style={{
+                    position: 'fixed',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '2rem'
+                }}>
+                    <div className="modal-content animate-scale-in" onClick={e => e.stopPropagation()} style={{
+                        background: '#ffffff',
+                        borderRadius: '24px',
+                        width: '100%',
+                        maxWidth: '450px',
+                        maxHeight: '90vh',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        padding: 0
+                    }}>
+                        <div className="modal-header" style={{
+                            padding: '1.5rem 2rem', borderBottom: '1px solid #f1f5f9',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            background: 'linear-gradient(to right, #f8fafc, #ffffff)',
+                            borderTopLeftRadius: '24px', borderTopRightRadius: '24px'
+                        }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>Editar: {editingItem.tamanho}</h3>
+                                <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>Ajuste os valores do lançamento</p>
+                            </div>
+                            <button className="btn-modern-icon" onClick={() => setShowEditModal(false)} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
                         </div>
-                        <form onSubmit={handleUpdate}>
-                            <div className="form-group">
-                                <label>Data da Entrega</label>
+                        <form onSubmit={handleUpdate} style={{ padding: '2rem' }}>
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data da Entrega</label>
                                 <input
                                     type="date"
                                     required
                                     value={editData.dataEntrega}
                                     onChange={e => setEditData({ ...editData, dataEntrega: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>Quantidade</label>
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Quantidade</label>
                                 <input type="number" required value={editData.qtd} onChange={e => {
                                     const q = e.target.value;
                                     const total = calcTotal(q, editData.valorUnitario);
                                     setEditData({ ...editData, qtd: q, valorTotal: total });
                                 }}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700 }}
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>Valor Unitário (R$)</label>
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Valor Unitário (R$)</label>
                                 <input type="number" step="0.01" required value={editData.valorUnitario} onChange={e => {
                                     const u = e.target.value;
                                     const total = calcTotal(editData.qtd, u);
                                     setEditData({ ...editData, valorUnitario: u, valorTotal: total });
                                 }}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
                                 />
                             </div>
-                            <div className="form-group"><label>Valor Total</label><input type="number" step="0.01" value={editData.valorTotal} readOnly style={{ background: '#f1f5f9' }} /></div>
-                            <div className="modal-actions">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Salvar</button>
+                            <div className="form-group" style={{ marginBottom: '2rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Valor Total</label>
+                                <input type="number" step="0.01" value={editData.valorTotal} readOnly style={{ background: '#ffffff', fontWeight: 900, color: '#10b981', border: '2px solid #10b981', width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', fontSize: '1rem' }} />
+                            </div>
+                            <div className="modal-actions" style={{
+                                display: 'flex', gap: '1rem', padding: '1.5rem 2rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', margin: '0 -2rem -2rem -2rem'
+                            }}>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff' }}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' }}>Salvar Alterações</button>
                             </div>
                         </form>
                     </div>
