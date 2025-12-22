@@ -180,7 +180,7 @@ export default function LoginPage() {
                             <div className="login-divider">
                                 <span>ou continue com</span>
                             </div>
-
+                            {/*
                             <button
                                 type="button"
                                 onClick={handleGoogleLogin}
@@ -200,10 +200,11 @@ export default function LoginPage() {
                                 <span className="login-info-icon">🛡️</span>
                                 <p>Acesso restrito a usuários autorizados. Para criar uma conta, entre em contato com o suporte.</p>
                             </div>
-                        </div>
+                            */}
 
-                        <div className="login-card-footer">
-                            © 2025 PH Service. Todos os direitos reservados.
+                            <div className="login-card-footer">
+                                © 2025 PH Service. Todos os direitos reservados.
+                            </div>
                         </div>
                     </div>
                 </div>

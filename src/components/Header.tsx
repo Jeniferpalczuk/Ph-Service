@@ -13,14 +13,14 @@ export default function Header() {
 
     const menuItems = [
         { icon: '📊', label: 'Dashboard', href: '/' },
-        { icon: '💛', label: 'Convênios', href: '/convenios' },
-        { icon: '📄', label: 'Boletos', href: '/boletos' },
-        { icon: '💰', label: 'Caixa', href: '/caixa' },
+        { icon: '✉️', label: 'Convênios', href: '/convenios' },
+        { icon: '📋', label: 'Boletos', href: '/boletos' },
+        { icon: '🗃️', label: 'Caixa', href: '/caixa' },
         { icon: '📤', label: 'Saídas', href: '/saidas' },
-        { icon: '💵', label: 'Vales', href: '/vales' },
+        { icon: '💸', label: 'Vales', href: '/vales' },
         { icon: '🍱', label: 'Marmitas', href: '/marmitas' },
-        { icon: '👥', label: 'Folha', href: '/folha-pagamento' },
-        { icon: '📂', label: 'Cadastros', href: '/cadastros' },
+        { icon: '📁', label: 'Folha', href: '/folha-pagamento' },
+        { icon: '🗂️', label: 'Cadastros', href: '/cadastros' },
     ];
 
     return (

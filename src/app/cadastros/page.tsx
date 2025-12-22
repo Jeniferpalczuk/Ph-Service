@@ -15,6 +15,7 @@ export default function CadastrosPage() {
     } = useApp();
 
     const [activeTab, setActiveTab] = useState<'funcionarios' | 'clientes' | 'fornecedores'>('funcionarios');
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Estados dos Modais
     const [showFuncModal, setShowFuncModal] = useState(false);
@@ -132,6 +133,27 @@ export default function CadastrosPage() {
                 </button>
             </div>
 
+            {/* Barra de Pesquisa */}
+            <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ position: 'relative', maxWidth: '400px' }}>
+                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '1.1rem' }}>🔍</span>
+                    <input
+                        type="text"
+                        placeholder={`Buscar ${activeTab === 'funcionarios' ? 'funcionários' : activeTab === 'clientes' ? 'clientes' : 'fornecedores'}...`}
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '10px 12px 10px 40px',
+                            borderRadius: '10px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '0.95rem',
+                            outline: 'none'
+                        }}
+                    />
+                </div>
+            </div>
+
             <div className="tab-content card">
                 {/* FUNCIONARIOS TAB */}
                 {activeTab === 'funcionarios' && (
@@ -141,7 +163,10 @@ export default function CadastrosPage() {
                             <button className="btn btn-primary" onClick={() => setShowFuncModal(true)}>+ Novo Funcionário</button>
                         </div>
                         <div className="grid-list">
-                            {funcionarios.map(f => {
+                            {funcionarios.filter(f =>
+                                f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                f.cargo.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map(f => {
                                 const isDemitido = !!f.dataDemissao;
                                 return (
                                     <div key={f.id} className="entity-card" style={{ borderColor: isDemitido ? 'var(--danger-500)' : undefined, background: isDemitido ? '#fff5f5' : undefined }}>
@@ -178,7 +203,10 @@ export default function CadastrosPage() {
                             <button className="btn btn-primary" onClick={() => setShowClienteModal(true)}>+ Novo Cliente</button>
                         </div>
                         <div className="grid-list">
-                            {clientes.map(c => (
+                            {clientes.filter(c =>
+                                c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (c.telefone || '').toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map(c => (
                                 <div key={c.id} className="entity-card">
                                     <div className="entity-info">
                                         <h4>{c.nome}</h4>
@@ -205,7 +233,10 @@ export default function CadastrosPage() {
                             <button className="btn btn-primary" onClick={() => setShowFornecModal(true)}>+ Novo Fornecedor</button>
                         </div>
                         <div className="grid-list">
-                            {fornecedores.map(f => (
+                            {fornecedores.filter(f =>
+                                f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                f.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map(f => (
                                 <div key={f.id} className="entity-card">
                                     <div className="entity-info">
                                         <h4>{f.nome}</h4>

@@ -8,7 +8,7 @@ import './convenios.css';
 
 export default function ConveniosPage() {
     const { user } = useAuth();
-    const { convenios, addConvenio, updateConvenio, deleteConvenio } = useApp();
+    const { convenios, addConvenio, updateConvenio, deleteConvenio, clientes } = useApp();
     const [showModal, setShowModal] = useState(false);
     const [editingConvenio, setEditingConvenio] = useState<Convenio | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -123,13 +123,15 @@ export default function ConveniosPage() {
         return labels[status];
     };
 
-    // Filter convenios
-    const filteredConvenios = convenios.filter(convenio => {
-        const matchesSearch = convenio.empresaCliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            convenio.periodoReferencia.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus === 'todos' || convenio.statusPagamento === filterStatus;
-        return matchesSearch && matchesStatus;
-    });
+    // Filter and sort convenios by most recent
+    const filteredConvenios = convenios
+        .filter(convenio => {
+            const matchesSearch = convenio.empresaCliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                convenio.periodoReferencia.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesStatus = filterStatus === 'todos' || convenio.statusPagamento === filterStatus;
+            return matchesSearch && matchesStatus;
+        })
+        .sort((a, b) => new Date(b.dataVencimento).getTime() - new Date(a.dataVencimento).getTime());
 
     const totalValor = filteredConvenios.reduce((sum, c) => sum + c.valorBoleto, 0);
     const totalPago = filteredConvenios.filter(c => c.statusPagamento === 'pago').reduce((sum, c) => sum + c.valorBoleto, 0);
@@ -160,13 +162,17 @@ export default function ConveniosPage() {
 
             {/* Filters */}
             <div className="filters-bar">
-                <input
-                    type="text"
-                    placeholder="Buscar por empresa ou período..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="search-input"
-                />
+                <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '1.1rem' }}>🔍</span>
+                    <input
+                        type="text"
+                        placeholder="Buscar por empresa ou período..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="search-input"
+                        style={{ paddingLeft: '40px' }}
+                    />
+                </div>
                 <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value as PaymentStatus | 'todos')}
@@ -255,12 +261,19 @@ export default function ConveniosPage() {
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Empresa/Cliente *</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         required
                                         value={formData.empresaCliente}
                                         onChange={(e) => setFormData({ ...formData, empresaCliente: e.target.value })}
-                                    />
+                                    >
+                                        <option value="">Selecione um cliente...</option>
+                                        {clientes.filter(c => c.ativo).map(c => (
+                                            <option key={c.id} value={c.nome}>{c.nome} ({c.tipo === 'empresa' ? 'Empresa' : 'PF'})</option>
+                                        ))}
+                                    </select>
+                                    <small style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                                        💡 Cadastre novos clientes em Cadastros → Clientes
+                                    </small>
                                 </div>
                                 <div className="form-group">
                                     <label>Tipo de Fechamento *</label>

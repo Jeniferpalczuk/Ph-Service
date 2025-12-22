@@ -135,6 +135,10 @@
     border-left: 6px solid #f59e0b;
 }
 
+.stat-card.convenios {
+    border-left: 6px solid #8b5cf6;
+}
+
 .stat-icon-wrapper {
     width: 44px;
     height: 44px;
@@ -164,6 +168,33 @@
 .stat-icon-wrapper.marmitas {
     background: #fffbeb;
     color: #f59e0b;
+}
+
+.stat-icon-wrapper.convenios {
+    background: #f5f3ff;
+    color: #8b5cf6;
+}
+
+/* Extra Info for Stat Cards (like Convenios) */
+.stat-extra-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+}
+
+.stat-extra-info .extra-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.stat-extra-info .extra-icon {
+    font-size: 0.9rem;
+    opacity: 0.8;
 }
 
 .stat-value {
