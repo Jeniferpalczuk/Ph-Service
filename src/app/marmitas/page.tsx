@@ -175,7 +175,7 @@ export default function MarmitasPage() {
                 <div className="modern-header-info">
                     <div className="modern-header-subtitle">Controle de Marmitas</div>
                     <div className="modern-header-title">
-                        R$ {totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </div>
                     <div className="modern-header-badges">
                         <div className="modern-badge-summary info">
@@ -213,7 +213,7 @@ export default function MarmitasPage() {
                                     <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.G}</span></td>
                                     <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.PF}</span></td>
                                     <td style={{ textAlign: 'center' }} className="col-money">
-                                        R$ {data.totalFin.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        {data.totalFin.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <button
@@ -242,7 +242,7 @@ export default function MarmitasPage() {
                             <div>
                                 <h3 style={{ margin: 0 }}>Detalhes: {selectedDateDetails}</h3>
                                 <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>
-                                    Faturamento: <b>R$ {dailySummary[selectedDateDetails].totalFin.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b>
+                                    Faturamento: <b>{dailySummary[selectedDateDetails].totalFin.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>
                                 </p>
                             </div>
                             <button className="modal-close" onClick={() => setSelectedDateDetails(null)}>✕</button>
@@ -264,10 +264,10 @@ export default function MarmitasPage() {
                                             <td className="col-highlight">{item.tamanho}</td>
                                             <td style={{ textAlign: 'center' }}>{item.quantidade || 1}</td>
                                             <td style={{ textAlign: 'center', color: '#64748b' }}>
-                                                {item.valorUnitario ? `R$ ${item.valorUnitario.toFixed(2)}` : '-'}
+                                                {item.valorUnitario ? item.valorUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}
                                             </td>
                                             <td style={{ textAlign: 'center' }} className="col-money">
-                                                R$ {item.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                {item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                             </td>
                                             <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                                 <button className="btn-modern-icon" onClick={() => openEditModal(item)}>✏️</button>

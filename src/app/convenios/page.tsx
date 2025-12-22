@@ -144,15 +144,15 @@ export default function ConveniosPage() {
                 <div className="header-stats">
                     <div className="stat-item">
                         <span className="stat-label">Total</span>
-                        <span className="stat-value">R$ {totalValor.toFixed(2)}</span>
+                        <span className="stat-value">{totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                     <div className="stat-item">
                         <span className="stat-label">Pago</span>
-                        <span className="stat-value text-success">R$ {totalPago.toFixed(2)}</span>
+                        <span className="stat-value text-success">{totalPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                     <div className="stat-item">
                         <span className="stat-label">Pendente</span>
-                        <span className="stat-value text-warning">R$ {totalPendente.toFixed(2)}</span>
+                        <span className="stat-value text-warning">{totalPendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                 </div>
                 <button className="btn btn-primary" onClick={() => setShowModal(true)}>
@@ -214,7 +214,7 @@ export default function ConveniosPage() {
                                     <td className="font-semibold">{convenio.empresaCliente}</td>
                                     <td>{convenio.tipoFechamento}</td>
                                     <td>{convenio.periodoReferencia}</td>
-                                    <td className="font-semibold">R$ {convenio.valorBoleto.toFixed(2)}</td>
+                                    <td className="font-semibold">{convenio.valorBoleto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                     <td>{convenio.banco}</td>
                                     <td>{new Date(convenio.dataVencimento).toLocaleDateString('pt-BR')}</td>
                                     <td>

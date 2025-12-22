@@ -167,11 +167,11 @@ export default function ValesPage() {
                 <div className="header-stats">
                     <div className="stat-item">
                         <span className="stat-label">Total Pendente ({filteredByMonth.filter(v => v.status === 'aberto').length} vales)</span>
-                        <span className="stat-value text-danger">R$ {totalPendentes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        <span className="stat-value text-danger">{totalPendentes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                     <div className="stat-item">
                         <span className="stat-label">Marcados p/ Desconto</span>
-                        <span className="stat-value text-warning">R$ {valesByEmployee.filter(v => markedForDiscount.has(v.funcionario)).reduce((s, v) => s + v.total, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        <span className="stat-value text-warning">{valesByEmployee.filter(v => markedForDiscount.has(v.funcionario)).reduce((s, v) => s + v.total, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                 </div>
                 <button className="btn btn-primary" onClick={() => setShowModal(true)}>➕ Novo Vale</button>
@@ -268,7 +268,7 @@ export default function ValesPage() {
                                     <div style={{ fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}>{emp.funcionario}</div>
                                     <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
                                         {emp.vales.length} vale(s) • <span className={emp.status === 'quitado' ? 'text-success' : 'text-danger'}>
-                                            R$ {emp.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            {emp.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </span>
                                     </div>
                                 </div>
@@ -305,7 +305,7 @@ export default function ValesPage() {
                                         {item.funcionario}
                                     </td>
                                     <td>{item.motivo}</td>
-                                    <td className="text-danger font-semibold">R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                    <td className="text-danger font-semibold">{item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                     <td>
                                         <span className={`badge ${item.status === 'quitado' ? 'badge-success' : 'badge-warning'}`}>
                                             {item.status === 'quitado' ? 'Descontado/Quitado' : 'Aberto'}

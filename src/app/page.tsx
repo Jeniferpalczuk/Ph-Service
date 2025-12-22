@@ -132,7 +132,7 @@ const BarChart = ({ data, title }: { data: { label: string, value: number, color
                       {data.length <= 12 ? `${d.label} ${new Date().getFullYear()}` : `Dia ${d.label}`}
                     </text>
                     <text x={x + barWidth / 2} y={y - 32} textAnchor="middle" style={{ fill: '#0f172a', fontSize: '13px', fontWeight: 800 }}>
-                      R$ {d.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {d.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </text>
                   </g>
                 )}
@@ -203,7 +203,7 @@ const DonutChart = ({ data, title }: { data: { label: string, value: number, col
             })}
           </svg>
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>{total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
             <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total 100%</div>
           </div>
         </div>
@@ -216,7 +216,7 @@ const DonutChart = ({ data, title }: { data: { label: string, value: number, col
               </div>
               <div style={{ paddingLeft: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b' }}>{((d.value / total) * 100).toFixed(0)}%</span>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>R$ {d.value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{d.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
               </div>
             </div>
           ))}
@@ -794,7 +794,7 @@ const MarmitasDashboard = ({ marmitas, year, month, filterTamanho, setFilterTama
         {/* Faturamento */}
         <div className="marmitas-card" style={{ padding: '1.25rem' }}>
           <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>Faturamento</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>R$ {stats.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>{stats.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
           <div className={`m-stat-trend ${stats.growth >= 0 ? 'positive' : 'negative'}`} style={{ marginTop: '0.5rem' }}>
             {stats.growth >= 0 ? '▲' : '▼'} {Math.abs(stats.growth).toFixed(0)}% <span style={{ color: '#94a3b8', fontWeight: 500 }}>vs mês anterior</span>
           </div>
@@ -803,7 +803,7 @@ const MarmitasDashboard = ({ marmitas, year, month, filterTamanho, setFilterTama
         {/* Ticket Médio */}
         <div className="marmitas-card" style={{ padding: '1.25rem' }}>
           <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem' }}>Ticket Médio</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>R$ {stats.avgTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>{stats.avgTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
         </div>
 
         {/* Acumulado do Ano */}
@@ -812,7 +812,7 @@ const MarmitasDashboard = ({ marmitas, year, month, filterTamanho, setFilterTama
           <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem' }}>Total Vendido</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.25rem' }}>{annualData.reduce((s, d) => s + d.qty, 0).toLocaleString('pt-BR')} <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>un</span></div>
           <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Faturamento Anual</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>R$ {annualData.reduce((s, d) => s + d.revenue, 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>{annualData.reduce((s, d) => s + d.revenue, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
           {/* Mini chart */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', marginTop: '0.75rem', height: '40px' }}>
             {annualData.map((d, i) => {
@@ -1007,8 +1007,13 @@ export default function Dashboard() {
       .filter(m => checkDate(m.dataEntrega))
       .reduce((sum, m) => sum + m.valorTotal, 0);
 
-    // Requested change: Faturamento = Todos os pagamentos (Caixa + Cartão + Alimentação + Pix)
-    const faturamentoTotal = faturamentoFechamento + entradasCaixaLegacy;
+    // Calculate Paid Agreements
+    const conveniosPagos = convenios
+      .filter(c => c.statusPagamento === 'pago' && (checkDate(c.dataPagamento) || checkDate(c.dataFechamento)))
+      .reduce((sum, c) => sum + c.valorBoleto, 0);
+
+    // Requested change: Faturamento = Todos os pagamentos (Caixa + Cartão + Alimentação + Pix) + Convênios Pagos
+    const faturamentoTotal = faturamentoFechamento + entradasCaixaLegacy + conveniosPagos;
 
     const despesasModulo = saidas
       .filter(s => checkDate(s.data))
@@ -1026,7 +1031,11 @@ export default function Dashboard() {
       .filter(p => checkDate(p.dataPagamento))
       .reduce((sum, p) => sum + p.valor, 0);
 
-    const totalDespesas = despesasModulo + saidasCaixaLegacy + saidasFechamento + folhaFilter;
+    const boletosPagos = boletos
+      .filter(b => b.statusPagamento === 'pago' && (checkDate(b.dataPagamento) || checkDate(b.dataVencimento)))
+      .reduce((sum, b) => sum + b.valor, 0);
+
+    const totalDespesas = despesasModulo + saidasCaixaLegacy + saidasFechamento + folhaFilter + boletosPagos;
 
     const saldoCaixa = faturamentoTotal - totalDespesas;
 
@@ -1107,6 +1116,16 @@ export default function Dashboard() {
       fornMap[label] = (fornMap[label] || 0) + s.valor;
     });
 
+    boletos.forEach(b => {
+      const d = b.dataPagamento ? new Date(b.dataPagamento) : new Date(b.dataVencimento);
+      if (b.statusPagamento !== 'pago') return;
+      if (d.getFullYear() !== filterYear) return;
+      if (!isMonthAll && d.getMonth() !== targetMonth) return;
+
+      const label = b.cliente || 'Boleto';
+      fornMap[label] = (fornMap[label] || 0) + b.valor;
+    });
+
     const colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
     return Object.entries(fornMap).map(([label, value], i) => ({
       label: label.charAt(0).toUpperCase() + label.slice(1),
@@ -1116,7 +1135,7 @@ export default function Dashboard() {
   };
 
   const formatCurrency = (value: number) => {
-    return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
   return (

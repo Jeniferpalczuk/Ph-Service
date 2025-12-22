@@ -119,7 +119,7 @@ export default function SaidasPage() {
                 <div className="modern-header-info">
                     <div className="modern-header-subtitle">Gestão de Despesas</div>
                     <div className="modern-header-title">
-                        R$ {totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {totalSaidas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </div>
                     <div className="modern-header-badges">
                         <div className="modern-badge-summary danger">
@@ -185,7 +185,7 @@ export default function SaidasPage() {
                                         <span className="modern-status-badge neutral" style={{ textTransform: 'capitalize' }}>{saida.categoria}</span>
                                     </td>
                                     <td style={{ textTransform: 'capitalize' }}>{saida.formaPagamento.replace('_', ' ')}</td>
-                                    <td className="col-money-negative">R$ {saida.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                    <td className="col-money-negative">{saida.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                     <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                         <button className="btn-modern-icon" onClick={() => handleEdit(saida)}>✏️</button>
                                         <button className="btn-modern-icon" onClick={() => handleDelete(saida.id)}>🗑️</button>
@@ -197,7 +197,7 @@ export default function SaidasPage() {
                 </table>
                 <div className="modern-footer">
                     <div className="modern-footer-totals">
-                        <div className="modern-total-item">Total do Período: <b className="red">R$ {totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b></div>
+                        <div className="modern-total-item">Total do Período: <b className="red">{totalSaidas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></div>
                     </div>
                 </div>
             </div>

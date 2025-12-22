@@ -272,7 +272,7 @@ export default function BoletosPage() {
                 <div className="modern-header-info">
                     <div className="modern-header-subtitle">Gestão de Boletos</div>
                     <div className="modern-header-title">
-                        R$ {totalValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </div>
                     <div className="modern-header-badges">
                         <div className="modern-badge-summary success">
@@ -359,7 +359,7 @@ export default function BoletosPage() {
                                     }}>
                                         <td className="col-highlight">{boleto.cliente}</td>
                                         <td>{boleto.banco}</td>
-                                        <td className="col-money">R$ {boleto.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                        <td className="col-money">{boleto.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 {new Date(boleto.dataVencimento).toLocaleDateString('pt-BR')}
@@ -396,7 +396,7 @@ export default function BoletosPage() {
                 </table>
                 <div className="modern-footer">
                     <div className="modern-footer-totals">
-                        <div className="modern-total-item">Total: <b>R$ {totalValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b></div>
+                        <div className="modern-total-item">Total: <b>{totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></div>
                     </div>
                 </div>
             </div>
@@ -613,7 +613,7 @@ export default function BoletosPage() {
                                                         color: '#0369a1',
                                                         textAlign: 'center'
                                                     }}>
-                                                        R$ {formData.valor ? (parseFloat(formData.valor) / numeroParcelas).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}
+                                                        {formData.valor ? (parseFloat(formData.valor) / numeroParcelas).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}
                                                     </div>
                                                 </div>
                                             </div>
