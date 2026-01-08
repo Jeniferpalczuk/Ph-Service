@@ -168,6 +168,20 @@ export default function BoletosPage() {
         }
     };
 
+    const handleMarkAsPaid = async (boleto: Boleto) => {
+        if (confirm(`Confirmar pagamento do boleto de ${boleto.cliente}?`)) {
+            const today = new Date();
+            // Set to noon to avoid timezone rollback
+            const payDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0);
+
+            await updateBoleto(boleto.id, {
+                ...boleto,
+                statusPagamento: 'pago',
+                dataPagamento: payDate
+            });
+        }
+    };
+
     const bancos = useMemo(() => Array.from(new Set(boletos.map(b => b.banco))), [boletos]);
 
     const filteredBoletos = useMemo(() => {
@@ -390,6 +404,16 @@ export default function BoletosPage() {
                                             {boleto.observacoes || '-'}
                                         </td>
                                         <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                            {boleto.statusPagamento !== 'pago' && (
+                                                <button
+                                                    className="btn-modern-icon"
+                                                    onClick={() => handleMarkAsPaid(boleto)}
+                                                    title="Marcar como Pago"
+                                                    style={{ color: '#059669', background: '#ecfdf5' }}
+                                                >
+                                                    ✅
+                                                </button>
+                                            )}
                                             <button className="btn-modern-icon" onClick={() => handleEdit(boleto)}>✏️</button>
                                             {user?.role === 'adm' && (
                                                 <button className="btn-modern-icon" onClick={() => handleDelete(boleto.id)}>🗑️</button>
@@ -466,26 +490,29 @@ export default function BoletosPage() {
                                         🏢 Cliente (Fornecedor) *
                                     </label>
                                     <div style={{ position: 'relative' }}>
-                                        <input
+                                        <select
                                             required
-                                            list="fornecedores-list"
                                             value={formData.cliente}
                                             onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
-                                            placeholder="Selecione o fornecedor..."
                                             style={{
                                                 width: '100%',
                                                 padding: '0.8rem 1rem',
                                                 borderRadius: '12px',
                                                 border: '1px solid #e2e8f0',
                                                 background: '#f8fafc',
-                                                fontSize: '0.95rem'
+                                                fontSize: '0.95rem',
+                                                appearance: 'none',
+                                                backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`,
+                                                backgroundRepeat: 'no-repeat',
+                                                backgroundPosition: 'right 1rem center',
+                                                backgroundSize: '0.65em auto'
                                             }}
-                                        />
-                                        <datalist id="fornecedores-list">
+                                        >
+                                            <option value="">Selecione o fornecedor...</option>
                                             {fornecedores.filter(f => f.ativo).map(f => (
                                                 <option key={f.id} value={f.nome}>{f.nome}</option>
                                             ))}
-                                        </datalist>
+                                        </select>
                                     </div>
                                 </div>
                                 <div className="form-group">
@@ -774,7 +801,7 @@ export default function BoletosPage() {
                                         flex: 2,
                                         padding: '1rem',
                                         borderRadius: '14px',
-                                        background: isParcelado ? 'linear-gradient(135deg, #0ea5e9, #0284c7)' : 'linear-gradient(135deg, #0f172a, #1 e293b)',
+                                        background: isParcelado ? 'linear-gradient(135deg, #0ea5e9, #0284c7)' : 'linear-gradient(135deg, #10b981, #059669)',
                                         color: '#ffffff',
                                         fontWeight: 800,
                                         border: 'none',

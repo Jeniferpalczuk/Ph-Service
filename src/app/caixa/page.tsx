@@ -44,9 +44,8 @@ export default function CaixaPage() {
     });
 
     const resetForm = () => {
-        setFormData({
-            data: new Date().toISOString().split('T')[0],
-            funcionario: '',
+        setFormData(prev => ({
+            ...prev,
             turno: 'manha',
             saidas: '',
             credito: '',
@@ -55,7 +54,7 @@ export default function CaixaPage() {
             dinheiro: '',
             pix: '',
             observacoes: ''
-        });
+        }));
         setLeituras({ credito: '', debito: '', alimentacao: '' });
         setCalculoMode(false);
         setEditingItem(null);

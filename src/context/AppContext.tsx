@@ -125,11 +125,11 @@ function dbToConvenio(row: any): Convenio {
         empresaCliente: row.empresa_cliente,
         tipoFechamento: row.tipo_fechamento,
         periodoReferencia: row.periodo_referencia,
-        dataFechamento: new Date(row.data_fechamento),
+        dataFechamento: new Date(row.data_fechamento + 'T12:00:00'),
         valorBoleto: parseFloat(row.valor_boleto),
         banco: row.banco,
-        dataVencimento: new Date(row.data_vencimento),
-        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        dataVencimento: new Date(row.data_vencimento + 'T12:00:00'),
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento + 'T12:00:00') : undefined,
         statusPagamento: row.status_pagamento,
         notaFiscal: row.nota_fiscal,
         enviadoPara: row.enviado_para,
@@ -146,8 +146,8 @@ function dbToBoleto(row: any): Boleto {
         cliente: row.cliente,
         valor: parseFloat(row.valor),
         banco: row.banco,
-        dataVencimento: new Date(row.data_vencimento),
-        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        dataVencimento: new Date(row.data_vencimento + 'T12:00:00'),
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento + 'T12:00:00') : undefined,
         statusPagamento: row.status_pagamento,
         observacoes: row.observacoes,
         convenioId: row.convenio_id,
@@ -163,7 +163,7 @@ function dbToCaixaEntry(row: any): CaixaEntry {
         descricao: row.descricao,
         valor: parseFloat(row.valor),
         formaPagamento: row.forma_pagamento,
-        data: new Date(row.data),
+        data: new Date(row.data + 'T12:00:00'),
         categoria: row.categoria,
         observacoes: row.observacoes,
         createdAt: new Date(row.created_at),
@@ -178,7 +178,7 @@ function dbToSaida(row: any): Saida {
         categoria: row.categoria,
         valor: parseFloat(row.valor),
         formaPagamento: row.forma_pagamento,
-        data: new Date(row.data),
+        data: new Date(row.data + 'T12:00:00'),
         fornecedor: row.fornecedor,
         observacoes: row.observacoes,
         anexos: row.anexos || [],
@@ -192,11 +192,11 @@ function dbToVale(row: any): Vale {
         id: row.id,
         funcionario: row.funcionario,
         valor: parseFloat(row.valor),
-        data: new Date(row.data),
+        data: new Date(row.data + 'T12:00:00'),
         motivo: row.motivo,
         status: row.status,
         valorPago: row.valor_pago ? parseFloat(row.valor_pago) : undefined,
-        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento + 'T12:00:00') : undefined,
         observacoes: row.observacoes,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
@@ -211,10 +211,10 @@ function dbToMarmita(row: any): Marmita {
         quantidade: row.quantidade,
         valorUnitario: row.valor_unitario ? parseFloat(row.valor_unitario) : undefined,
         valorTotal: parseFloat(row.valor_total),
-        dataEntrega: new Date(row.data_entrega),
+        dataEntrega: new Date(row.data_entrega + 'T12:00:00'),
         formaPagamento: row.forma_pagamento,
         statusRecebimento: row.status_recebimento,
-        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento + 'T12:00:00') : undefined,
         observacoes: row.observacoes,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
@@ -230,7 +230,7 @@ function dbToPagamentoFuncionario(row: any): PagamentoFuncionario {
         descontos: row.descontos ? parseFloat(row.descontos) : undefined,
         formaPagamento: row.forma_pagamento,
         statusPagamento: row.status_pagamento,
-        dataPagamento: new Date(row.data_pagamento),
+        dataPagamento: new Date(row.data_pagamento + 'T12:00:00'),
         observacoes: row.observacoes,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
@@ -245,9 +245,9 @@ function dbToOutroServico(row: any): OutroServico {
         descricao: row.descricao,
         valor: parseFloat(row.valor),
         formaPagamento: row.forma_pagamento,
-        data: new Date(row.data),
+        data: new Date(row.data + 'T12:00:00'),
         statusPagamento: row.status_pagamento,
-        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento) : undefined,
+        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento + 'T12:00:00') : undefined,
         observacoes: row.observacoes,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
@@ -260,10 +260,10 @@ function dbToFuncionario(row: any): Funcionario {
         nome: row.nome,
         cargo: row.cargo,
         telefone: row.telefone,
-        dataAdmissao: row.data_admissao ? new Date(row.data_admissao) : undefined,
+        dataAdmissao: row.data_admissao ? new Date(row.data_admissao + 'T12:00:00') : undefined,
         salarioBase: row.salario_base ? parseFloat(row.salario_base) : undefined,
         ativo: row.ativo,
-        dataDemissao: row.data_demissao ? new Date(row.data_demissao) : undefined,
+        dataDemissao: row.data_demissao ? new Date(row.data_demissao + 'T12:00:00') : undefined,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
     };
@@ -285,7 +285,7 @@ function dbToCliente(row: any): Cliente {
 function dbToFechamentoCaixa(row: any): FechamentoCaixa {
     return {
         id: row.id,
-        data: new Date(row.data),
+        data: new Date(row.data + 'T12:00:00'),
         funcionario: row.funcionario,
         turno: row.turno,
         entradas: {
@@ -906,6 +906,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         if (!error && data) {
             setFechamentosCaixa(prev => [...prev, dbToFechamentoCaixa(data)]);
+        } else if (error) {
+            console.error('Error adding fechamento:', error);
+            alert('Erro ao salvar fechamento: ' + error.message);
         }
     };
 

@@ -49,13 +49,16 @@ export default function FolhaPagamentoPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        const [y, m, d] = formData.dataPagamento.split('-').map(Number);
+        const dataAjustada = new Date(y, m - 1, d, 12, 0, 0);
+
         const pagamentoData = {
             funcionario: formData.funcionario,
             cargoFuncao: formData.cargoFuncao,
             valor: parseFloat(formData.valor),
             formaPagamento: formData.formaPagamento,
             statusPagamento: formData.statusPagamento,
-            dataPagamento: new Date(formData.dataPagamento),
+            dataPagamento: dataAjustada,
             observacoes: formData.observacoes || undefined,
             descontos: valesPendentes > 0 ? valesPendentes : (editingPagamento?.descontos || 0)
         };
@@ -77,15 +80,15 @@ export default function FolhaPagamentoPage() {
     };
 
     const resetForm = () => {
-        setFormData({
+        setFormData(prev => ({
+            ...prev,
             funcionario: '',
             cargoFuncao: '',
             valor: '',
             formaPagamento: 'dinheiro',
             statusPagamento: 'pendente',
-            dataPagamento: new Date().toISOString().split('T')[0],
             observacoes: '',
-        });
+        }));
         setValesPendentes(0);
         setEditingPagamento(null);
         setShowModal(false);
