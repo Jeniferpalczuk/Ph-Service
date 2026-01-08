@@ -34,6 +34,7 @@ export default function FolhaPagamentoPage() {
         statusPagamento: 'pendente' as PaymentStatus,
         dataPagamento: new Date().toISOString().split('T')[0],
         observacoes: '',
+        faltas: '',
     });
 
     const [valesPendentes, setValesPendentes] = useState(0);
@@ -60,7 +61,8 @@ export default function FolhaPagamentoPage() {
             statusPagamento: formData.statusPagamento,
             dataPagamento: dataAjustada,
             observacoes: formData.observacoes || undefined,
-            descontos: valesPendentes > 0 ? valesPendentes : (editingPagamento?.descontos || 0)
+            descontos: valesPendentes > 0 ? valesPendentes : (editingPagamento?.descontos || 0),
+            faltas: formData.faltas ? parseFloat(formData.faltas) : 0
         };
 
         if (editingPagamento) {
@@ -88,6 +90,7 @@ export default function FolhaPagamentoPage() {
             formaPagamento: 'dinheiro',
             statusPagamento: 'pendente',
             observacoes: '',
+            faltas: '',
         }));
         setValesPendentes(0);
         setEditingPagamento(null);
@@ -105,6 +108,7 @@ export default function FolhaPagamentoPage() {
             statusPagamento: pagamento.statusPagamento,
             dataPagamento: new Date(pagamento.dataPagamento).toISOString().split('T')[0],
             observacoes: pagamento.observacoes || '',
+            faltas: pagamento.faltas ? pagamento.faltas.toString() : '',
         });
         setShowModal(true);
     };
@@ -145,6 +149,14 @@ export default function FolhaPagamentoPage() {
     const totalDescontos = filteredFolha.reduce((sum, p) => sum + (p.descontos || 0), 0);
 
     const cargos = Array.from(new Set(funcionarios.map(f => f.cargo))).filter(Boolean);
+
+    // Calculate Salary Logic
+    const calculateLiquidoValue = (salarioBase: number, vales: number, diasFalta: number): number => {
+        const valorDia = salarioBase / 30; // Considerando mês comercial de 30 dias
+        const descontoFaltas = valorDia * diasFalta;
+        const liquido = Math.max(0, salarioBase - vales - descontoFaltas);
+        return parseFloat(liquido.toFixed(2));
+    };
 
     // Periodos (Month/Year)
     const periodos = useMemo(() => {
@@ -253,7 +265,14 @@ export default function FolhaPagamentoPage() {
                                     <td className="col-funcionario">{item.funcionario}</td>
                                     <td>{item.cargoFuncao}</td>
                                     <td className="col-valor">R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                    <td className="col-descontos">R$ {(item.descontos || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                    <td className="col-descontos">
+                                        <div>R$ {(item.descontos || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                        {item.faltas && item.faltas > 0 && (
+                                            <div style={{ fontSize: '0.75rem', color: '#dc2626' }}>
+                                                ({item.faltas} falta{item.faltas > 1 ? 's' : ''})
+                                            </div>
+                                        )}
+                                    </td>
                                     <td>
                                         <span className={`folha-status-badge ${item.statusPagamento}`}>
                                             {item.statusPagamento}
@@ -310,7 +329,8 @@ export default function FolhaPagamentoPage() {
                                             const selected = funcionarios.find(f => f.nome === funcName);
                                             const valesTotal = calculateVales(funcName);
                                             const salarioBase = selected?.salarioBase || 0;
-                                            const liquido = Math.max(0, salarioBase - valesTotal);
+                                            const diasFalta = formData.faltas ? parseFloat(formData.faltas) : 0;
+                                            const liquido = calculateLiquidoValue(salarioBase, valesTotal, diasFalta);
 
                                             setFormData({
                                                 ...formData,
@@ -349,15 +369,37 @@ export default function FolhaPagamentoPage() {
                                     <input required value={formData.cargoFuncao} onChange={(e) => setFormData({ ...formData, cargoFuncao: e.target.value })} />
                                 </div>
                                 <div className="form-group">
-                                    <label>Valor Líquido (R$) *</label>
+                                    <label>Faltas (Dias)</label>
                                     <input
                                         type="number"
-                                        step="0.01"
-                                        required
-                                        value={formData.valor}
-                                        onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                                        min="0"
+                                        step="0.5"
+                                        value={formData.faltas}
+                                        onChange={(e) => {
+                                            const dias = parseFloat(e.target.value) || 0;
+                                            const selected = funcionarios.find(f => f.nome === formData.funcionario);
+                                            const salarioBase = selected?.salarioBase || 0;
+                                            const liquido = calculateLiquidoValue(salarioBase, valesPendentes, dias);
+                                            setFormData({
+                                                ...formData,
+                                                faltas: e.target.value,
+                                                valor: liquido.toFixed(2)
+                                            });
+                                        }}
+                                        placeholder="0"
                                     />
                                 </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Valor Líquido (R$) *</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    required
+                                    value={formData.valor}
+                                    onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                                />
                             </div>
 
                             <div className="form-row">

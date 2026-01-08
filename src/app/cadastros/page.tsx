@@ -177,34 +177,41 @@ export default function CadastrosPage() {
                             <button className="btn btn-primary" onClick={() => setShowFuncModal(true)}>+ Novo Funcionário</button>
                         </div>
                         <div className="grid-list">
-                            {funcionarios.filter(f =>
-                                f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                f.cargo.toLowerCase().includes(searchTerm.toLowerCase())
-                            ).map(f => {
-                                const isDemitido = !!f.dataDemissao;
-                                return (
-                                    <div key={f.id} className="entity-card" style={{ borderColor: isDemitido ? 'var(--danger-500)' : undefined, background: isDemitido ? '#fff5f5' : undefined }}>
-                                        <div className="entity-info">
-                                            <h4 style={{ color: isDemitido ? 'var(--danger-600)' : undefined }}>
-                                                {f.nome} {isDemitido && <span style={{ fontSize: '0.7rem', border: '1px solid currentColor', borderRadius: '4px', padding: '1px 4px' }}>DEMITIDO</span>}
-                                            </h4>
-                                            <p>{f.cargo}</p>
-                                            <span style={{ fontWeight: 600 }}>R$ {f.salarioBase?.toFixed(2)}</span>
-                                            {isDemitido && (
-                                                <p style={{ fontSize: '0.8rem', color: 'var(--danger-600)', marginTop: '4px' }}>
-                                                    Demissão: {new Date(f.dataDemissao!).toLocaleDateString('pt-BR')}
-                                                </p>
-                                            )}
+                            {funcionarios
+                                .filter(f =>
+                                (f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                    f.cargo.toLowerCase().includes(searchTerm.toLowerCase()))
+                                )
+                                .sort((a, b) => {
+                                    // Sort Active first, then by Name
+                                    if (a.ativo === b.ativo) return a.nome.localeCompare(b.nome);
+                                    return a.ativo ? -1 : 1;
+                                })
+                                .map(f => {
+                                    const isDemitido = !!f.dataDemissao;
+                                    return (
+                                        <div key={f.id} className="entity-card" style={{ borderColor: isDemitido ? 'var(--danger-500)' : undefined, background: isDemitido ? '#fff5f5' : undefined }}>
+                                            <div className="entity-info">
+                                                <h4 style={{ color: isDemitido ? 'var(--danger-600)' : undefined }}>
+                                                    {f.nome} {isDemitido && <span style={{ fontSize: '0.7rem', border: '1px solid currentColor', borderRadius: '4px', padding: '1px 4px' }}>DEMITIDO</span>}
+                                                </h4>
+                                                <p>{f.cargo}</p>
+                                                <span style={{ fontWeight: 600 }}>R$ {f.salarioBase?.toFixed(2)}</span>
+                                                {isDemitido && (
+                                                    <p style={{ fontSize: '0.8rem', color: 'var(--danger-600)', marginTop: '4px' }}>
+                                                        Demissão: {new Date(f.dataDemissao!).toLocaleDateString('pt-BR')}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="entity-actions">
+                                                <button type="button" onClick={() => editFunc(f)} style={{ cursor: 'pointer' }}>✏️</button>
+                                                {user?.role === 'adm' && (
+                                                    <button type="button" onClick={(e) => handleDeleteFunc(f.id, e)} className="btn-delete" style={{ cursor: 'pointer' }}>🗑️</button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="entity-actions">
-                                            <button type="button" onClick={() => editFunc(f)} style={{ cursor: 'pointer' }}>✏️</button>
-                                            {user?.role === 'adm' && (
-                                                <button type="button" onClick={(e) => handleDeleteFunc(f.id, e)} className="btn-delete" style={{ cursor: 'pointer' }}>🗑️</button>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
                         </div>
                     </div>
                 )}

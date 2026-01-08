@@ -192,6 +192,7 @@ export interface PagamentoFuncionario {
   cargoFuncao: string;
   valor: number; // Valor Líquido (pago)
   descontos?: number; // Valor dos Vales descontados
+  faltas?: number; // Número de dias de falta (opcional)
   formaPagamento: PaymentMethod;
   statusPagamento: PaymentStatus;
   dataPagamento: Date;
