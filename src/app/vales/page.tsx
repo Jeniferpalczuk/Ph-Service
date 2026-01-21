@@ -4,7 +4,9 @@ import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { Vale, ValeStatus } from '@/types';
-import '../convenios/convenios.css';
+import { MoneyInput } from '@/components/MoneyInput';
+import '../shared-modern.css';
+// import '../convenios/convenios.css'; // Removed
 
 export default function ValesPage() {
     const { user } = useAuth();
@@ -30,6 +32,7 @@ export default function ValesPage() {
     });
 
     const resetForm = () => {
+        // Persist 'data' to allow rapid entry for the same day
         setFormData(prev => ({
             ...prev,
             funcionario: '',
@@ -165,65 +168,83 @@ export default function ValesPage() {
     }, []);
 
     return (
-        <div className="convenios-page">
-            <div className="page-header">
-                <div className="header-stats">
-                    <div className="stat-item">
-                        <span className="stat-label">Total Pendente ({filteredByMonth.filter(v => v.status === 'aberto').length} vales)</span>
-                        <span className="stat-value text-danger">{totalPendentes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+        <div className="modern-page">
+            <div className="modern-header">
+                <div className="modern-header-info">
+                    <div className="modern-header-subtitle">Gestão de Vales</div>
+                    <div className="modern-header-title">
+                        {totalPendentes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Marcados p/ Desconto</span>
-                        <span className="stat-value text-warning">{valesByEmployee.filter(v => markedForDiscount.has(v.funcionario)).reduce((s, v) => s + v.total, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    <div className="modern-header-badges">
+                        <div className="modern-badge-summary warning">
+                            <span>⚠️</span> Pendentes
+                        </div>
+                        {totalMarcadosParaDesconto > 0 && (
+                            <div className="modern-badge-summary info">
+                                <span>📉</span> Desc. Previsto: {totalMarcadosParaDesconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </div>
+                        )}
+                        {(searchTerm || selectedMonth) && (
+                            <button className="modern-badge-summary neutral" onClick={() => {
+                                setSearchTerm('');
+                            }} style={{ border: 'none', cursor: 'pointer' }}>
+                                🧹 Limpar Busca
+                            </button>
+                        )}
                     </div>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>➕ Novo Vale</button>
+                <button className="btn-modern-primary" onClick={() => setShowModal(true)}>
+                    ➕ Novo Vale
+                </button>
             </div>
 
-            <div className="filters-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '1.1rem' }}>🔍</span>
-                    <input
-                        type="text"
-                        placeholder="Buscar por funcionário ou motivo..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="search-input"
-                        style={{ paddingLeft: '40px' }}
-                    />
+            <div className="modern-filters-container">
+                <div className="modern-filter-group" style={{ flex: 2 }}>
+                    <label>🔍 Buscar:</label>
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Buscar por funcionário ou motivo..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            style={{ paddingLeft: '40px' }}
+                        />
+                    </div>
                 </div>
-                <select
-                    value={selectedMonth}
-                    onChange={e => setSelectedMonth(e.target.value)}
-                    className="filter-select"
-                    style={{ minWidth: '180px' }}
-                >
-                    {monthOptions.map(m => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                </select>
+                <div className="modern-filter-group">
+                    <label>📅 Mês de Referência:</label>
+                    <select
+                        value={selectedMonth}
+                        onChange={e => setSelectedMonth(e.target.value)}
+                    >
+                        {monthOptions.map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Seção de funcionários para marcar */}
-            <div className="card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div className="modern-table-container" style={{ marginBottom: '2rem', padding: '1.5rem', background: '#ffffff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
-                        📋 Funcionários com Vales no Mês
+                        📋 Resumo por Funcionário (Mês Atual)
                     </h3>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button
                             type="button"
                             onClick={markAllForDiscount}
-                            className="btn btn-secondary"
-                            style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                            className="btn-modern-icon"
+                            style={{ width: 'auto', padding: '0 12px', fontSize: '0.85rem' }}
                         >
                             ✅ Marcar Todos
                         </button>
                         <button
                             type="button"
                             onClick={clearAllDiscounts}
-                            className="btn btn-secondary"
-                            style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+                            className="btn-modern-icon"
+                            style={{ width: 'auto', padding: '0 12px', fontSize: '0.85rem' }}
                         >
                             ❌ Limpar
                         </button>
@@ -244,7 +265,7 @@ export default function ValesPage() {
                                     padding: '1rem',
                                     borderRadius: '12px',
                                     border: markedForDiscount.has(emp.funcionario) ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-                                    background: markedForDiscount.has(emp.funcionario) ? '#eff6ff' : '#fff',
+                                    background: markedForDiscount.has(emp.funcionario) ? '#eff6ff' : '#f8fafc',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease',
                                     display: 'flex',
@@ -270,12 +291,16 @@ export default function ValesPage() {
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}>{emp.funcionario}</div>
                                     <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                        {emp.vales.length} vale(s) • <span className={emp.status === 'quitado' ? 'text-success' : 'text-danger'}>
+                                        {emp.vales.length} vale(s) • <span style={{ color: emp.status === 'quitado' ? '#10b981' : '#ef4444', fontWeight: 700 }}>
                                             {emp.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </span>
                                     </div>
                                 </div>
-                                <span className={`badge ${emp.status === 'quitado' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.7rem' }}>
+                                <span className={`modern-status-badge ${emp.status === 'quitado' ? 'pago' : 'pendente'}`}
+                                    style={{
+                                        backgroundColor: emp.status === 'quitado' ? '#d1fae5' : '#fffbeb',
+                                        color: emp.status === 'quitado' ? '#065f46' : '#d97706'
+                                    }}>
                                     {emp.status === 'quitado' ? 'Quitado' : 'Pendente'}
                                 </span>
                             </div>
@@ -284,43 +309,46 @@ export default function ValesPage() {
                 )}
             </div>
 
-            <div className="table-container card">
-                <table>
+            <div className="modern-table-container">
+                <table className="modern-table">
                     <thead>
                         <tr>
-                            <th>Data</th>
-                            <th>Funcionário</th>
-                            <th>Motivo</th>
-                            <th>Valor</th>
-                            <th>Status</th>
-                            <th>Ações</th>
+                            <th>DATA</th>
+                            <th>FUNCIONÁRIO</th>
+                            <th>MOTIVO</th>
+                            <th>VALOR</th>
+                            <th>STATUS</th>
+                            <th style={{ textAlign: 'right' }}>AÇÕES</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredItems.length === 0 ? (
-                            <tr><td colSpan={6} className="text-center">Nenhum vale registrado.</td></tr>
+                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Nenhum vale registrado.</td></tr>
                         ) : (
                             filteredItems.map(item => (
                                 <tr key={item.id} style={{ background: markedForDiscount.has(item.funcionario) ? '#f0f9ff' : undefined }}>
-                                    <td>{new Date(item.data).toLocaleDateString()}</td>
-                                    <td style={{ fontWeight: 600 }}>
+                                    <td>{new Date(item.data).toLocaleDateString('pt-BR')}</td>
+                                    <td className="col-highlight">
                                         {markedForDiscount.has(item.funcionario) && <span style={{ marginRight: '6px' }}>✓</span>}
                                         {item.funcionario}
                                     </td>
                                     <td>{item.motivo}</td>
-                                    <td className="text-danger font-semibold">{item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                    <td className="col-money-negative">{item.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                     <td>
-                                        <span className={`badge ${item.status === 'quitado' ? 'badge-success' : 'badge-warning'}`}>
+                                        <span className={`modern-status-badge ${item.status === 'quitado' ? 'pago' : 'pendente'}`}
+                                            style={{
+                                                backgroundColor: item.status === 'quitado' ? '#d1fae5' : '#fffbeb',
+                                                color: item.status === 'quitado' ? '#065f46' : '#d97706'
+                                            }}
+                                        >
                                             {item.status === 'quitado' ? 'Descontado/Quitado' : 'Aberto'}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <button type="button" className="btn-icon" onClick={() => handleEdit(item)} style={{ cursor: 'pointer' }}>✏️</button>
-                                            {user?.role === 'adm' && (
-                                                <button type="button" className="btn-icon" onClick={(e) => handleDelete(item.id, e)} style={{ cursor: 'pointer' }}>🗑️</button>
-                                            )}
-                                        </div>
+                                    <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                        <button type="button" className="btn-modern-icon" onClick={() => handleEdit(item)} title="Editar">✏️</button>
+                                        {user?.role === 'adm' && (
+                                            <button type="button" className="btn-modern-icon" onClick={(e) => handleDelete(item.id, e)} title="Excluir">🗑️</button>
+                                        )}
                                     </td>
                                 </tr>
                             ))
@@ -359,7 +387,7 @@ export default function ValesPage() {
                         }}>
                             <div>
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                                    {editingItem ? 'Editar' : 'Novo'} Vale
+                                    {editingItem ? '✏️ Editar Vale' : '➕ Novo Vale'}
                                 </h2>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>
                                     Registre um adiantamento para o funcionário
@@ -368,14 +396,14 @@ export default function ValesPage() {
                             <button className="btn-modern-icon" onClick={resetForm} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="modal-form" style={{ padding: '2rem' }}>
+                        <form onSubmit={handleSubmit} style={{ padding: '2rem' }}>
                             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Funcionário *</label>
+                                <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Funcionário *</label>
                                 <select
                                     required
                                     value={formData.funcionario}
                                     onChange={e => setFormData({ ...formData, funcionario: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                 >
                                     <option value="">Selecione um funcionário...</option>
                                     {funcionarios.filter(f => f.ativo).map(f => (
@@ -384,51 +412,49 @@ export default function ValesPage() {
                                 </select>
                             </div>
 
-                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Valor *</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Valor *</label>
                                     <div style={{ position: 'relative' }}>
                                         <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#94a3b8' }}>R$</span>
-                                        <input
-                                            type="number"
-                                            step="0.01"
+                                        <MoneyInput
                                             required
                                             value={formData.valor}
-                                            onChange={e => setFormData({ ...formData, valor: e.target.value })}
-                                            style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700, color: '#0ea5e9' }}
+                                            onChange={(val) => setFormData({ ...formData, valor: val.toString() })}
+                                            style={{ width: '100%', padding: '0.8rem 1rem 0.8rem 2.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem', fontWeight: 700, color: '#0ea5e9' }}
                                         />
                                     </div>
                                 </div>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data *</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Data *</label>
                                     <input
                                         type="date"
                                         required
                                         value={formData.data}
                                         onChange={e => setFormData({ ...formData, data: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     />
                                 </div>
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Motivo *</label>
+                                <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Motivo *</label>
                                 <input
                                     required
                                     value={formData.motivo}
                                     onChange={e => setFormData({ ...formData, motivo: e.target.value })}
                                     placeholder="Ex: Adiantamento Quinzenal"
-                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                 />
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Status *</label>
+                                <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Status *</label>
                                 <select
                                     required
                                     value={formData.status}
                                     onChange={e => setFormData({ ...formData, status: e.target.value as any })}
-                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                    style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                 >
                                     <option value="aberto">Aberto</option>
                                     <option value="marcado_desconto">Marcado para Desconto</option>
@@ -436,23 +462,47 @@ export default function ValesPage() {
                                 </select>
                             </div>
 
-                            <div className="modal-actions" style={{
-                                display: 'flex', gap: '1rem', padding: '1.5rem 2rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', margin: '0 -2rem -2rem -2rem'
+                            <div style={{
+                                marginTop: '2rem',
+                                display: 'flex',
+                                gap: '1rem',
+                                position: 'sticky',
+                                bottom: 0,
+                                background: '#ffffff',
+                                padding: '1rem 0 0 0',
+                                borderTop: '1px solid #f1f5f9'
                             }}>
                                 <button
                                     type="button"
-                                    className="btn btn-secondary"
                                     onClick={resetForm}
-                                    style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b' }}
+                                    style={{
+                                        flex: 1,
+                                        padding: '1rem',
+                                        borderRadius: '14px',
+                                        background: '#f1f5f9',
+                                        color: '#64748b',
+                                        fontWeight: 700,
+                                        border: 'none',
+                                        cursor: 'pointer'
+                                    }}
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    className="btn btn-primary"
-                                    style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)' }}
+                                    style={{
+                                        flex: 2,
+                                        padding: '1rem',
+                                        borderRadius: '14px',
+                                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                                        color: '#ffffff',
+                                        fontWeight: 800,
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)'
+                                    }}
                                 >
-                                    {editingItem ? 'Atualizar Vale' : 'Salvar Vale'}
+                                    {editingItem ? 'Salvar Alterações' : 'Adicionar Vale'}
                                 </button>
                             </div>
                         </form>

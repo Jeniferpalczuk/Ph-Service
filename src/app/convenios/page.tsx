@@ -1,16 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Convenio, PaymentStatus, ClosingType } from '@/types';
+import { PaymentStatus, ClosingType } from '@/types';
+import { Convenio } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import './convenios.css';
+import { MoneyInput } from '@/components/MoneyInput';
+import '../shared-modern.css';
 
 export default function ConveniosPage() {
     const { user } = useAuth();
     const { convenios, addConvenio, updateConvenio, deleteConvenio, clientes } = useApp();
     const [showModal, setShowModal] = useState(false);
     const [editingConvenio, setEditingConvenio] = useState<Convenio | null>(null);
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<PaymentStatus | 'todos'>('todos');
 
@@ -71,6 +77,8 @@ export default function ConveniosPage() {
     };
 
     const resetForm = () => {
+        // Persist commonly used fields: tipoFechamento, periodoReferencia, dataFechamento, banco, dataVencimento, dataPagamento
+        // Reset specific fields: empresaCliente, valorBoleto, statusPagamento, notaFiscal, enviadoPara, observacoes
         setFormData(prev => ({
             ...prev,
             empresaCliente: '',
@@ -110,153 +118,160 @@ export default function ConveniosPage() {
         }
     };
 
-    const getStatusBadge = (status: PaymentStatus) => {
-        const badges = {
-            pago: 'badge-success',
-            pendente: 'badge-warning',
-            vencido: 'badge-danger',
-            parcial: 'badge-primary',
-        };
-        return badges[status];
-    };
-
-    const getStatusLabel = (status: PaymentStatus) => {
-        const labels = {
-            pago: 'Pago',
-            pendente: 'Pendente',
-            vencido: 'Vencido',
-            parcial: 'Parcial',
-        };
-        return labels[status];
-    };
+    // Gerar meses para seleção
+    const monthOptions = useMemo(() => {
+        const months = [];
+        const now = new Date();
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            months.push({
+                value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                label: d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+            });
+        }
+        return months;
+    }, []);
 
     // Filter and sort convenios by most recent
-    const filteredConvenios = convenios
-        .filter(convenio => {
-            const matchesSearch = convenio.empresaCliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                convenio.periodoReferencia.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesStatus = filterStatus === 'todos' || convenio.statusPagamento === filterStatus;
-            return matchesSearch && matchesStatus;
-        })
-        .sort((a, b) => new Date(b.dataVencimento).getTime() - new Date(a.dataVencimento).getTime());
+    const filteredConvenios = useMemo(() => {
+        return convenios
+            .filter(convenio => {
+                const d = new Date(convenio.dataVencimento);
+                const convMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
-    const totalValor = filteredConvenios.reduce((sum, c) => sum + c.valorBoleto, 0);
-    const totalPago = filteredConvenios.filter(c => c.statusPagamento === 'pago').reduce((sum, c) => sum + c.valorBoleto, 0);
-    const totalPendente = filteredConvenios.filter(c => c.statusPagamento !== 'pago').reduce((sum, c) => sum + c.valorBoleto, 0);
+                const matchesMonth = convMonth === selectedMonth;
+                const matchesSearch = convenio.empresaCliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    convenio.periodoReferencia.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesStatus = filterStatus === 'todos' || convenio.statusPagamento === filterStatus;
+                return matchesMonth && matchesSearch && matchesStatus;
+            })
+            .sort((a, b) => new Date(b.dataVencimento).getTime() - new Date(a.dataVencimento).getTime());
+    }, [convenios, searchTerm, filterStatus, selectedMonth]);
+
+    const totalValor = useMemo(() => filteredConvenios.reduce((sum, c) => sum + c.valorBoleto, 0), [filteredConvenios]);
+    const totalPago = useMemo(() => filteredConvenios.filter(c => c.statusPagamento === 'pago').length, [filteredConvenios]);
+    const totalPendente = useMemo(() => filteredConvenios.filter(c => c.statusPagamento === 'pendente').length, [filteredConvenios]);
+    const totalVencido = useMemo(() => filteredConvenios.filter(c => c.statusPagamento === 'vencido').length, [filteredConvenios]);
 
     return (
-        <div className="convenios-page">
-            {/* Header */}
-            <div className="page-header">
-                <div className="header-stats">
-                    <div className="stat-item">
-                        <span className="stat-label">Total</span>
-                        <span className="stat-value">{totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+        <div className="modern-page">
+            <div className="modern-header">
+                <div className="modern-header-info">
+                    <div className="modern-header-subtitle">Gestão de Convênios</div>
+                    <div className="modern-header-title">
+                        {totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Pago</span>
-                        <span className="stat-value text-success">{totalPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Pendente</span>
-                        <span className="stat-value text-warning">{totalPendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    <div className="modern-header-badges">
+                        <div className="modern-badge-summary success">
+                            <span>✅</span> {totalPago} pagos
+                        </div>
+                        <div className="modern-badge-summary warning">
+                            <span>🕒</span> {totalPendente} pendentes
+                        </div>
+                        {totalVencido > 0 && (
+                            <div className="modern-badge-summary danger">
+                                <span>🚨</span> {totalVencido} vencidos
+                            </div>
+                        )}
+                        {(searchTerm || filterStatus !== 'todos') && (
+                            <button className="modern-badge-summary neutral" onClick={() => {
+                                setSearchTerm('');
+                                setFilterStatus('todos');
+                            }} style={{ border: 'none', cursor: 'pointer' }}>
+                                🧹 Limpar Filtros
+                            </button>
+                        )}
                     </div>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                <button className="btn-modern-primary" onClick={() => setShowModal(true)}>
                     ➕ Novo Convênio
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="filters-bar">
-                <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '1.1rem' }}>🔍</span>
-                    <input
-                        type="text"
-                        placeholder="Buscar por empresa ou período..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                        style={{ paddingLeft: '40px' }}
-                    />
+            <div className="modern-filters-container">
+                <div className="modern-filter-group" style={{ flex: 2 }}>
+                    <label>🔍 Buscar:</label>
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Buscar por empresa ou período..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ paddingLeft: '40px' }}
+                        />
+                    </div>
                 </div>
-                <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value as PaymentStatus | 'todos')}
-                    className="filter-select"
-                >
-                    <option value="todos">Todos os Status</option>
-                    <option value="pago">Pago</option>
-                    <option value="pendente">Pendente</option>
-                    <option value="vencido">Vencido</option>
-                    <option value="parcial">Parcial</option>
-                </select>
+                <div className="modern-filter-group">
+                    <label>📅 Mês de Referência:</label>
+                    <select
+                        value={selectedMonth}
+                        onChange={e => setSelectedMonth(e.target.value)}
+                    >
+                        {monthOptions.map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            {/* Table */}
-            <div className="table-container card">
-                <table>
+            <div className="modern-table-container">
+                <table className="modern-table">
                     <thead>
                         <tr>
-                            <th>Empresa/Cliente</th>
-                            <th>Tipo</th>
-                            <th>Período</th>
-                            <th>Valor</th>
-                            <th>Banco</th>
-                            <th>Vencimento</th>
-                            <th>Status</th>
-                            <th>Ações</th>
+                            <th>EMPRESA/CLIENTE</th>
+                            <th>TIPO</th>
+                            <th>PERÍODO</th>
+                            <th>VALOR</th>
+                            <th>BANCO</th>
+                            <th>VENCIMENTO</th>
+                            <th>STATUS</th>
+                            <th style={{ textAlign: 'right' }}>AÇÕES</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredConvenios.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="text-center">
-                                    Nenhum convênio encontrado
+                                <td colSpan={8} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                                    Nenhum convênio encontrado.
                                 </td>
                             </tr>
                         ) : (
                             filteredConvenios.map((convenio) => (
                                 <tr key={convenio.id}>
-                                    <td className="font-semibold">{convenio.empresaCliente}</td>
+                                    <td className="col-highlight">{convenio.empresaCliente}</td>
                                     <td>{convenio.tipoFechamento}</td>
                                     <td>{convenio.periodoReferencia}</td>
-                                    <td className="font-semibold">{convenio.valorBoleto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                    <td className="col-money">{convenio.valorBoleto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                     <td>{convenio.banco}</td>
                                     <td>{new Date(convenio.dataVencimento).toLocaleDateString('pt-BR')}</td>
                                     <td>
-                                        <span className={`badge ${getStatusBadge(convenio.statusPagamento)}`}>
-                                            {getStatusLabel(convenio.statusPagamento)}
+                                        <span className={`modern-status-badge ${convenio.statusPagamento === 'pago' ? 'pago' : 'pendente'}`}
+                                            style={{
+                                                backgroundColor: convenio.statusPagamento === 'pago' ? '#d1fae5' : (convenio.statusPagamento === 'vencido' ? '#fee2e2' : '#fef3c7'),
+                                                color: convenio.statusPagamento === 'pago' ? '#065f46' : (convenio.statusPagamento === 'vencido' ? '#dc2626' : '#92400e')
+                                            }}>
+                                            {convenio.statusPagamento}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <button
-                                                className="btn-icon btn-edit"
-                                                onClick={() => handleEdit(convenio)}
-                                                title="Editar"
-                                            >
-                                                ✏️
-                                            </button>
-                                            {user?.role === 'adm' && (
-                                                <button
-                                                    className="btn-icon btn-delete"
-                                                    onClick={(e) => handleDelete(convenio.id, e)}
-                                                    title="Excluir"
-                                                >
-                                                    🗑️
-                                                </button>
-                                            )}
-                                        </div>
+                                    <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                        <button className="btn-modern-icon" onClick={() => handleEdit(convenio)} title="Editar">✏️</button>
+                                        {user?.role === 'adm' && (
+                                            <button className="btn-modern-icon" onClick={(e) => handleDelete(convenio.id, e)} title="Excluir">🗑️</button>
+                                        )}
                                     </td>
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </table>
+                <div className="modern-footer">
+                    <div className="modern-footer-totals">
+                        <div className="modern-total-item">Total: <b>{totalValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></div>
+                    </div>
+                </div>
             </div>
 
-            {/* Modal */}
             {showModal && (
                 <div className="modal-overlay animate-fade-in" onClick={resetForm} style={{
                     position: 'fixed',
@@ -299,7 +314,7 @@ export default function ConveniosPage() {
                         }}>
                             <div>
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                                    {editingConvenio ? 'Editar' : 'Novo'} Convênio
+                                    {editingConvenio ? '✏️ Editar Convênio' : '➕ Novo Convênio'}
                                 </h2>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>
                                     Preencha as informações do fechamento
@@ -308,16 +323,23 @@ export default function ConveniosPage() {
                             <button className="btn-modern-icon" onClick={resetForm} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="modal-form" style={{ padding: '2rem' }}>
+                        <form onSubmit={handleSubmit} style={{ padding: '2rem' }}>
                             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>
-                                    Empresa/Cliente *
+                                <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>
+                                    🏢 Empresa/Cliente *
                                 </label>
                                 <select
                                     required
                                     value={formData.empresaCliente}
                                     onChange={(e) => setFormData({ ...formData, empresaCliente: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.8rem 1rem',
+                                        borderRadius: '12px',
+                                        border: '1px solid #e2e8f0',
+                                        background: '#f8fafc',
+                                        fontSize: '0.95rem'
+                                    }}
                                 >
                                     <option value="">Selecione um cliente...</option>
                                     {clientes.filter(c => c.ativo).map(c => (
@@ -329,14 +351,14 @@ export default function ConveniosPage() {
                                 </small>
                             </div>
 
-                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Tipo de Fechamento *</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Tipo de Fechamento *</label>
                                     <select
                                         required
                                         value={formData.tipoFechamento}
                                         onChange={(e) => setFormData({ ...formData, tipoFechamento: e.target.value as ClosingType })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     >
                                         <option value="mensal">Mensal</option>
                                         <option value="quinzenal">Quinzenal</option>
@@ -345,78 +367,77 @@ export default function ConveniosPage() {
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Período de Referência *</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Período de Referência *</label>
                                     <input
                                         type="text"
                                         required
                                         placeholder="Ex: Janeiro/2024"
                                         value={formData.periodoReferencia}
                                         onChange={(e) => setFormData({ ...formData, periodoReferencia: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     />
                                 </div>
                             </div>
 
-                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data do Fechamento *</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Data do Fechamento *</label>
                                     <input
                                         type="date"
                                         required
                                         value={formData.dataFechamento}
                                         onChange={(e) => setFormData({ ...formData, dataFechamento: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Valor do Boleto *</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Valor do Boleto *</label>
                                     <div style={{ position: 'relative' }}>
                                         <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#94a3b8' }}>R$</span>
-                                        <input
-                                            type="number"
-                                            step="0.01"
+                                        <MoneyInput
                                             min="0"
                                             placeholder="0.00"
                                             required
                                             value={formData.valorBoleto}
-                                            onChange={(e) => setFormData({ ...formData, valorBoleto: e.target.value })}
-                                            style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700, color: '#0ea5e9' }}
+                                            onChange={(val) => setFormData({ ...formData, valorBoleto: val.toString() })}
+                                            style={{ width: '100%', padding: '0.8rem 1rem 0.8rem 2.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem', fontWeight: 700, color: '#0ea5e9' }}
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Banco *</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>🏦 Banco *</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.banco}
                                         onChange={(e) => setFormData({ ...formData, banco: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        placeholder="Ex: Itaú, Bradesco..."
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data de Vencimento *</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>📅 Data de Vencimento *</label>
                                     <input
                                         type="date"
                                         required
                                         value={formData.dataVencimento}
                                         onChange={(e) => setFormData({ ...formData, dataVencimento: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     />
                                 </div>
                             </div>
 
-                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Status do Pagamento *</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Status do Pagamento *</label>
                                     <select
                                         required
                                         value={formData.statusPagamento}
                                         onChange={(e) => setFormData({ ...formData, statusPagamento: e.target.value as PaymentStatus })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     >
                                         <option value="pendente">Pendente</option>
                                         <option value="pago">Pago</option>
@@ -425,69 +446,90 @@ export default function ConveniosPage() {
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data de Pagamento</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Data de Pagamento</label>
                                     <input
                                         type="date"
                                         value={formData.dataPagamento}
                                         onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     />
                                 </div>
                             </div>
 
-                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Nota Fiscal</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Nota Fiscal</label>
                                     <input
                                         type="text"
                                         value={formData.notaFiscal}
                                         onChange={(e) => setFormData({ ...formData, notaFiscal: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        placeholder="Opcional"
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Enviado Para</label>
+                                    <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Enviado Para</label>
                                     <input
                                         type="text"
                                         value={formData.enviadoPara}
                                         onChange={(e) => setFormData({ ...formData, enviadoPara: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                        placeholder="Opcional"
+                                        style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem' }}
                                     />
                                 </div>
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Observações</label>
+                                <label style={{ color: '#475569', fontWeight: 700, fontSize: '0.85rem', marginBottom: '8px', display: 'block' }}>Observações</label>
                                 <textarea
                                     rows={3}
                                     value={formData.observacoes}
                                     onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', resize: 'vertical' }}
+                                    style={{ width: '100%', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.95rem', resize: 'vertical' }}
                                 />
                             </div>
 
-                            <div className="modal-actions" style={{
+                            <div style={{
+                                marginTop: '2rem',
                                 display: 'flex',
                                 gap: '1rem',
-                                padding: '1.5rem 2rem',
-                                background: '#f8fafc',
-                                borderTop: '1px solid #f1f5f9',
-                                margin: '0 -2rem -2rem -2rem'
+                                position: 'sticky',
+                                bottom: 0,
+                                background: '#ffffff',
+                                padding: '1rem 0 0 0',
+                                borderTop: '1px solid #f1f5f9'
                             }}>
                                 <button
                                     type="button"
-                                    className="btn btn-secondary"
                                     onClick={resetForm}
-                                    style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b' }}
+                                    style={{
+                                        flex: 1,
+                                        padding: '1rem',
+                                        borderRadius: '14px',
+                                        background: '#f1f5f9',
+                                        color: '#64748b',
+                                        fontWeight: 700,
+                                        border: 'none',
+                                        cursor: 'pointer'
+                                    }}
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    className="btn btn-primary"
-                                    style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)' }}
+                                    style={{
+                                        flex: 2,
+                                        padding: '1rem',
+                                        borderRadius: '14px',
+                                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                                        color: '#ffffff',
+                                        fontWeight: 800,
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)'
+                                    }}
                                 >
-                                    {editingConvenio ? 'Atualizar Convênio' : 'Salvar Convênio'}
+                                    {editingConvenio ? 'Salvar Alterações' : 'Adicionar Convênio'}
                                 </button>
                             </div>
                         </form>

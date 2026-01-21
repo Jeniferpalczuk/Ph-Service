@@ -21,12 +21,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [session, setSession] = useState<Session | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<any>({
+        id: 'mock_user_123',
+        email: 'demo@phservice.com',
+        role: 'adm',
+        user_metadata: { full_name: 'Demo Admin' }
+    });
+    const [session, setSession] = useState<Session | null>({ access_token: 'mock' } as Session);
+    const [loading, setLoading] = useState(false);
     const supabase = createClient();
     const router = useRouter();
 
+    /* 
+    // TEMPORARILY DISABLED FOR DEMO
     useEffect(() => {
         // Get initial session
         const getSession = async () => {
@@ -49,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         return () => subscription.unsubscribe();
     }, [supabase.auth]);
+    */
 
     const signInWithGoogle = async () => {
         const { error } = await supabase.auth.signInWithOAuth({

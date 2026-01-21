@@ -56,6 +56,31 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
+/* Header da Lista (Tabs) */
+.list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.list-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #334155;
+    margin: 0;
+}
+
+.list-header .btn-primary {
+    flex: initial;
+    width: auto;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);
+}
+
 /* Grid Layout para Cards (Boxes) */
 .grid-list {
     display: grid;
@@ -227,7 +252,7 @@
 }
 
 .form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
@@ -275,7 +300,7 @@
 
 .btn-secondary {
     flex: 1;
-    padding: 1rem;
+    padding: 0.8rem;
     border-radius: 14px;
     font-weight: 700;
     background: #ffffff;
@@ -292,7 +317,7 @@
 
 .btn-primary {
     flex: 2;
-    padding: 1rem;
+    padding: 0.8rem;
     border-radius: 14px;
     font-weight: 700;
     border: none;

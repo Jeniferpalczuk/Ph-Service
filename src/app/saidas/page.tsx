@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Saida, ExpenseCategory, PaymentMethod } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { MoneyInput } from '@/components/MoneyInput';
 import '../shared-modern.css';
 
 export default function SaidasPage() {
@@ -13,6 +14,10 @@ export default function SaidasPage() {
     const [editingSaida, setEditingSaida] = useState<Saida | null>(null);
 
     // Filter States
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('all');
 
@@ -100,14 +105,32 @@ export default function SaidasPage() {
         }
     };
 
+    // Gerar meses para seleção
+    const monthOptions = useMemo(() => {
+        const months = [];
+        const now = new Date();
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            months.push({
+                value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                label: d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+            });
+        }
+        return months;
+    }, []);
+
     const filteredSaidas = useMemo(() => {
         return saidas.filter(s => {
+            const d = new Date(s.data);
+            const saidaMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const matchesMonth = saidaMonth === selectedMonth;
+
             const matchesSearch = s.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (s.fornecedor?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
             const matchesCategory = filterCategory === 'all' || s.categoria === filterCategory;
-            return matchesSearch && matchesCategory;
+            return matchesMonth && matchesSearch && matchesCategory;
         }).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-    }, [saidas, searchTerm, filterCategory]);
+    }, [saidas, searchTerm, filterCategory, selectedMonth]);
 
     const totalSaidas = filteredSaidas.reduce((sum, s) => sum + s.valor, 0);
 
@@ -136,21 +159,27 @@ export default function SaidasPage() {
             </div>
 
             <div className="modern-filters-container">
-                <div className="modern-filter-group">
+                <div className="modern-filter-group" style={{ flex: 2 }}>
                     <label>🔍 Buscar:</label>
-                    <input
-                        type="text"
-                        placeholder="Descrição ou fornecedor..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                    />
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Descrição ou fornecedor..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            style={{ paddingLeft: '40px' }}
+                        />
+                    </div>
                 </div>
                 <div className="modern-filter-group">
-                    <label>📂 Categoria:</label>
-                    <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-                        <option value="all">Todas as Categorias</option>
-                        {Object.entries(CATEGORY_MAP).map(([label, value]) => (
-                            <option key={value} value={value}>{label}</option>
+                    <label>📅 Mês de Referência:</label>
+                    <select
+                        value={selectedMonth}
+                        onChange={e => setSelectedMonth(e.target.value)}
+                    >
+                        {monthOptions.map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
                         ))}
                     </select>
                 </div>
@@ -268,12 +297,10 @@ export default function SaidasPage() {
                                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Valor *</label>
                                     <div style={{ position: 'relative' }}>
                                         <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#94a3b8' }}>R$</span>
-                                        <input
-                                            type="number"
-                                            step="0.01"
+                                        <MoneyInput
                                             required
                                             value={formData.valor}
-                                            onChange={e => setFormData({ ...formData, valor: e.target.value })}
+                                            onChange={(val) => setFormData({ ...formData, valor: val.toString() })}
                                             style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700, color: '#ef4444' }}
                                         />
                                     </div>
@@ -354,14 +381,14 @@ export default function SaidasPage() {
                                     type="button"
                                     className="btn btn-secondary"
                                     onClick={resetForm}
-                                    style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b' }}
+                                    style={{ flex: 1, padding: '0.8rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b' }}
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     className="btn btn-primary"
-                                    style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.3)' }}
+                                    style={{ flex: 2, padding: '0.8rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.3)' }}
                                 >
                                     {editingSaida ? 'Atualizar Saída' : 'Salvar Saída'}
                                 </button>

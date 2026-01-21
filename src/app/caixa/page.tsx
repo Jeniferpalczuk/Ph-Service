@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { FechamentoCaixa } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { MoneyInput } from '@/components/MoneyInput';
 import '../shared-modern.css';
 
 export default function CaixaPage() {
@@ -19,6 +20,10 @@ export default function CaixaPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState<FechamentoCaixa | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
     const [filterTurno, setFilterTurno] = useState('all');
 
     // Form State
@@ -137,14 +142,33 @@ export default function CaixaPage() {
         }
     }, [leituras, fechamentoManha, formData.turno, calculoMode]);
 
+    // Gerar meses para seleção
+    const monthOptions = useMemo(() => {
+        const months = [];
+        const now = new Date();
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            months.push({
+                value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                label: d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+            });
+        }
+        return months;
+    }, []);
+
     const filteredItems = useMemo(() => {
         return fechamentosCaixa.filter(item => {
+            const d = new Date(item.data);
+            const itemMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const matchesMonth = itemMonth === selectedMonth;
+
             const matchesSearch = item.funcionario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                new Date(item.data).toLocaleDateString().includes(searchTerm);
+                new Date(item.data).toLocaleDateString().includes(searchTerm) ||
+                item.turno.toLowerCase().includes(searchTerm.toLowerCase()); // Added turno search
             const matchesTurno = filterTurno === 'all' || item.turno === filterTurno;
-            return matchesSearch && matchesTurno;
+            return matchesMonth && matchesSearch && matchesTurno;
         }).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-    }, [fechamentosCaixa, searchTerm, filterTurno]);
+    }, [fechamentosCaixa, searchTerm, filterTurno, selectedMonth]);
 
     const totalEntradas = filteredItems.reduce((sum, item) => sum + Object.values(item.entradas).reduce((a, b) => a + b, 0), 0);
     const totalSaidas = filteredItems.reduce((sum, item) => sum + item.saidas, 0);
@@ -178,21 +202,28 @@ export default function CaixaPage() {
             </div>
 
             <div className="modern-filters-container">
-                <div className="modern-filter-group">
+                <div className="modern-filter-group" style={{ flex: 2 }}>
                     <label>🔍 Buscar:</label>
-                    <input
-                        type="text"
-                        placeholder="Funcionário ou data..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                    />
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                        <input
+                            type="text"
+                            placeholder="Funcionário, data ou turno..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            style={{ paddingLeft: '40px' }}
+                        />
+                    </div>
                 </div>
                 <div className="modern-filter-group">
-                    <label>🌙 Turno:</label>
-                    <select value={filterTurno} onChange={e => setFilterTurno(e.target.value)}>
-                        <option value="all">Todos os Turnos</option>
-                        <option value="manha">Manhã</option>
-                        <option value="tarde">Tarde</option>
+                    <label>📅 Mês de Referência:</label>
+                    <select
+                        value={selectedMonth}
+                        onChange={e => setSelectedMonth(e.target.value)}
+                    >
+                        {monthOptions.map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -297,12 +328,12 @@ export default function CaixaPage() {
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                             <div className="form-group">
                                                 <label>Total Crédito (Maquininha)</label>
-                                                <input type="number" step="0.01" value={leituras.credito} onChange={e => setLeituras({ ...leituras, credito: e.target.value })} />
+                                                <MoneyInput value={leituras.credito} onChange={(val) => setLeituras({ ...leituras, credito: val.toString() })} />
                                                 <small style={{ color: '#64748b' }}>Manhã: R$ {fechamentoManha.entradas.credito.toFixed(2)}</small>
                                             </div>
                                             <div className="form-group">
                                                 <label>Total Débito (Maquininha)</label>
-                                                <input type="number" step="0.01" value={leituras.debito} onChange={e => setLeituras({ ...leituras, debito: e.target.value })} />
+                                                <MoneyInput value={leituras.debito} onChange={(val) => setLeituras({ ...leituras, debito: val.toString() })} />
                                                 <small style={{ color: '#64748b' }}>Manhã: R$ {fechamentoManha.entradas.debito.toFixed(2)}</small>
                                             </div>
                                         </div>
@@ -312,14 +343,14 @@ export default function CaixaPage() {
 
                             <div style={{ marginBottom: '1rem', fontWeight: 800, color: '#1e293b', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💵 Entradas do Turno</div>
                             <div className="form-row">
-                                <div className="form-group"><label>Crédito</label><input type="number" step="0.01" value={formData.credito} onChange={e => setFormData({ ...formData, credito: e.target.value })} disabled={calculoMode} /></div>
-                                <div className="form-group"><label>Débito</label><input type="number" step="0.01" value={formData.debito} onChange={e => setFormData({ ...formData, debito: e.target.value })} disabled={calculoMode} /></div>
-                                <div className="form-group"><label>Alimentação</label><input type="number" step="0.01" value={formData.alimentacao} onChange={e => setFormData({ ...formData, alimentacao: e.target.value })} /></div>
+                                <div className="form-group"><label>Crédito</label><MoneyInput value={formData.credito} onChange={(val) => setFormData({ ...formData, credito: val.toString() })} disabled={calculoMode} /></div>
+                                <div className="form-group"><label>Débito</label><MoneyInput value={formData.debito} onChange={(val) => setFormData({ ...formData, debito: val.toString() })} disabled={calculoMode} /></div>
+                                <div className="form-group"><label>Alimentação</label><MoneyInput value={formData.alimentacao} onChange={(val) => setFormData({ ...formData, alimentacao: val.toString() })} /></div>
                             </div>
                             <div className="form-row">
-                                <div className="form-group"><label>Dinheiro</label><input type="number" step="0.01" value={formData.dinheiro} onChange={e => setFormData({ ...formData, dinheiro: e.target.value })} /></div>
-                                <div className="form-group"><label>PIX</label><input type="number" step="0.01" value={formData.pix} onChange={e => setFormData({ ...formData, pix: e.target.value })} /></div>
-                                <div className="form-group"><label>Saídas</label><input type="number" step="0.01" value={formData.saidas} onChange={e => setFormData({ ...formData, saidas: e.target.value })} /></div>
+                                <div className="form-group"><label>Dinheiro</label><MoneyInput value={formData.dinheiro} onChange={(val) => setFormData({ ...formData, dinheiro: val.toString() })} /></div>
+                                <div className="form-group"><label>PIX</label><MoneyInput value={formData.pix} onChange={(val) => setFormData({ ...formData, pix: val.toString() })} /></div>
+                                <div className="form-group"><label>Saídas</label><MoneyInput value={formData.saidas} onChange={(val) => setFormData({ ...formData, saidas: val.toString() })} /></div>
                             </div>
 
                             <div className="form-group">

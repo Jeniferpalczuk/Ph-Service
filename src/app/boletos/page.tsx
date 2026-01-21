@@ -2,8 +2,10 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Boleto, PaymentStatus } from '@/types';
+import { PaymentStatus } from '@/types'; // Fixed import if needed, checking existing.
+import { Boleto } from '@/types'; // Separated for clarity or keep existing
 import { useAuth } from '@/context/AuthContext';
+import { MoneyInput } from '@/components/MoneyInput';
 import '../shared-modern.css';
 
 export default function BoletosPage() {
@@ -14,6 +16,11 @@ export default function BoletosPage() {
     const [showNotification, setShowNotification] = useState(true);
 
     // Filter States
+    // Filter States
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
     const [filterCliente, setFilterCliente] = useState('');
     const [filterBanco, setFilterBanco] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
@@ -184,16 +191,35 @@ export default function BoletosPage() {
 
     const bancos = useMemo(() => Array.from(new Set(boletos.map(b => b.banco))), [boletos]);
 
+    // Gerar meses para seleção
+    const monthOptions = useMemo(() => {
+        const months = [];
+        const now = new Date();
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            months.push({
+                value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                label: d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+            });
+        }
+        return months;
+    }, []);
+
     const filteredBoletos = useMemo(() => {
         return boletos
             .filter(b => {
+                const d = new Date(b.dataVencimento);
+                const boletoMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+                const matchesMonth = boletoMonth === selectedMonth;
                 const matchesCliente = b.cliente.toLowerCase().includes(filterCliente.toLowerCase());
                 const matchesBanco = filterBanco === 'all' || b.banco === filterBanco;
                 const matchesStatus = filterStatus === 'all' || b.statusPagamento === filterStatus;
                 const matchesSearch = b.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     b.banco.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     (b.observacoes || '').toLowerCase().includes(searchTerm.toLowerCase());
-                return matchesCliente && matchesBanco && matchesStatus && matchesSearch;
+
+                return matchesMonth && matchesCliente && matchesBanco && matchesStatus && matchesSearch;
             })
             .sort((a, b) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime());
     }, [boletos, filterCliente, filterBanco, filterStatus, searchTerm]);
@@ -326,7 +352,7 @@ export default function BoletosPage() {
                         <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
                         <input
                             type="text"
-                            placeholder="Pesquisar cliente, banco, observações..."
+                            placeholder="Buscar boletos..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             style={{ paddingLeft: '40px' }}
@@ -334,19 +360,14 @@ export default function BoletosPage() {
                     </div>
                 </div>
                 <div className="modern-filter-group">
-                    <label>🏦 Banco:</label>
-                    <select value={filterBanco} onChange={e => setFilterBanco(e.target.value)}>
-                        <option value="all">Todos os Bancos</option>
-                        {bancos.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                </div>
-                <div className="modern-filter-group">
-                    <label>🔄 Status:</label>
-                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                        <option value="all">Status: Todos</option>
-                        <option value="pago">Pago</option>
-                        <option value="pendente">Pendente</option>
-                        <option value="vencido">Vencido</option>
+                    <label>📅 Mês de Referência:</label>
+                    <select
+                        value={selectedMonth}
+                        onChange={e => setSelectedMonth(e.target.value)}
+                    >
+                        {monthOptions.map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -541,12 +562,10 @@ export default function BoletosPage() {
                                     </label>
                                     <div style={{ position: 'relative' }}>
                                         <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontWeight: 600 }}>R$</span>
-                                        <input
-                                            type="number"
-                                            step="0.01"
+                                        <MoneyInput
                                             required
                                             value={formData.valor}
-                                            onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                                            onChange={(val) => setFormData({ ...formData, valor: val.toString() })}
                                             placeholder="0,00"
                                             style={{
                                                 width: '100%',

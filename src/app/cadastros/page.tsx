@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Funcionario, Cliente, Fornecedor } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { MoneyInput } from '@/components/MoneyInput';
 import './cadastros.css';
 
 export default function CadastrosPage() {
@@ -303,7 +304,11 @@ export default function CadastrosPage() {
                                         <label>Salário Base</label>
                                         <div style={{ position: 'relative' }}>
                                             <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#94a3b8' }}>R$</span>
-                                            <input type="number" step="0.01" min="0" value={funcData.salarioBase} onChange={e => setFuncData({ ...funcData, salarioBase: e.target.value })} style={{ paddingLeft: '2.5rem', color: '#10b981', fontWeight: 700 }} />
+                                            <MoneyInput
+                                                value={funcData.salarioBase}
+                                                onChange={(val) => setFuncData({ ...funcData, salarioBase: val.toString() })}
+                                                style={{ paddingLeft: '2.5rem', color: '#10b981', fontWeight: 700 }}
+                                            />
                                         </div>
                                     </div>
                                 </div>
