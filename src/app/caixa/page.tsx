@@ -289,80 +289,82 @@ export default function CaixaPage() {
                             <button className="modal-close" onClick={resetForm}>✕</button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="modal-form">
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Data *</label>
-                                    <input type="date" required value={formData.data} onChange={e => setFormData({ ...formData, data: e.target.value })} />
+                        <div className="modal-body">
+                            <form onSubmit={handleSubmit}>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Data *</label>
+                                        <input type="date" required value={formData.data} onChange={e => setFormData({ ...formData, data: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Turno *</label>
+                                        <select value={formData.turno} onChange={e => { setFormData({ ...formData, turno: e.target.value as any }); setCalculoMode(false); }} disabled={!!editingItem}>
+                                            <option value="manha">Manhã</option>
+                                            <option value="tarde">Tarde</option>
+                                        </select>
+                                    </div>
                                 </div>
+
                                 <div className="form-group">
-                                    <label>Turno *</label>
-                                    <select value={formData.turno} onChange={e => { setFormData({ ...formData, turno: e.target.value as any }); setCalculoMode(false); }} disabled={!!editingItem}>
-                                        <option value="manha">Manhã</option>
-                                        <option value="tarde">Tarde</option>
+                                    <label>Funcionário *</label>
+                                    <select required value={formData.funcionario} onChange={e => setFormData({ ...formData, funcionario: e.target.value })}>
+                                        <option value="">Selecione...</option>
+                                        {funcionarios.filter(f => f.ativo).map(f => (
+                                            <option key={f.id} value={f.nome}>{f.nome}</option>
+                                        ))}
                                     </select>
                                 </div>
-                            </div>
 
-                            <div className="form-group">
-                                <label>Funcionário *</label>
-                                <select required value={formData.funcionario} onChange={e => setFormData({ ...formData, funcionario: e.target.value })}>
-                                    <option value="">Selecione...</option>
-                                    {funcionarios.filter(f => f.ativo).map(f => (
-                                        <option key={f.id} value={f.nome}>{f.nome}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {formData.turno === 'tarde' && fechamentoManha && !editingItem && (
-                                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                        <h4 style={{ margin: 0, color: '#0f172a' }}>📊 Calculadora de Turno (T2)</h4>
-                                        <label style={{ fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
-                                            <input type="checkbox" checked={calculoMode} onChange={e => setCalculoMode(e.target.checked)} />
-                                            Cálculo Automático
-                                        </label>
-                                    </div>
-
-                                    {calculoMode && (
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                            <div className="form-group">
-                                                <label>Total Crédito (Maquininha)</label>
-                                                <MoneyInput value={leituras.credito} onChange={(val) => setLeituras({ ...leituras, credito: val.toString() })} />
-                                                <small style={{ color: '#64748b' }}>Manhã: R$ {fechamentoManha.entradas.credito.toFixed(2)}</small>
-                                            </div>
-                                            <div className="form-group">
-                                                <label>Total Débito (Maquininha)</label>
-                                                <MoneyInput value={leituras.debito} onChange={(val) => setLeituras({ ...leituras, debito: val.toString() })} />
-                                                <small style={{ color: '#64748b' }}>Manhã: R$ {fechamentoManha.entradas.debito.toFixed(2)}</small>
-                                            </div>
+                                {formData.turno === 'tarde' && fechamentoManha && !editingItem && (
+                                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                            <h4 style={{ margin: 0, color: '#0f172a' }}>📊 Calculadora de Turno (T2)</h4>
+                                            <label style={{ fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
+                                                <input type="checkbox" checked={calculoMode} onChange={e => setCalculoMode(e.target.checked)} />
+                                                Cálculo Automático
+                                            </label>
                                         </div>
-                                    )}
+
+                                        {calculoMode && (
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                                <div className="form-group">
+                                                    <label>Total Crédito (Maquininha)</label>
+                                                    <MoneyInput value={leituras.credito} onChange={(val) => setLeituras({ ...leituras, credito: val.toString() })} />
+                                                    <small style={{ color: '#64748b' }}>Manhã: R$ {fechamentoManha.entradas.credito.toFixed(2)}</small>
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Total Débito (Maquininha)</label>
+                                                    <MoneyInput value={leituras.debito} onChange={(val) => setLeituras({ ...leituras, debito: val.toString() })} />
+                                                    <small style={{ color: '#64748b' }}>Manhã: R$ {fechamentoManha.entradas.debito.toFixed(2)}</small>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div style={{ marginBottom: '1rem', fontWeight: 800, color: '#1e293b', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💵 Entradas do Turno</div>
+                                <div className="form-row">
+                                    <div className="form-group"><label>Crédito</label><MoneyInput value={formData.credito} onChange={(val) => setFormData({ ...formData, credito: val.toString() })} disabled={calculoMode} /></div>
+                                    <div className="form-group"><label>Débito</label><MoneyInput value={formData.debito} onChange={(val) => setFormData({ ...formData, debito: val.toString() })} disabled={calculoMode} /></div>
+                                    <div className="form-group"><label>Alimentação</label><MoneyInput value={formData.alimentacao} onChange={(val) => setFormData({ ...formData, alimentacao: val.toString() })} /></div>
                                 </div>
-                            )}
+                                <div className="form-row">
+                                    <div className="form-group"><label>Dinheiro</label><MoneyInput value={formData.dinheiro} onChange={(val) => setFormData({ ...formData, dinheiro: val.toString() })} /></div>
+                                    <div className="form-group"><label>PIX</label><MoneyInput value={formData.pix} onChange={(val) => setFormData({ ...formData, pix: val.toString() })} /></div>
+                                    <div className="form-group"><label>Saídas</label><MoneyInput value={formData.saidas} onChange={(val) => setFormData({ ...formData, saidas: val.toString() })} /></div>
+                                </div>
 
-                            <div style={{ marginBottom: '1rem', fontWeight: 800, color: '#1e293b', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💵 Entradas do Turno</div>
-                            <div className="form-row">
-                                <div className="form-group"><label>Crédito</label><MoneyInput value={formData.credito} onChange={(val) => setFormData({ ...formData, credito: val.toString() })} disabled={calculoMode} /></div>
-                                <div className="form-group"><label>Débito</label><MoneyInput value={formData.debito} onChange={(val) => setFormData({ ...formData, debito: val.toString() })} disabled={calculoMode} /></div>
-                                <div className="form-group"><label>Alimentação</label><MoneyInput value={formData.alimentacao} onChange={(val) => setFormData({ ...formData, alimentacao: val.toString() })} /></div>
-                            </div>
-                            <div className="form-row">
-                                <div className="form-group"><label>Dinheiro</label><MoneyInput value={formData.dinheiro} onChange={(val) => setFormData({ ...formData, dinheiro: val.toString() })} /></div>
-                                <div className="form-group"><label>PIX</label><MoneyInput value={formData.pix} onChange={(val) => setFormData({ ...formData, pix: val.toString() })} /></div>
-                                <div className="form-group"><label>Saídas</label><MoneyInput value={formData.saidas} onChange={(val) => setFormData({ ...formData, saidas: val.toString() })} /></div>
-                            </div>
+                                <div className="form-group">
+                                    <label>Observações</label>
+                                    <textarea rows={2} value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} />
+                                </div>
 
-                            <div className="form-group">
-                                <label>Observações</label>
-                                <textarea rows={2} value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} />
-                            </div>
-
-                            <div className="modal-actions">
-                                <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Salvar Fechamento</button>
-                            </div>
-                        </form>
+                                <div className="modal-actions">
+                                    <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
+                                    <button type="submit" className="btn btn-primary">Salvar Fechamento</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

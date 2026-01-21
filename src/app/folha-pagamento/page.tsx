@@ -4,6 +4,8 @@ import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { PagamentoFuncionario, PaymentMethod, PaymentStatus } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { MoneyInput } from '@/components/MoneyInput';
+import '../shared-modern.css';
 import './folha.css';
 
 export default function FolhaPagamentoPage() {
@@ -314,113 +316,114 @@ export default function FolhaPagamentoPage() {
                 <div className="modal-overlay" onClick={resetForm}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>{editingPagamento ? 'Editar Pagamento' : 'Novo Pagamento'}</h2>
+                            <div>
+                                <h2>{editingPagamento ? 'Editar Pagamento' : 'Novo Pagamento'}</h2>
+                            </div>
                             <button className="modal-close" onClick={resetForm}>✕</button>
                         </div>
-                        <form onSubmit={handleSubmit} className="modal-form">
-                            <div className="form-group">
-                                <label>Funcionário *</label>
-                                {funcionarios.length > 0 ? (
-                                    <select
-                                        required
-                                        value={formData.funcionario}
-                                        onChange={(e) => {
-                                            const funcName = e.target.value;
-                                            const selected = funcionarios.find(f => f.nome === funcName);
-                                            const valesTotal = calculateVales(funcName);
-                                            const salarioBase = selected?.salarioBase || 0;
-                                            const diasFalta = formData.faltas ? parseFloat(formData.faltas) : 0;
-                                            const liquido = calculateLiquidoValue(salarioBase, valesTotal, diasFalta);
+                        <div className="modal-body">
+                            <form onSubmit={handleSubmit}>
+                                <div className="form-group">
+                                    <label>Funcionário *</label>
+                                    {funcionarios.length > 0 ? (
+                                        <select
+                                            required
+                                            value={formData.funcionario}
+                                            onChange={(e) => {
+                                                const funcName = e.target.value;
+                                                const selected = funcionarios.find(f => f.nome === funcName);
+                                                const valesTotal = calculateVales(funcName);
+                                                const salarioBase = selected?.salarioBase || 0;
+                                                const diasFalta = formData.faltas ? parseFloat(formData.faltas) : 0;
+                                                const liquido = calculateLiquidoValue(salarioBase, valesTotal, diasFalta);
 
-                                            setFormData({
-                                                ...formData,
-                                                funcionario: funcName,
-                                                cargoFuncao: selected?.cargo || formData.cargoFuncao,
-                                                valor: liquido.toFixed(2)
-                                            });
-                                        }}
-                                    >
-                                        <option value="">Selecione...</option>
-                                        {funcionarios.filter(f => f.ativo).map(f => (
-                                            <option key={f.id} value={f.nome}>{f.nome}</option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.funcionario}
-                                        onChange={(e) => setFormData({ ...formData, funcionario: e.target.value })}
-                                        placeholder="Nome do funcionário"
-                                    />
+                                                setFormData({
+                                                    ...formData,
+                                                    funcionario: funcName,
+                                                    cargoFuncao: selected?.cargo || formData.cargoFuncao,
+                                                    valor: liquido.toFixed(2)
+                                                });
+                                            }}
+                                        >
+                                            <option value="">Selecione...</option>
+                                            {funcionarios.filter(f => f.ativo).map(f => (
+                                                <option key={f.id} value={f.nome}>{f.nome}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            required
+                                            value={formData.funcionario}
+                                            onChange={(e) => setFormData({ ...formData, funcionario: e.target.value })}
+                                            placeholder="Nome do funcionário"
+                                        />
+                                    )}
+                                </div>
+
+                                {valesPendentes > 0 && (
+                                    <div style={{ background: '#fff7ed', padding: '10px', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #fdba74', color: '#c2410c', fontSize: '0.85rem' }}>
+                                        ⚠️ Funcionário tem <b>R$ {valesPendentes.toFixed(2)}</b> em vales pendentes.<br />
+                                        O valor líquido sugerido já aplica o desconto automaticamente.
+                                    </div>
                                 )}
-                            </div>
 
-                            {valesPendentes > 0 && (
-                                <div style={{ background: '#fff7ed', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #fdba74', color: '#c2410c', fontSize: '0.85rem' }}>
-                                    ⚠️ Funcionário tem <b>R$ {valesPendentes.toFixed(2)}</b> em vales pendentes.<br />
-                                    O valor líquido sugerido já aplica o desconto automaticamente.
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Cargo</label>
+                                        <input required value={formData.cargoFuncao} onChange={(e) => setFormData({ ...formData, cargoFuncao: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Faltas (Dias)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.5"
+                                            value={formData.faltas}
+                                            onChange={(e) => {
+                                                const dias = parseFloat(e.target.value) || 0;
+                                                const selected = funcionarios.find(f => f.nome === formData.funcionario);
+                                                const salarioBase = selected?.salarioBase || 0;
+                                                const liquido = calculateLiquidoValue(salarioBase, valesPendentes, dias);
+                                                setFormData({
+                                                    ...formData,
+                                                    faltas: e.target.value,
+                                                    valor: liquido.toFixed(2)
+                                                });
+                                            }}
+                                            placeholder="0"
+                                        />
+                                    </div>
                                 </div>
-                            )}
 
-                            <div className="form-row">
                                 <div className="form-group">
-                                    <label>Cargo</label>
-                                    <input required value={formData.cargoFuncao} onChange={(e) => setFormData({ ...formData, cargoFuncao: e.target.value })} />
-                                </div>
-                                <div className="form-group">
-                                    <label>Faltas (Dias)</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.5"
-                                        value={formData.faltas}
-                                        onChange={(e) => {
-                                            const dias = parseFloat(e.target.value) || 0;
-                                            const selected = funcionarios.find(f => f.nome === formData.funcionario);
-                                            const salarioBase = selected?.salarioBase || 0;
-                                            const liquido = calculateLiquidoValue(salarioBase, valesPendentes, dias);
-                                            setFormData({
-                                                ...formData,
-                                                faltas: e.target.value,
-                                                valor: liquido.toFixed(2)
-                                            });
-                                        }}
-                                        placeholder="0"
+                                    <label>Valor Líquido (R$) *</label>
+                                    <MoneyInput
+                                        value={formData.valor}
+                                        onChange={(val) => setFormData({ ...formData, valor: val.toString() })}
+                                        required
                                     />
                                 </div>
-                            </div>
 
-                            <div className="form-group">
-                                <label>Valor Líquido (R$) *</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    required
-                                    value={formData.valor}
-                                    onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Data</label>
-                                    <input type="date" required value={formData.dataPagamento} onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })} />
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Data</label>
+                                        <input type="date" required value={formData.dataPagamento} onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Status</label>
+                                        <select required value={formData.statusPagamento} onChange={(e) => setFormData({ ...formData, statusPagamento: e.target.value as PaymentStatus })}>
+                                            <option value="pendente">Pendente</option>
+                                            <option value="pago">Pago (Baixa Automática de Vales)</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label>Status</label>
-                                    <select required value={formData.statusPagamento} onChange={(e) => setFormData({ ...formData, statusPagamento: e.target.value as PaymentStatus })}>
-                                        <option value="pendente">Pendente</option>
-                                        <option value="pago">Pago (Baixa Automática de Vales)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="modal-actions">
-                                <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">{editingPagamento ? 'Atualizar Pagamento' : 'Salvar Pagamento'}</button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
+                        <div className="modal-actions">
+                            <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
+                            <button type="button" className="btn btn-primary" onClick={handleSubmit}>{editingPagamento ? 'Atualizar Pagamento' : 'Salvar Pagamento'}</button>
+                        </div>
                     </div>
                 </div>
             )}
