@@ -1,17 +1,40 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useApp } from '@/context/AppContext';
-import { Saida, ExpenseCategory, PaymentMethod } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { Saida, ExpenseCategory, PaymentMethod } from '@/types';
+import {
+    useSaidasList,
+    useCreateSaida,
+    useUpdateSaida,
+    useDeleteSaida,
+    useSaidasTotal
+} from '@/hooks/financeiro/useSaidas';
+import { useFornecedoresList } from '@/hooks/cadastros/useFornecedores';
 import { MoneyInput } from '@/components/MoneyInput';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import { toast } from 'react-hot-toast';
+import {
+    LuPlus,
+    LuTrendingDown,
+    LuPencil,
+    LuTrash2,
+    LuX
+} from 'react-icons/lu';
 import '../shared-modern.css';
 
+/**
+ * SaidasPage - Fase 5 (Advanced Features)
+ * 
+ * Implementado CRUD completo via Server Actions + React Query.
+ */
 export default function SaidasPage() {
     const { user } = useAuth();
-    const { saidas, addSaida, updateSaida, deleteSaida, fornecedores } = useApp();
-    const [showModal, setShowModal] = useState(false);
-    const [editingSaida, setEditingSaida] = useState<Saida | null>(null);
+
+    // Hooks de Saídas
+    const createSaidaMutation = useCreateSaida();
+    const updateSaidaMutation = useUpdateSaida();
+    const deleteSaidaMutation = useDeleteSaida();
 
     // Filter States
     const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -19,7 +42,30 @@ export default function SaidasPage() {
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterCategory, setFilterCategory] = useState('all');
+    const [page, setPage] = useState(1);
+
+    // Fetch Saidas via React Query
+    const lastDay = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate().toString().padStart(2, '0');
+
+    const { data: saidasData, isLoading: isLoadingSaidas } = useSaidasList({
+        page,
+        search: searchTerm,
+        startDate: `${selectedMonth}-01`,
+        endDate: `${selectedMonth}-${lastDay}`,
+    });
+
+    const saidas = saidasData?.data ?? [];
+    const totalPages = saidasData?.totalPages ?? 1;
+
+    // Fetch Totais
+    const { data: totalSaidasVal } = useSaidasTotal(`${selectedMonth}-01`, `${selectedMonth}-${lastDay}`);
+
+    // Fetch Fornecedores
+    const { data: fornecedoresData } = useFornecedoresList({ pageSize: 1000 });
+    const fornecedores = fornecedoresData?.data ?? [];
+
+    const [showModal, setShowModal] = useState(false);
+    const [editingSaida, setEditingSaida] = useState<Saida | null>(null);
 
     const [formData, setFormData] = useState({
         descricao: '',
@@ -46,66 +92,76 @@ export default function SaidasPage() {
         'Outros': 'outros'
     };
 
-    const categorias = Object.keys(CATEGORY_MAP);
     const pagamentos: PaymentMethod[] = ['dinheiro', 'pix', 'cartao_credito', 'cartao_debito', 'boleto', 'transferencia'];
 
     const resetForm = () => {
-        setFormData(prev => ({
-            ...prev,
+        setFormData({
             descricao: '',
             valor: '',
+            data: new Date().toISOString().split('T')[0],
+            categoria: 'outros',
+            formaPagamento: 'dinheiro',
             fornecedor: '',
             observacoes: '',
-        }));
+        });
         setEditingSaida(null);
         setShowModal(false);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const [y, m, d] = formData.data.split('-').map(Number);
-        const dataAjustada = new Date(y, m - 1, d, 12, 0, 0);
-
-        const saidaData = {
-            descricao: formData.descricao,
-            valor: parseFloat(formData.valor),
-            data: dataAjustada,
-            categoria: formData.categoria,
-            formaPagamento: formData.formaPagamento,
-            fornecedor: formData.fornecedor || undefined,
-            observacoes: formData.observacoes || undefined,
-            anexos: []
-        };
-
-        if (editingSaida) {
-            updateSaida(editingSaida.id, saidaData);
-        } else {
-            addSaida(saidaData);
-        }
-        resetForm();
-    };
-
-    const handleEdit = (saida: Saida) => {
+    const handleEditOpen = (saida: Saida) => {
         setEditingSaida(saida);
         setFormData({
             descricao: saida.descricao,
             valor: saida.valor.toString(),
             data: new Date(saida.data).toISOString().split('T')[0],
-            categoria: saida.categoria as ExpenseCategory,
-            formaPagamento: saida.formaPagamento as PaymentMethod,
+            categoria: saida.categoria,
+            formaPagamento: saida.formaPagamento,
             fornecedor: saida.fornecedor || '',
             observacoes: saida.observacoes || '',
         });
         setShowModal(true);
     };
 
-    const handleDelete = (id: string) => {
-        if (confirm('Tem certeza que deseja excluir esta saída?')) {
-            deleteSaida(id);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            const [y, m, d] = formData.data.split('-').map(Number);
+            const dataAjustada = new Date(y, m - 1, d, 12, 0, 0);
+
+            const payload = {
+                descricao: formData.descricao,
+                valor: parseFloat(formData.valor),
+                data: dataAjustada,
+                categoria: formData.categoria,
+                metodoPagamento: formData.formaPagamento,
+                observacoes: formData.observacoes || null,
+            };
+
+            if (editingSaida) {
+                await updateSaidaMutation.mutateAsync({ id: editingSaida.id, updates: payload });
+                toast.success('Saída atualizada!');
+            } else {
+                await createSaidaMutation.mutateAsync(payload);
+                toast.success('Saída registrada!');
+            }
+            resetForm();
+        } catch (err) {
+            toast.error('Erro ao processar solicitação.');
         }
     };
 
-    // Gerar meses para seleção
+    const handleDelete = async (id: string) => {
+        if (confirm('Excluir esta despesa?')) {
+            try {
+                await deleteSaidaMutation.mutateAsync(id);
+                toast.success('Excluída com sucesso');
+            } catch (err) {
+                toast.error('Erro ao excluir');
+            }
+        }
+    };
+
     const monthOptions = useMemo(() => {
         const months = [];
         const now = new Date();
@@ -119,65 +175,34 @@ export default function SaidasPage() {
         return months;
     }, []);
 
-    const filteredSaidas = useMemo(() => {
-        return saidas.filter(s => {
-            const d = new Date(s.data);
-            const saidaMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const matchesMonth = saidaMonth === selectedMonth;
-
-            const matchesSearch = s.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (s.fornecedor?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-            const matchesCategory = filterCategory === 'all' || s.categoria === filterCategory;
-            return matchesMonth && matchesSearch && matchesCategory;
-        }).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-    }, [saidas, searchTerm, filterCategory, selectedMonth]);
-
-    const totalSaidas = filteredSaidas.reduce((sum, s) => sum + s.valor, 0);
-
     return (
         <div className="modern-page">
             <div className="modern-header">
-                <div className="modern-header-info">
-                    <div className="modern-header-subtitle">Gestão de Despesas</div>
-                    <div className="modern-header-title">
-                        {totalSaidas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </div>
+                <div>
+                    <div className="modern-header-subtitle">Financeiro</div>
+                    <div className="modern-header-title">Controle de Saídas</div>
                     <div className="modern-header-badges">
                         <div className="modern-badge-summary danger">
-                            <span>💸</span> {filteredSaidas.length} lançamentos
+                            <LuTrendingDown size={16} /> Total: {totalSaidasVal?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'R$ 0,00'}
                         </div>
-                        {(searchTerm || filterCategory !== 'all') && (
-                            <button className="modern-badge-summary neutral" onClick={() => { setSearchTerm(''); setFilterCategory('all'); }} style={{ border: 'none', cursor: 'pointer' }}>
-                                🧹 Limpar Filtros
-                            </button>
-                        )}
                     </div>
                 </div>
-                <button className="btn-modern-primary" onClick={() => setShowModal(true)}>
-                    <span>+</span> Nova Saída
-                </button>
+                <button className="btn-modern-primary" onClick={() => setShowModal(true)}><LuPlus size={18} /> Nova Saída</button>
             </div>
 
             <div className="modern-filters-container">
                 <div className="modern-filter-group" style={{ flex: 2 }}>
-                    <label>🔍 Buscar:</label>
-                    <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
-                        <input
-                            type="text"
-                            placeholder="Descrição ou fornecedor..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            style={{ paddingLeft: '40px' }}
-                        />
-                    </div>
+                    <label>Buscar:</label>
+                    <input
+                        type="text"
+                        placeholder="Descrição ou fornecedor..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
                 </div>
                 <div className="modern-filter-group">
-                    <label>📅 Mês de Referência:</label>
-                    <select
-                        value={selectedMonth}
-                        onChange={e => setSelectedMonth(e.target.value)}
-                    >
+                    <label>Mês:</label>
+                    <select value={selectedMonth} onChange={e => { setSelectedMonth(e.target.value); setPage(1); }}>
                         {monthOptions.map(m => (
                             <option key={m.value} value={m.value}>{m.label}</option>
                         ))}
@@ -185,218 +210,101 @@ export default function SaidasPage() {
                 </div>
             </div>
 
-            <div className="modern-table-container">
-                <table className="modern-table">
-                    <thead>
-                        <tr>
-                            <th>DATA</th>
-                            <th>DESCRIÇÃO / FORNECEDOR</th>
-                            <th>CATEGORIA</th>
-                            <th>FORMA</th>
-                            <th>VALOR</th>
-                            <th style={{ textAlign: 'right' }}>AÇÕES</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredSaidas.length === 0 ? (
-                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Nenhuma saída registrada.</td></tr>
-                        ) : (
-                            filteredSaidas.map(saida => (
-                                <tr key={saida.id}>
-                                    <td>{new Date(saida.data).toLocaleDateString('pt-BR')}</td>
-                                    <td>
-                                        <div className="col-highlight">{saida.descricao}</div>
-                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{saida.fornecedor || '-'}</div>
-                                    </td>
-                                    <td>
-                                        <span className="modern-status-badge neutral" style={{ textTransform: 'capitalize' }}>{saida.categoria}</span>
-                                    </td>
-                                    <td style={{ textTransform: 'capitalize' }}>{saida.formaPagamento.replace('_', ' ')}</td>
-                                    <td className="col-money-negative">{saida.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                    <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                        <button className="btn-modern-icon" onClick={() => handleEdit(saida)}>✏️</button>
-                                        <button className="btn-modern-icon" onClick={() => handleDelete(saida.id)}>🗑️</button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-                <div className="modern-footer">
-                    <div className="modern-footer-totals">
-                        <div className="modern-total-item">Total do Período: <b className="red">{totalSaidas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></div>
+            <div className="modern-table-container card" style={{ padding: '0' }}>
+                {isLoadingSaidas ? (
+                    <div style={{ padding: '2rem' }}>
+                        <TableSkeleton rows={8} cols={6} />
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <table className="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>DATA</th>
+                                    <th>DESCRIÇÃO / FORNECEDOR</th>
+                                    <th>CATEGORIA</th>
+                                    <th>FORMA</th>
+                                    <th>VALOR</th>
+                                    <th style={{ textAlign: 'right' }}>AÇÕES</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {saidas.length === 0 ? (
+                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '3rem' }}>Nenhuma saída registrada.</td></tr>
+                                ) : (
+                                    saidas.map(saida => (
+                                        <tr key={saida.id}>
+                                            <td>{new Date(saida.data).toLocaleDateString('pt-BR')}</td>
+                                            <td>
+                                                <div className="col-highlight">{saida.descricao}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{saida.fornecedor || '-'}</div>
+                                            </td>
+                                            <td><span className="status-badge neutral">{saida.categoria}</span></td>
+                                            <td style={{ textTransform: 'capitalize' }}>{saida.formaPagamento?.replace('_', ' ')}</td>
+                                            <td className="col-money-negative">{saida.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    <button className="btn-modern-icon" onClick={() => handleEditOpen(saida)} title="Editar"><LuPencil size={16} /></button>
+                                                    <button className="btn-modern-icon" onClick={() => handleDelete(saida.id)} title="Excluir"><LuTrash2 size={16} /></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                        {totalPages > 1 && (
+                            <div className="pagination">
+                                <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
+                                <span>Página {page} de {totalPages}</span>
+                                <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Próxima</button>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
 
             {showModal && (
-                <div className="modal-overlay animate-fade-in" onClick={resetForm} style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(15, 23, 42, 0.4)',
-                    backdropFilter: 'blur(8px)',
-                    zIndex: 1000,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '2rem'
-                }}>
-                    <div className="modal-content animate-scale-in" onClick={e => e.stopPropagation()} style={{
-                        background: '#ffffff',
-                        borderRadius: '24px',
-                        width: '100%',
-                        maxWidth: '650px',
-                        maxHeight: '90vh',
-                        overflowY: 'auto',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        padding: 0
-                    }}>
-                        <div className="modal-header" style={{
-                            padding: '1.5rem 2rem',
-                            borderBottom: '1px solid #f1f5f9',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'linear-gradient(to right, #f8fafc, #ffffff)',
-                            borderTopLeftRadius: '24px',
-                            borderTopRightRadius: '24px',
-                            position: 'sticky',
-                            top: 0,
-                            zIndex: 10,
-                            backdropFilter: 'blur(10px)'
-                        }}>
+                <div className="modal-overlay" onClick={resetForm}>
+                    <div className="modal-content card" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '95%' }}>
+                        <div className="modal-header">
                             <div>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                                    {editingSaida ? 'Editar' : 'Nova'} Saída
-                                </h2>
-                                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>
-                                    Registre uma nova despesa no sistema
-                                </p>
+                                <h2>{editingSaida ? 'Editar Saída' : 'Nova Saída'}</h2>
                             </div>
-                            <button className="btn-modern-icon" onClick={resetForm} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
+                            <button className="btn-close" onClick={resetForm}><LuX size={18} /></button>
                         </div>
-
-                        <form onSubmit={handleSubmit} className="modal-form" style={{ padding: '2rem' }}>
-                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Descrição *</label>
-                                <input
-                                    required
-                                    value={formData.descricao}
-                                    onChange={e => setFormData({ ...formData, descricao: e.target.value })}
-                                    placeholder="Ex: Pagamento Fornecedor X"
-                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
-                                />
-                            </div>
-
-                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Valor *</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#94a3b8' }}>R$</span>
-                                        <MoneyInput
-                                            required
-                                            value={formData.valor}
-                                            onChange={(val) => setFormData({ ...formData, valor: val.toString() })}
-                                            style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700, color: '#ef4444' }}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data *</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={formData.data}
-                                        onChange={e => setFormData({ ...formData, data: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Categoria *</label>
-                                    <select
-                                        value={formData.categoria}
-                                        onChange={e => setFormData({ ...formData, categoria: e.target.value as ExpenseCategory })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
-                                    >
-                                        {Object.entries(CATEGORY_MAP).map(([label, value]) => (
-                                            <option key={value} value={value}>{label}</option>
-                                        ))}
+                        <form onSubmit={handleSubmit} className="modern-form">
+                            <div className="form-group"><label>Descrição *</label><input required value={formData.descricao} onChange={e => setFormData({ ...formData, descricao: e.target.value })} /></div>
+                            <div className="grid-2">
+                                <div className="form-group"><label>Valor *</label><MoneyInput required value={formData.valor} onChange={val => setFormData({ ...formData, valor: val.toString() })} /></div>
+                                <div className="form-group"><label>Data *</label><input type="date" required value={formData.data} onChange={e => setFormData({ ...formData, data: e.target.value })} /></div>
+                                <div className="form-group"><label>Categoria *</label>
+                                    <select value={formData.categoria} onChange={e => setFormData({ ...formData, categoria: e.target.value as any })}>
+                                        {Object.entries(CATEGORY_MAP).map(([l, v]) => <option key={v} value={v}>{l}</option>)}
                                     </select>
                                 </div>
-                                <div className="form-group">
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Forma de Pagamento *</label>
-                                    <select
-                                        value={formData.formaPagamento}
-                                        onChange={e => setFormData({ ...formData, formaPagamento: e.target.value as PaymentMethod })}
-                                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
-                                    >
+                                <div className="form-group"><label>Pagamento *</label>
+                                    <select value={formData.formaPagamento} onChange={e => setFormData({ ...formData, formaPagamento: e.target.value as any })}>
                                         {pagamentos.map(p => <option key={p} value={p}>{p.replace('_', ' ')}</option>)}
                                     </select>
                                 </div>
                             </div>
-
-                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Fornecedor</label>
-                                <input
-                                    list="fornecedores-saidas-list"
-                                    value={formData.fornecedor}
-                                    onChange={e => setFormData({ ...formData, fornecedor: e.target.value })}
-                                    placeholder="Selecione ou digite o nome do fornecedor..."
-                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
-                                />
-                                <datalist id="fornecedores-saidas-list">
-                                    {fornecedores.filter(f => f.ativo).map(f => (
-                                        <option key={f.id} value={f.nome}>{f.nome}</option>
-                                    ))}
-                                </datalist>
-                            </div>
-
-                            <div className="form-group" style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Observações</label>
-                                <textarea
-                                    rows={2}
-                                    value={formData.observacoes}
-                                    onChange={e => setFormData({ ...formData, observacoes: e.target.value })}
-                                    placeholder="Informações adicionais da despesa..."
-                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', resize: 'vertical' }}
-                                />
-                            </div>
-
-                            <div className="modal-actions" style={{
-                                display: 'flex',
-                                gap: '1rem',
-                                padding: '1.5rem 2rem',
-                                background: '#f8fafc',
-                                borderTop: '1px solid #f1f5f9',
-                                margin: '0 -2rem -2rem -2rem'
-                            }}>
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={resetForm}
-                                    style={{ flex: 1, padding: '0.8rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b' }}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                    style={{ flex: 2, padding: '0.8rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.3)' }}
-                                >
-                                    {editingSaida ? 'Atualizar Saída' : 'Salvar Saída'}
+                            <div className="modal-actions" style={{ marginTop: '2rem' }}>
+                                <button type="button" className="btn-secondary" onClick={resetForm}>Cancelar</button>
+                                <button type="submit" className="btn-primary" disabled={createSaidaMutation.isPending || updateSaidaMutation.isPending}>
+                                    {editingSaida ? 'Salvar Alterações' : 'Confirmar Saída'}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+            <style jsx>{`
+                .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; border-top: 1px solid #f1f5f9; }
+                .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+                .col-money-negative { color: #ef4444; font-weight: 700; text-align: right; }
+                .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; background: #f1f5f9; color: #475569; }
+            `}</style>
         </div>
     );
 }

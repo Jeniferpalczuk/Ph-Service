@@ -4,7 +4,9 @@ import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AppProvider } from '@/context/AppContext';
-import Header from '@/components/Header';
+import { QueryProvider } from '@/providers/QueryProvider';
+import Sidebar from '@/components/Sidebar';
+import TopBar from '@/components/TopBar';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, loading } = useAuth();
@@ -39,10 +41,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="app-layout">
-            <Header />
-            <main className="main-content">
-                {children}
-            </main>
+            <Sidebar />
+            <div className="main-container">
+                <TopBar />
+                <main className="main-content">
+                    <div className="content-inner">
+                        {children}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 }
@@ -50,9 +57,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
     return (
         <AuthProvider>
-            <AppProvider>
-                <AuthGuard>{children}</AuthGuard>
-            </AppProvider>
+            <QueryProvider>
+                <AppProvider>
+                    <AuthGuard>{children}</AuthGuard>
+                </AppProvider>
+            </QueryProvider>
         </AuthProvider>
     );
 }
+

@@ -1,148 +1,149 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useApp } from '@/context/AppContext';
-import { FechamentoCaixa } from '@/types';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { FechamentoCaixa } from '@/types';
+import {
+    useCaixaList,
+    useCreateCaixa,
+    useDeleteCaixa,
+    useCaixaSummary
+} from '@/hooks/financeiro/useCaixa';
+import { useFuncionariosList } from '@/hooks/cadastros/useFuncionarios';
 import { MoneyInput } from '@/components/MoneyInput';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import { toast } from 'react-hot-toast';
+import {
+    LuPlus,
+    LuSun,
+    LuMoon,
+    LuPencil,
+    LuTrash2,
+    LuX
+} from 'react-icons/lu';
 import '../shared-modern.css';
 
+/**
+ * CaixaPage - Fase 4 (Performance & UX)
+ * 
+ * Migrada para React Query com Skeletons e Toast.
+ */
 export default function CaixaPage() {
-    const {
-        fechamentosCaixa,
-        addFechamentoCaixa,
-        updateFechamentoCaixa,
-        deleteFechamentoCaixa,
-        funcionarios
-    } = useApp();
     const { user } = useAuth();
 
-    const [showModal, setShowModal] = useState(false);
-    const [editingItem, setEditingItem] = useState<FechamentoCaixa | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    // Hooks do Caixa
+    const createCaixaMutation = useCreateCaixa();
+    const deleteCaixaMutation = useDeleteCaixa();
+
+    // Filter States
     const [selectedMonth, setSelectedMonth] = useState(() => {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
-    const [filterTurno, setFilterTurno] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterTurno, setFilterTurno] = useState<any>('all');
+    const [page, setPage] = useState(1);
 
-    // Form State
+    // Fetch Caixa via React Query
+    const lastDay = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate().toString().padStart(2, '0');
+
+    const { data: caixaData, isLoading: isLoadingCaixa, isError: isErrorCaixa, error: errorCaixa } = useCaixaList({
+        page,
+        search: searchTerm,
+        startDate: `${selectedMonth}-01`,
+        endDate: `${selectedMonth}-${lastDay}`,
+        turno: filterTurno
+    });
+
+    const entries = caixaData?.data ?? [];
+    const totalPages = caixaData?.totalPages ?? 1;
+
+    // Fetch Totais do período
+    const { data: summary } = useCaixaSummary(`${selectedMonth}-01`, `${selectedMonth}-${lastDay}`);
+
+    // Fetch Funcionários
+    const { data: funcionariosData } = useFuncionariosList({ pageSize: 1000 });
+    const employees = funcionariosData?.data ?? [];
+
+    const [showModal, setShowModal] = useState(false);
+    const [editingItem, setEditingItem] = useState<FechamentoCaixa | null>(null);
+
     const [formData, setFormData] = useState({
         data: new Date().toISOString().split('T')[0],
         funcionario: '',
         turno: 'manha' as 'manha' | 'tarde',
         saidas: '',
+        dinheiro: '',
+        pix: '',
         credito: '',
         debito: '',
         alimentacao: '',
-        dinheiro: '',
-        pix: '',
         observacoes: ''
     });
 
-    // Helper State for Tarde Calculation
-    const [calculoMode, setCalculoMode] = useState(false);
-    const [leituras, setLeituras] = useState({
-        credito: '',
-        debito: '',
-        alimentacao: ''
-    });
-
     const resetForm = () => {
-        setFormData(prev => ({
-            ...prev,
+        setFormData({
+            data: new Date().toISOString().split('T')[0],
+            funcionario: '',
             turno: 'manha',
             saidas: '',
+            dinheiro: '',
+            pix: '',
             credito: '',
             debito: '',
             alimentacao: '',
-            dinheiro: '',
-            pix: '',
             observacoes: ''
-        }));
-        setLeituras({ credito: '', debito: '', alimentacao: '' });
-        setCalculoMode(false);
+        });
         setEditingItem(null);
         setShowModal(false);
     };
 
-    const handleEdit = (item: FechamentoCaixa) => {
-        setEditingItem(item);
-        setFormData({
-            data: new Date(item.data).toISOString().split('T')[0],
-            funcionario: item.funcionario,
-            turno: item.turno,
-            saidas: item.saidas > 0 ? item.saidas.toString() : '',
-            credito: item.entradas.credito > 0 ? item.entradas.credito.toString() : '',
-            debito: item.entradas.debito > 0 ? item.entradas.debito.toString() : '',
-            alimentacao: item.entradas.alimentacao > 0 ? item.entradas.alimentacao.toString() : '',
-            dinheiro: item.entradas.dinheiro > 0 ? item.entradas.dinheiro.toString() : '',
-            pix: item.entradas.pix > 0 ? item.entradas.pix.toString() : '',
-            observacoes: item.observacoes || ''
-        });
-        setShowModal(true);
-    };
-
-    const handleDelete = (id: string) => {
-        if (confirm('Tem certeza que deseja excluir este fechamento?')) {
-            deleteFechamentoCaixa(id);
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const [ano, mes, dia] = formData.data.split('-').map(Number);
-        const dataAjustada = new Date(ano, mes - 1, dia, 12, 0, 0);
+        try {
+            const [y, m, d] = formData.data.split('-').map(Number);
+            const dataAjustada = new Date(y, m - 1, d, 12, 0, 0);
 
-        const payload = {
-            data: dataAjustada,
-            funcionario: formData.funcionario,
-            turno: formData.turno,
-            saidas: parseFloat(formData.saidas) || 0,
-            entradas: {
-                credito: parseFloat(formData.credito) || 0,
-                debito: parseFloat(formData.debito) || 0,
-                alimentacao: parseFloat(formData.alimentacao) || 0,
-                dinheiro: parseFloat(formData.dinheiro) || 0,
-                pix: parseFloat(formData.pix) || 0,
-            },
-            observacoes: formData.observacoes
-        };
-
-        if (editingItem) {
-            updateFechamentoCaixa(editingItem.id, payload);
-        } else {
-            addFechamentoCaixa(payload);
-        }
-        resetForm();
-    };
-
-    const fechamentoManha = formData.turno === 'tarde'
-        ? fechamentosCaixa.find(f =>
-            new Date(f.data).toISOString().split('T')[0] === formData.data &&
-            f.turno === 'manha'
-        )
-        : null;
-
-    useEffect(() => {
-        if (formData.turno === 'tarde' && fechamentoManha && calculoMode) {
-            const calcVal = (leitura: string, manhaVal: number) => {
-                const total = parseFloat(leitura) || 0;
-                const diff = total - manhaVal;
-                return diff > 0 ? diff.toFixed(2) : '';
+            const payload = {
+                data: dataAjustada,
+                funcionario: formData.funcionario,
+                turno: formData.turno,
+                entradas: {
+                    dinheiro: parseFloat(formData.dinheiro) || 0,
+                    pix: parseFloat(formData.pix) || 0,
+                    credito: parseFloat(formData.credito) || 0,
+                    debito: parseFloat(formData.debito) || 0,
+                    alimentacao: parseFloat(formData.alimentacao) || 0,
+                },
+                saidas: parseFloat(formData.saidas) || 0,
+                observacoes: formData.observacoes || null
             };
 
-            setFormData(prev => ({
-                ...prev,
-                credito: calcVal(leituras.credito, fechamentoManha.entradas.credito),
-                debito: calcVal(leituras.debito, fechamentoManha.entradas.debito),
-                alimentacao: calcVal(leituras.alimentacao, fechamentoManha.entradas.alimentacao),
-            }));
+            if (editingItem) {
+                toast.error('Edição em breve via Server Action');
+            } else {
+                await createCaixaMutation.mutateAsync(payload);
+                toast.success('Caixa fechado com sucesso!');
+            }
+            resetForm();
+        } catch (err) {
+            toast.error('Erro ao salvar fechamento.');
         }
-    }, [leituras, fechamentoManha, formData.turno, calculoMode]);
+    };
 
-    // Gerar meses para seleção
+    const handleDelete = async (id: string) => {
+        if (confirm('Excluir este fechamento?')) {
+            try {
+                await deleteCaixaMutation.mutateAsync(id);
+                toast.success('Fechamento excluído');
+            } catch (err) {
+                toast.error('Erro ao excluir');
+            }
+        }
+    };
+
+    // Meses
     const monthOptions = useMemo(() => {
         const months = [];
         const now = new Date();
@@ -156,71 +157,44 @@ export default function CaixaPage() {
         return months;
     }, []);
 
-    const filteredItems = useMemo(() => {
-        return fechamentosCaixa.filter(item => {
-            const d = new Date(item.data);
-            const itemMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const matchesMonth = itemMonth === selectedMonth;
-
-            const matchesSearch = item.funcionario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                new Date(item.data).toLocaleDateString().includes(searchTerm) ||
-                item.turno.toLowerCase().includes(searchTerm.toLowerCase()); // Added turno search
-            const matchesTurno = filterTurno === 'all' || item.turno === filterTurno;
-            return matchesMonth && matchesSearch && matchesTurno;
-        }).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-    }, [fechamentosCaixa, searchTerm, filterTurno, selectedMonth]);
-
-    const totalEntradas = filteredItems.reduce((sum, item) => sum + Object.values(item.entradas).reduce((a, b) => a + b, 0), 0);
-    const totalSaidas = filteredItems.reduce((sum, item) => sum + item.saidas, 0);
-    const saldoLiquido = totalEntradas - totalSaidas;
+    const saldoLiquido = (summary?.entradas || 0) - (summary?.saidas || 0);
 
     return (
         <div className="modern-page">
             <div className="modern-header">
-                <div className="modern-header-info">
-                    <div className="modern-header-subtitle">Fechamento de Caixa</div>
-                    <div className="modern-header-title">
-                        R$ {saldoLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </div>
+                <div>
+                    <div className="modern-header-subtitle">Financeiro</div>
+                    <div className="modern-header-title">Fechamento de Caixa</div>
                     <div className="modern-header-badges">
                         <div className="modern-badge-summary success">
-                            <span>📈</span> R$ {totalEntradas.toLocaleString('pt-BR', { minimumFractionDigits: 0 })} entradas
+                            Saldo: {saldoLiquido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </div>
-                        <div className="modern-badge-summary danger">
-                            <span>📉</span> R$ {totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 0 })} saídas
-                        </div>
-                        {(searchTerm || filterTurno !== 'all') && (
-                            <button className="modern-badge-summary neutral" onClick={() => { setSearchTerm(''); setFilterTurno('all'); }} style={{ border: 'none', cursor: 'pointer' }}>
-                                🧹 Limpar Filtros
-                            </button>
-                        )}
                     </div>
                 </div>
-                <button className="btn-modern-primary" onClick={() => setShowModal(true)}>
-                    <span>+</span> Novo Fechamento
-                </button>
+                <button className="btn-modern-primary" onClick={() => setShowModal(true)}><LuPlus size={18} /> Novo Fechamento</button>
             </div>
 
             <div className="modern-filters-container">
                 <div className="modern-filter-group" style={{ flex: 2 }}>
-                    <label>🔍 Buscar:</label>
-                    <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
-                        <input
-                            type="text"
-                            placeholder="Funcionário, data ou turno..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            style={{ paddingLeft: '40px' }}
-                        />
-                    </div>
+                    <label>Buscar:</label>
+                    <input
+                        type="text"
+                        placeholder="Nome do funcionário..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
                 </div>
                 <div className="modern-filter-group">
-                    <label>📅 Mês de Referência:</label>
-                    <select
-                        value={selectedMonth}
-                        onChange={e => setSelectedMonth(e.target.value)}
-                    >
+                    <label>Turno:</label>
+                    <select value={filterTurno} onChange={e => setFilterTurno(e.target.value)}>
+                        <option value="all">Todos</option>
+                        <option value="manha">Manhã</option>
+                        <option value="tarde">Tarde</option>
+                    </select>
+                </div>
+                <div className="modern-filter-group">
+                    <label>Mês:</label>
+                    <select value={selectedMonth} onChange={e => { setSelectedMonth(e.target.value); setPage(1); }}>
                         {monthOptions.map(m => (
                             <option key={m.value} value={m.value}>{m.label}</option>
                         ))}
@@ -228,146 +202,127 @@ export default function CaixaPage() {
                 </div>
             </div>
 
-            <div className="modern-table-container">
-                <table className="modern-table">
-                    <thead>
-                        <tr>
-                            <th>DATA</th>
-                            <th>TURNO</th>
-                            <th>FUNCIONÁRIO</th>
-                            <th>ENTRADAS</th>
-                            <th>SAÍDAS</th>
-                            <th>LÍQUIDO</th>
-                            <th style={{ textAlign: 'right' }}>AÇÕES</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredItems.length === 0 ? (
-                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Nenhum fechamento registrado.</td></tr>
-                        ) : (
-                            filteredItems.map(item => {
-                                const entradasItem = Object.values(item.entradas).reduce((a, b) => a + b, 0);
-                                return (
-                                    <tr key={item.id}>
-                                        <td>{new Date(item.data).toLocaleDateString('pt-BR')}</td>
-                                        <td>
-                                            <span className={`modern-status-badge ${item.turno}`}
-                                                style={{
-                                                    backgroundColor: item.turno === 'manha' ? '#eff6ff' : '#fffbeb',
-                                                    color: item.turno === 'manha' ? '#1e40af' : '#92400e'
-                                                }}>
-                                                {item.turno === 'manha' ? '☀️ Manhã' : '🌙 Tarde'}
-                                            </span>
-                                        </td>
-                                        <td className="col-highlight">{item.funcionario}</td>
-                                        <td className="col-money">R$ {entradasItem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                        <td className="col-money-negative">R$ {item.saidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                        <td className="col-highlight">R$ {(entradasItem - item.saidas).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                        <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                            <button className="btn-modern-icon" onClick={() => handleEdit(item)}>✏️</button>
-                                            <button className="btn-modern-icon" onClick={() => handleDelete(item.id)}>🗑️</button>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                </table>
-                <div className="modern-footer">
-                    <div className="modern-footer-totals">
-                        <div className="modern-total-item">Entradas: <b className="green">R$ {totalEntradas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b></div>
-                        <div className="modern-total-item">Saídas: <b className="red">R$ {totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b></div>
+            <div className="modern-table-container card" style={{ padding: '0' }}>
+                {isLoadingCaixa ? (
+                    <div style={{ padding: '2rem' }}>
+                        <TableSkeleton rows={8} cols={7} />
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <table className="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>DATA</th>
+                                    <th>TURNO</th>
+                                    <th>FUNCIONÁRIO</th>
+                                    <th>ENTRADAS</th>
+                                    <th>SAÍDAS</th>
+                                    <th>LÍQUIDO</th>
+                                    <th style={{ textAlign: 'right' }}>AÇÕES</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {entries.length === 0 ? (
+                                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem' }}>Nenhum fechamento registrado no período.</td></tr>
+                                ) : (
+                                    entries.map(item => {
+                                        const entradasTotal = Object.values(item.entradas).reduce((a, b) => a + b, 0);
+                                        return (
+                                            <tr key={item.id}>
+                                                <td>{item.data.toLocaleDateString('pt-BR')}</td>
+                                                <td>
+                                                    <span className={`status-badge ${item.turno}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                        {item.turno === 'manha' ? <><LuSun size={14} /> Manhã</> : <><LuMoon size={14} /> Tarde</>}
+                                                    </span>
+                                                </td>
+                                                <td className="col-highlight">{item.funcionario}</td>
+                                                <td className="col-money">R$ {entradasTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                                <td className="col-money-negative">R$ {item.saidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                                <td className="col-highlight">R$ {(entradasTotal - item.saidas).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                                <td style={{ textAlign: 'right' }}>
+                                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                        <button className="btn-modern-icon" onClick={() => setShowModal(true)} title="Editar"><LuPencil size={16} /></button>
+                                                        <button className="btn-modern-icon" onClick={() => handleDelete(item.id)} title="Excluir"><LuTrash2 size={16} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+
+                        <div className="pagination">
+                            <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
+                            <span>Página {page} de {totalPages}</span>
+                            <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Próxima</button>
+                        </div>
+                    </>
+                )}
             </div>
 
             {showModal && (
                 <div className="modal-overlay" onClick={resetForm}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '650px' }}>
+                    <div className="modal-content card" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '95%' }}>
                         <div className="modal-header">
-                            <h2>{editingItem ? 'Editar Fechamento' : 'Novo Fechamento'}</h2>
-                            <button className="modal-close" onClick={resetForm}>✕</button>
+                            <div>
+                                <h2>{editingItem ? 'Editar Fechamento' : 'Novo Fechamento'}</h2>
+                            </div>
+                            <button className="btn-close" onClick={resetForm}><LuX size={18} /></button>
                         </div>
 
-                        <div className="modal-body">
-                            <form onSubmit={handleSubmit}>
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label>Data *</label>
-                                        <input type="date" required value={formData.data} onChange={e => setFormData({ ...formData, data: e.target.value })} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Turno *</label>
-                                        <select value={formData.turno} onChange={e => { setFormData({ ...formData, turno: e.target.value as any }); setCalculoMode(false); }} disabled={!!editingItem}>
-                                            <option value="manha">Manhã</option>
-                                            <option value="tarde">Tarde</option>
-                                        </select>
-                                    </div>
-                                </div>
-
+                        <form onSubmit={handleSubmit} className="modern-form">
+                            <div className="grid-2">
                                 <div className="form-group">
-                                    <label>Funcionário *</label>
-                                    <select required value={formData.funcionario} onChange={e => setFormData({ ...formData, funcionario: e.target.value })}>
-                                        <option value="">Selecione...</option>
-                                        {funcionarios.filter(f => f.ativo).map(f => (
-                                            <option key={f.id} value={f.nome}>{f.nome}</option>
-                                        ))}
+                                    <label>Data *</label>
+                                    <input type="date" required value={formData.data} onChange={e => setFormData({ ...formData, data: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Turno *</label>
+                                    <select value={formData.turno} onChange={e => setFormData({ ...formData, turno: e.target.value as any })}>
+                                        <option value="manha">Manhã</option>
+                                        <option value="tarde">Tarde</option>
                                     </select>
                                 </div>
+                            </div>
 
-                                {formData.turno === 'tarde' && fechamentoManha && !editingItem && (
-                                    <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                            <h4 style={{ margin: 0, color: '#0f172a' }}>📊 Calculadora de Turno (T2)</h4>
-                                            <label style={{ fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
-                                                <input type="checkbox" checked={calculoMode} onChange={e => setCalculoMode(e.target.checked)} />
-                                                Cálculo Automático
-                                            </label>
-                                        </div>
+                            <div className="form-group">
+                                <label>Funcionário *</label>
+                                <select required value={formData.funcionario} onChange={e => setFormData({ ...formData, funcionario: e.target.value })}>
+                                    <option value="">Selecione...</option>
+                                    {employees.map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
+                                </select>
+                            </div>
 
-                                        {calculoMode && (
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                                <div className="form-group">
-                                                    <label>Total Crédito (Maquininha)</label>
-                                                    <MoneyInput value={leituras.credito} onChange={(val) => setLeituras({ ...leituras, credito: val.toString() })} />
-                                                    <small style={{ color: '#64748b' }}>Manhã: R$ {fechamentoManha.entradas.credito.toFixed(2)}</small>
-                                                </div>
-                                                <div className="form-group">
-                                                    <label>Total Débito (Maquininha)</label>
-                                                    <MoneyInput value={leituras.debito} onChange={(val) => setLeituras({ ...leituras, debito: val.toString() })} />
-                                                    <small style={{ color: '#64748b' }}>Manhã: R$ {fechamentoManha.entradas.debito.toFixed(2)}</small>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                            <div style={{ marginBottom: '1rem', fontWeight: 700, fontSize: '0.8rem', color: '#64748b' }}>ENTRADAS</div>
+                            <div className="grid-3">
+                                <div className="form-group"><label>Dinheiro</label><MoneyInput value={formData.dinheiro} onChange={v => setFormData({ ...formData, dinheiro: v.toString() })} /></div>
+                                <div className="form-group"><label>Pix</label><MoneyInput value={formData.pix} onChange={v => setFormData({ ...formData, pix: v.toString() })} /></div>
+                                <div className="form-group"><label>Debito</label><MoneyInput value={formData.debito} onChange={v => setFormData({ ...formData, debito: v.toString() })} /></div>
+                                <div className="form-group"><label>Credito</label><MoneyInput value={formData.credito} onChange={v => setFormData({ ...formData, credito: v.toString() })} /></div>
+                                <div className="form-group"><label>Alimentação</label><MoneyInput value={formData.alimentacao} onChange={v => setFormData({ ...formData, alimentacao: v.toString() })} /></div>
+                                <div className="form-group"><label>Saídas</label><MoneyInput value={formData.saidas} onChange={v => setFormData({ ...formData, saidas: v.toString() })} /></div>
+                            </div>
 
-                                <div style={{ marginBottom: '1rem', fontWeight: 800, color: '#1e293b', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💵 Entradas do Turno</div>
-                                <div className="form-row">
-                                    <div className="form-group"><label>Crédito</label><MoneyInput value={formData.credito} onChange={(val) => setFormData({ ...formData, credito: val.toString() })} disabled={calculoMode} /></div>
-                                    <div className="form-group"><label>Débito</label><MoneyInput value={formData.debito} onChange={(val) => setFormData({ ...formData, debito: val.toString() })} disabled={calculoMode} /></div>
-                                    <div className="form-group"><label>Alimentação</label><MoneyInput value={formData.alimentacao} onChange={(val) => setFormData({ ...formData, alimentacao: val.toString() })} /></div>
-                                </div>
-                                <div className="form-row">
-                                    <div className="form-group"><label>Dinheiro</label><MoneyInput value={formData.dinheiro} onChange={(val) => setFormData({ ...formData, dinheiro: val.toString() })} /></div>
-                                    <div className="form-group"><label>PIX</label><MoneyInput value={formData.pix} onChange={(val) => setFormData({ ...formData, pix: val.toString() })} /></div>
-                                    <div className="form-group"><label>Saídas</label><MoneyInput value={formData.saidas} onChange={(val) => setFormData({ ...formData, saidas: val.toString() })} /></div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label>Observações</label>
-                                    <textarea rows={2} value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} />
-                                </div>
-
-                                <div className="modal-actions">
-                                    <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
-                                    <button type="submit" className="btn btn-primary">Salvar Fechamento</button>
-                                </div>
-                            </form>
-                        </div>
+                            <div className="modal-actions" style={{ marginTop: '2rem' }}>
+                                <button type="button" className="btn-secondary" onClick={resetForm}>Cancelar</button>
+                                <button type="submit" className="btn-primary" disabled={createCaixaMutation.isPending}>
+                                    Confirmar Fechamento
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
+
+            <style jsx>{`
+                .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+                .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+                .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; border-top: 1px solid #f1f5f9; }
+                .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+                .status-badge.manha { background: #eff6ff; color: #1e40af; }
+                .status-badge.tarde { background: #fffbeb; color: #92400e; }
+            `}</style>
         </div>
     );
 }

@@ -1,429 +1,269 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useApp } from '@/context/AppContext';
-import { PagamentoFuncionario, PaymentMethod, PaymentStatus } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { PagamentoFuncionario, PaymentMethod, PaymentStatus } from '@/types';
+import {
+    useFolhaPagamentoList,
+    useCreatePagamento,
+    useUpdatePagamento,
+    useDeletePagamento,
+    calcularValorLiquido
+} from '@/hooks/rh/useFolhaPagamento';
+import { useFuncionariosList } from '@/hooks/cadastros/useFuncionarios';
+import { useTotalValesPendentes, useQuitarValesFuncionario } from '@/hooks/rh/useVales';
 import { MoneyInput } from '@/components/MoneyInput';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import { toast } from 'react-hot-toast';
+import {
+    LuPlus,
+    LuPencil,
+    LuTrash2,
+    LuX
+} from 'react-icons/lu';
 import '../shared-modern.css';
 import './folha.css';
 
+/**
+ * FolhaPagamentoPage - Fase 5 (Advanced Features)
+ * 
+ * Migrada para CRUD completo e React Query.
+ */
 export default function FolhaPagamentoPage() {
     const { user } = useAuth();
-    const {
-        folhaPagamento, funcionarios, vales,
-        addPagamentoFuncionario, updatePagamentoFuncionario,
-        deletePagamentoFuncionario, updateVale
-    } = useApp();
+    const createPagamentoMutation = useCreatePagamento();
+    const updatePagamentoMutation = useUpdatePagamento();
+    const deletePagamentoMutation = useDeletePagamento();
 
-    // UI State
+    const [page, setPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+
+    const { data: folhaData, isLoading: isLoadingFolha } = useFolhaPagamentoList({
+        page,
+        search: searchTerm,
+        status: filterStatus as any
+    });
+
+    const folhaItems = folhaData?.data ?? [];
+    const totalPages = folhaData?.totalPages ?? 1;
+
+    const { data: funcionariosData } = useFuncionariosList({ pageSize: 1000 });
+    const employees = funcionariosData?.data ?? [];
+
     const [showModal, setShowModal] = useState(false);
-    const [editingPagamento, setEditingPagamento] = useState<PagamentoFuncionario | null>(null);
-    const [perPage, setPerPage] = useState(10);
-    const [currentPage, setCurrentPage] = useState(1);
-
-    // Filter States
-    const [filterPeriodo, setFilterPeriodo] = useState('all');
-    const [filterFuncionario, setFilterFuncionario] = useState('');
-    const [filterCargo, setFilterCargo] = useState('all');
-    const [filterStatus, setFilterStatus] = useState('all');
+    const [editingItem, setEditingItem] = useState<PagamentoFuncionario | null>(null);
 
     const [formData, setFormData] = useState({
         funcionario: '',
-        cargoFuncao: '',
-        valor: '',
-        formaPagamento: 'dinheiro' as PaymentMethod,
-        statusPagamento: 'pendente' as PaymentStatus,
+        cargo: '',
+        salarioBase: '',
         dataPagamento: new Date().toISOString().split('T')[0],
-        observacoes: '',
-        faltas: '',
+        periodoReferencia: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+        status: 'pago' as 'pago' | 'pendente' | 'cancelado',
+        faltas: '0',
+        horasExtras: '0',
+        vales: '0',
+        marmitas: '0',
+        outrosDescontos: '0',
+        observacoes: ''
     });
 
-    const [valesPendentes, setValesPendentes] = useState(0);
-
-    const calculateVales = (funcNome: string) => {
-        const total = vales
-            .filter(v => v.funcionario === funcNome && v.status === 'aberto')
-            .reduce((sum, v) => sum + v.valor, 0);
-        setValesPendentes(total);
-        return total;
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const [y, m, d] = formData.dataPagamento.split('-').map(Number);
-        const dataAjustada = new Date(y, m - 1, d, 12, 0, 0);
-
-        const pagamentoData = {
-            funcionario: formData.funcionario,
-            cargoFuncao: formData.cargoFuncao,
-            valor: parseFloat(formData.valor),
-            formaPagamento: formData.formaPagamento,
-            statusPagamento: formData.statusPagamento,
-            dataPagamento: dataAjustada,
-            observacoes: formData.observacoes || undefined,
-            descontos: valesPendentes > 0 ? valesPendentes : (editingPagamento?.descontos || 0),
-            faltas: formData.faltas ? parseFloat(formData.faltas) : 0
-        };
-
-        if (editingPagamento) {
-            updatePagamentoFuncionario(editingPagamento.id, pagamentoData);
-        } else {
-            addPagamentoFuncionario(pagamentoData);
-        }
-
-        if (formData.statusPagamento === 'pago' && valesPendentes > 0) {
-            const valesDoFunc = vales.filter(v => v.funcionario === formData.funcionario && v.status === 'aberto');
-            valesDoFunc.forEach(v => {
-                updateVale(v.id, { status: 'quitado', observacoes: (v.observacoes || '') + ' [Baixa Automática Folha]' });
-            });
-        }
-
-        resetForm();
-    };
+    const { data: valesPendentes } = useTotalValesPendentes(formData.funcionario);
+    const quittingValesMutation = useQuitarValesFuncionario();
 
     const resetForm = () => {
-        setFormData(prev => ({
-            ...prev,
+        setFormData({
             funcionario: '',
-            cargoFuncao: '',
-            valor: '',
-            formaPagamento: 'dinheiro',
-            statusPagamento: 'pendente',
-            observacoes: '',
-            faltas: '',
-        }));
-        setValesPendentes(0);
-        setEditingPagamento(null);
+            cargo: '',
+            salarioBase: '',
+            dataPagamento: new Date().toISOString().split('T')[0],
+            periodoReferencia: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+            status: 'pago',
+            faltas: '0',
+            horasExtras: '0',
+            vales: '0',
+            marmitas: '0',
+            outrosDescontos: '0',
+            observacoes: ''
+        });
+        setEditingItem(null);
         setShowModal(false);
     };
 
-    const handleEdit = (pagamento: PagamentoFuncionario) => {
-        setEditingPagamento(pagamento);
-        calculateVales(pagamento.funcionario);
+    const handleEditOpen = (item: PagamentoFuncionario) => {
+        setEditingItem(item);
         setFormData({
-            funcionario: pagamento.funcionario,
-            cargoFuncao: pagamento.cargoFuncao,
-            valor: pagamento.valor.toString(),
-            formaPagamento: pagamento.formaPagamento,
-            statusPagamento: pagamento.statusPagamento,
-            dataPagamento: new Date(pagamento.dataPagamento).toISOString().split('T')[0],
-            observacoes: pagamento.observacoes || '',
-            faltas: pagamento.faltas ? pagamento.faltas.toString() : '',
+            funcionario: item.funcionario,
+            cargo: item.cargoFuncao || '',
+            salarioBase: item.valor.toString(), // Simplified for now
+            dataPagamento: new Date(item.dataPagamento).toISOString().split('T')[0],
+            periodoReferencia: item.periodoReferencia || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+            status: (item.statusPagamento as any) === 'pago' ? 'pago' : 'pendente',
+            faltas: (item.faltas || 0).toString(),
+            horasExtras: '0',
+            vales: (item.descontos || 0).toString(),
+            marmitas: '0',
+            outrosDescontos: '0',
+            observacoes: item.observacoes || ''
         });
         setShowModal(true);
     };
 
-    const handleDelete = (id: string) => {
-        if (confirm('Tem certeza que deseja excluir este pagamento?')) {
-            deletePagamentoFuncionario(id);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            const [y, m, d] = formData.dataPagamento.split('-').map(Number);
+            const dataAjustada = new Date(y, m - 1, d, 12, 0, 0);
+
+            const vLiquido = parseFloat(formData.salarioBase) - (parseFloat(formData.vales) + parseFloat(formData.marmitas) + parseFloat(formData.outrosDescontos));
+
+            const payload: any = {
+                funcionario: formData.funcionario,
+                cargo: formData.cargo,
+                salarioBase: parseFloat(formData.salarioBase),
+                dataPagamento: dataAjustada,
+                periodoReferencia: formData.periodoReferencia,
+                status: formData.status,
+                faltas: parseFloat(formData.faltas),
+                valorLiquido: vLiquido,
+                vales: parseFloat(formData.vales) || (valesPendentes || 0),
+                marmitas: parseFloat(formData.marmitas),
+                outrosDescontos: parseFloat(formData.outrosDescontos),
+                observacoes: formData.observacoes || null
+            };
+
+            if (editingItem) {
+                await updatePagamentoMutation.mutateAsync({ id: editingItem.id, updates: payload });
+                toast.success('Folha atualizada!');
+            } else {
+                await createPagamentoMutation.mutateAsync(payload);
+                if (formData.status === 'pago' && (valesPendentes || 0) > 0) {
+                    await quittingValesMutation.mutateAsync({
+                        funcionarioNome: formData.funcionario,
+                        observacao: 'Liquidado via Folha'
+                    });
+                }
+                toast.success('Folha registrada!');
+            }
+            resetForm();
+        } catch (err) {
+            toast.error('Erro ao processar folha.');
         }
     };
 
-    // Filtered and Sorted Data
-    const filteredFolha = useMemo(() => {
-        return folhaPagamento
-            .filter(item => {
-                const matchesFunc = item.funcionario.toLowerCase().includes(filterFuncionario.toLowerCase());
-                const matchesCargo = filterCargo === 'all' || item.cargoFuncao === filterCargo;
-                const matchesStatus = filterStatus === 'all' || item.statusPagamento === filterStatus;
-
-                let matchesPeriodo = true;
-                if (filterPeriodo !== 'all') {
-                    const [month, year] = filterPeriodo.split('/');
-                    const itemDate = new Date(item.dataPagamento);
-                    matchesPeriodo = itemDate.getMonth() === parseInt(month) && itemDate.getFullYear() === parseInt(year);
-                }
-
-                return matchesFunc && matchesCargo && matchesStatus && matchesPeriodo;
-            })
-            // Sort by Date Descending (Most recent first)
-            .sort((a, b) => new Date(b.dataPagamento).getTime() - new Date(a.dataPagamento).getTime());
-    }, [folhaPagamento, filterFuncionario, filterCargo, filterStatus, filterPeriodo]);
-
-    const paginatedData = filteredFolha.slice((currentPage - 1) * perPage, currentPage * perPage);
-
-    // Stats
-    const statsTotal = filteredFolha.reduce((sum, p) => sum + p.valor, 0);
-    const statsPagos = filteredFolha.filter(p => p.statusPagamento === 'pago').length;
-    const statsPendentes = filteredFolha.filter(p => p.statusPagamento !== 'pago').length;
-    const totalDescontos = filteredFolha.reduce((sum, p) => sum + (p.descontos || 0), 0);
-
-    const cargos = Array.from(new Set(funcionarios.map(f => f.cargo))).filter(Boolean);
-
-    // Calculate Salary Logic
-    const calculateLiquidoValue = (salarioBase: number, vales: number, diasFalta: number): number => {
-        const valorDia = salarioBase / 30; // Considerando mês comercial de 30 dias
-        const descontoFaltas = valorDia * diasFalta;
-        const liquido = Math.max(0, salarioBase - vales - descontoFaltas);
-        return parseFloat(liquido.toFixed(2));
+    const handleDelete = async (id: string) => {
+        if (confirm('Excluir este pagamento?')) {
+            try {
+                await deletePagamentoMutation.mutateAsync(id);
+                toast.success('Excluído');
+            } catch (err) {
+                toast.error('Erro ao excluir');
+            }
+        }
     };
-
-    // Periodos (Month/Year)
-    const periodos = useMemo(() => {
-        const p = new Set<string>();
-        folhaPagamento.forEach(item => {
-            const date = new Date(item.dataPagamento);
-            const label = `${date.toLocaleString('pt-BR', { month: 'long' })}/${date.getFullYear()}`;
-            const value = `${date.getMonth()}/${date.getFullYear()}`;
-            p.add(JSON.stringify({ label, value }));
-        });
-        return Array.from(p).map(s => JSON.parse(s));
-    }, [folhaPagamento]);
 
     return (
         <div className="folha-page">
             <div className="folha-header">
-                <div className="folha-header-info">
-                    <div className="folha-header-subtitle">
-                        Total da Folha • {filterPeriodo === 'all' ? 'Geral' : periodos.find(p => p.value === filterPeriodo)?.label}
-                    </div>
-                    <div className="folha-header-title">
-                        R$ {statsTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </div>
-                    <div className="folha-header-badges">
-                        <div className="folha-badge-summary pagos">
-                            <span>✅</span> {statsPagos} pagos
-                        </div>
-                        <div className="folha-badge-summary pendentes">
-                            <span>🕒</span> {statsPendentes} pendente
-                        </div>
-                        <div className="folha-badge-summary descontos">
-                            <span>💳</span> R$ {totalDescontos.toLocaleString('pt-BR', { minimumFractionDigits: 0 })} em descontos
-                        </div>
-                        {(filterFuncionario || filterCargo !== 'all' || filterStatus !== 'all' || filterPeriodo !== 'all') && (
-                            <button className="folha-badge-summary" style={{ background: '#f1f5f9', color: '#64748b', border: 'none', cursor: 'pointer' }}
-                                onClick={() => {
-                                    setFilterFuncionario('');
-                                    setFilterCargo('all');
-                                    setFilterStatus('all');
-                                    setFilterPeriodo('all');
-                                }}>
-                                🧹 Limpar Filtros
-                            </button>
-                        )}
-                    </div>
+                <div>
+                    <div className="folha-header-subtitle">Gestão de RH</div>
+                    <div className="folha-header-title">Folha de Pagamento</div>
                 </div>
-                <button className="btn-novo-pagamento" onClick={() => setShowModal(true)}>
-                    <span>+</span> Novo Pagamento
-                </button>
+                <button className="btn-modern-primary" onClick={() => setShowModal(true)}><LuPlus size={18} /> Novo Pagamento</button>
             </div>
 
             <div className="folha-filters-container">
-                <div className="filter-group">
-                    <label>📅 Período:</label>
-                    <select value={filterPeriodo} onChange={e => setFilterPeriodo(e.target.value)}>
-                        <option value="all">Todos os Períodos</option>
-                        {periodos.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                    </select>
+                <div className="filter-group" style={{ flex: 2 }}>
+                    <label>Buscar:</label>
+                    <input type="text" placeholder="Nome do colaborador..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 </div>
                 <div className="filter-group">
-                    <label>👤 Funcionário:</label>
-                    <input
-                        type="text"
-                        placeholder="Pesquisar funcionário..."
-                        value={filterFuncionario}
-                        onChange={e => setFilterFuncionario(e.target.value)}
-                    />
-                </div>
-                <div className="filter-group">
-                    <label>💼 Cargo:</label>
-                    <select value={filterCargo} onChange={e => setFilterCargo(e.target.value)}>
-                        <option value="all">Todos os Cargos</option>
-                        {cargos.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                </div>
-                <div className="filter-group">
-                    <label>🔄 Status:</label>
+                    <label>Status:</label>
                     <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                        <option value="all">Status: Todos</option>
-                        <option value="pago">Pago</option>
-                        <option value="pendente">Pendente</option>
+                        <option value="all">Todos</option>
+                        <option value="pago">Pagos</option>
+                        <option value="pendente">Pendentes</option>
                     </select>
                 </div>
             </div>
 
-            <div className="folha-table-container">
-                <table className="folha-modern-table">
-                    <thead>
-                        <tr>
-                            <th>DATA</th>
-                            <th>FUNCIONÁRIO</th>
-                            <th>CARGO</th>
-                            <th>VALOR LÍQUIDO</th>
-                            <th>DESCONTOS</th>
-                            <th>STATUS</th>
-                            <th className="text-right">AÇÕES</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paginatedData.length === 0 ? (
-                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Nenhum pagamento encontrado para os filtros selecionados.</td></tr>
-                        ) : (
-                            paginatedData.map((item) => (
-                                <tr key={item.id}>
-                                    <td>{new Date(item.dataPagamento).toLocaleDateString('pt-BR')}</td>
-                                    <td className="col-funcionario">{item.funcionario}</td>
-                                    <td>{item.cargoFuncao}</td>
-                                    <td className="col-valor">R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                    <td className="col-descontos">
-                                        <div>R$ {(item.descontos || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                                        {item.faltas && item.faltas > 0 && (
-                                            <div style={{ fontSize: '0.75rem', color: '#dc2626' }}>
-                                                ({item.faltas} falta{item.faltas > 1 ? 's' : ''})
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <span className={`folha-status-badge ${item.statusPagamento}`}>
-                                            {item.statusPagamento}
-                                        </span>
-                                    </td>
-                                    <td className="text-right" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                        <button className="btn-actions-trigger" onClick={() => handleEdit(item)} title="Editar">✏️</button>
-                                        <button className="btn-actions-trigger" onClick={() => handleDelete(item.id)} title="Excluir">🗑️</button>
-                                    </td>
+            <div className="folha-table-container card">
+                {isLoadingFolha ? <TableSkeleton rows={10} cols={7} /> : (
+                    <>
+                        <table className="folha-modern-table">
+                            <thead>
+                                <tr>
+                                    <th>DATA</th>
+                                    <th>FUNCIONÁRIO</th>
+                                    <th>PERÍODO</th>
+                                    <th>LÍQUIDO</th>
+                                    <th>STATUS</th>
+                                    <th style={{ textAlign: 'right' }}>AÇÕES</th>
                                 </tr>
-                            ))
+                            </thead>
+                            <tbody>
+                                {folhaItems.map(item => (
+                                    <tr key={item.id}>
+                                        <td>{new Date(item.dataPagamento).toLocaleDateString('pt-BR')}</td>
+                                        <td className="col-funcionario">{item.funcionario}</td>
+                                        <td>{item.periodoReferencia}</td>
+                                        <td className="col-valor">R$ {item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                        <td><span className={`status-badge ${item.statusPagamento}`}>{item.statusPagamento}</span></td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button className="btn-modern-icon" onClick={() => handleEditOpen(item)} title="Editar"><LuPencil size={16} /></button>
+                                            <button className="btn-modern-icon" onClick={() => handleDelete(item.id)} title="Excluir"><LuTrash2 size={16} /></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {totalPages > 1 && (
+                            <div className="pagination">
+                                <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
+                                <span>Página {page} de {totalPages}</span>
+                                <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Próxima</button>
+                            </div>
                         )}
-                    </tbody>
-                </table>
-                <div className="folha-footer">
-                    <div className="folha-footer-totals">
-                        <div className="total-item">Total exibido: <b className="green">R$ {statsTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b></div>
-                        <div className="total-item">Descontos: <b className="red">R$ {totalDescontos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b></div>
-                    </div>
-                    <div className="folha-pagination">
-                        <div className="per-page-select">
-                            <select value={perPage} onChange={e => setPerPage(Number(e.target.value))} style={{ border: 'none', background: 'transparent', fontWeight: 700 }}>
-                                <option value={10}>10</option>
-                                <option value={25}>25</option>
-                                <option value={50}>50</option>
-                            </select>
-                            por página
-                        </div>
-                        <div className="pagination-controls">
-                            <button className="btn-page" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}>❮</button>
-                            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>Página {currentPage}</span>
-                            <button className="btn-page" onClick={() => setCurrentPage(prev => prev + 1)}>❯</button>
-                        </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
 
             {showModal && (
                 <div className="modal-overlay" onClick={resetForm}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-content card" onClick={e => e.stopPropagation()} style={{ maxWidth: '650px', width: '95%' }}>
                         <div className="modal-header">
-                            <div>
-                                <h2>{editingPagamento ? 'Editar Pagamento' : 'Novo Pagamento'}</h2>
+                            <div><h2>{editingItem ? 'Editar Folha' : 'Novo Pagamento'}</h2></div>
+                            <button className="btn-close" onClick={resetForm}><LuX size={18} /></button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="modern-form">
+                            <div className="form-group">
+                                <label>Funcionário *</label>
+                                <select required value={formData.funcionario} onChange={e => {
+                                    const f = employees.find(x => x.nome === e.target.value);
+                                    setFormData({ ...formData, funcionario: e.target.value, cargo: f?.cargo || '', salarioBase: (f?.salarioBase || 0).toString() });
+                                }}>
+                                    <option value="">Selecione...</option>
+                                    {employees.filter(f => f.ativo).map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
+                                </select>
                             </div>
-                            <button className="modal-close" onClick={resetForm}>✕</button>
-                        </div>
-                        <div className="modal-body">
-                            <form onSubmit={handleSubmit}>
-                                <div className="form-group">
-                                    <label>Funcionário *</label>
-                                    {funcionarios.length > 0 ? (
-                                        <select
-                                            required
-                                            value={formData.funcionario}
-                                            onChange={(e) => {
-                                                const funcName = e.target.value;
-                                                const selected = funcionarios.find(f => f.nome === funcName);
-                                                const valesTotal = calculateVales(funcName);
-                                                const salarioBase = selected?.salarioBase || 0;
-                                                const diasFalta = formData.faltas ? parseFloat(formData.faltas) : 0;
-                                                const liquido = calculateLiquidoValue(salarioBase, valesTotal, diasFalta);
-
-                                                setFormData({
-                                                    ...formData,
-                                                    funcionario: funcName,
-                                                    cargoFuncao: selected?.cargo || formData.cargoFuncao,
-                                                    valor: liquido.toFixed(2)
-                                                });
-                                            }}
-                                        >
-                                            <option value="">Selecione...</option>
-                                            {funcionarios.filter(f => f.ativo).map(f => (
-                                                <option key={f.id} value={f.nome}>{f.nome}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <input
-                                            type="text"
-                                            required
-                                            value={formData.funcionario}
-                                            onChange={(e) => setFormData({ ...formData, funcionario: e.target.value })}
-                                            placeholder="Nome do funcionário"
-                                        />
-                                    )}
+                            <div className="grid-2">
+                                <div className="form-group"><label>Salário Base *</label><MoneyInput value={formData.salarioBase} onChange={v => setFormData({ ...formData, salarioBase: v.toString() })} /></div>
+                                <div className="form-group"><label>Período (YYYY-MM)</label><input type="month" value={formData.periodoReferencia} onChange={e => setFormData({ ...formData, periodoReferencia: e.target.value })} /></div>
+                                <div className="form-group"><label>Faltas (Dias)</label><input type="number" value={formData.faltas} onChange={e => setFormData({ ...formData, faltas: e.target.value })} /></div>
+                                <div className="form-group"><label>Status</label>
+                                    <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
+                                        <option value="pendente">Pendente</option>
+                                        <option value="pago">Pago</option>
+                                    </select>
                                 </div>
-
-                                {valesPendentes > 0 && (
-                                    <div style={{ background: '#fff7ed', padding: '10px', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #fdba74', color: '#c2410c', fontSize: '0.85rem' }}>
-                                        ⚠️ Funcionário tem <b>R$ {valesPendentes.toFixed(2)}</b> em vales pendentes.<br />
-                                        O valor líquido sugerido já aplica o desconto automaticamente.
-                                    </div>
-                                )}
-
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label>Cargo</label>
-                                        <input required value={formData.cargoFuncao} onChange={(e) => setFormData({ ...formData, cargoFuncao: e.target.value })} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Faltas (Dias)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.5"
-                                            value={formData.faltas}
-                                            onChange={(e) => {
-                                                const dias = parseFloat(e.target.value) || 0;
-                                                const selected = funcionarios.find(f => f.nome === formData.funcionario);
-                                                const salarioBase = selected?.salarioBase || 0;
-                                                const liquido = calculateLiquidoValue(salarioBase, valesPendentes, dias);
-                                                setFormData({
-                                                    ...formData,
-                                                    faltas: e.target.value,
-                                                    valor: liquido.toFixed(2)
-                                                });
-                                            }}
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label>Valor Líquido (R$) *</label>
-                                    <MoneyInput
-                                        value={formData.valor}
-                                        onChange={(val) => setFormData({ ...formData, valor: val.toString() })}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label>Data</label>
-                                        <input type="date" required value={formData.dataPagamento} onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Status</label>
-                                        <select required value={formData.statusPagamento} onChange={(e) => setFormData({ ...formData, statusPagamento: e.target.value as PaymentStatus })}>
-                                            <option value="pendente">Pendente</option>
-                                            <option value="pago">Pago (Baixa Automática de Vales)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div className="modal-actions">
-                            <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancelar</button>
-                            <button type="button" className="btn btn-primary" onClick={handleSubmit}>{editingPagamento ? 'Atualizar Pagamento' : 'Salvar Pagamento'}</button>
-                        </div>
+                            </div>
+                            <div className="modal-actions" style={{ marginTop: '2rem' }}>
+                                <button type="button" className="btn-secondary" onClick={resetForm}>Cancelar</button>
+                                <button type="submit" className="btn-primary" disabled={createPagamentoMutation.isPending || updatePagamentoMutation.isPending}>Confirmar Lançamento</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

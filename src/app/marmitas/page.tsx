@@ -1,14 +1,64 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { Marmita } from '@/types';
+import {
+    useMarmitasList,
+    useCreateMarmita,
+    useCreateMarmitasLote,
+    useUpdateMarmita,
+    useDeleteMarmita
+} from '@/hooks/financeiro/useMarmitas';
+import { TableSkeleton } from '@/components/ui/Skeleton';
+import { toast } from 'react-hot-toast';
+import {
+    LuPlus,
+    LuUtensils,
+    LuPencil,
+    LuTrash2,
+    LuX
+} from 'react-icons/lu';
 import '../shared-modern.css';
 
 export default function MarmitasPage() {
     const { user } = useAuth();
-    const { marmitas, addMarmita, updateMarmita, deleteMarmita } = useApp();
+
+    // Hooks de React Query
+    // Filter States
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
+
+    const createLoteMutation = useCreateMarmitasLote();
+    const updateMutation = useUpdateMarmita();
+    const deleteMutation = useDeleteMarmita();
+
+    // Fetch Marmitas via React Query
+    const lastDay = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate().toString().padStart(2, '0');
+    const { data: marmitasData, isLoading, isError, error } = useMarmitasList({
+        pageSize: 1000,
+        startDate: `${selectedMonth}-01`,
+        endDate: `${selectedMonth}-${lastDay}`
+    });
+
+    // Meses para seleção
+    const monthOptions = useMemo(() => {
+        const months = [];
+        const now = new Date();
+        for (let i = 0; i < 24; i++) { // Go back 2 years
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            months.push({
+                value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                label: d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+            });
+        }
+        return months;
+    }, []);
+
+    const marmitas = marmitasData?.data ?? [];
+
     const [showModal, setShowModal] = useState(false);
 
     // Detalhes do Dia
@@ -62,48 +112,54 @@ export default function MarmitasPage() {
         setFormData(prev);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const [y, m, d] = formData.dataEntrega.split('-').map(Number);
         const dataRef = new Date(y, m - 1, d, 12, 0, 0);
 
         const sizes = [
-            { key: 'P', label: 'Pequena', qtd: formData.qtdP, unit: formData.unitP, total: formData.totalP },
-            { key: 'M', label: 'Média', qtd: formData.qtdM, unit: formData.unitM, total: formData.totalM },
-            { key: 'G', label: 'Grande', qtd: formData.qtdG, unit: formData.unitG, total: formData.totalG },
-            { key: 'PF', label: 'Prato Feito', qtd: formData.qtdPF, unit: formData.unitPF, total: formData.totalPF },
+            { key: 'P' as const, label: 'Pequena', qtd: formData.qtdP, unit: formData.unitP, total: formData.totalP },
+            { key: 'M' as const, label: 'Média', qtd: formData.qtdM, unit: formData.unitM, total: formData.totalM },
+            { key: 'G' as const, label: 'Grande', qtd: formData.qtdG, unit: formData.unitG, total: formData.totalG },
+            { key: 'PF' as const, label: 'Prato Feito', qtd: formData.qtdPF, unit: formData.unitPF, total: formData.totalPF },
         ];
 
-        let addedCount = 0;
-        sizes.forEach(size => {
-            const qtd = parseInt(size.qtd) || 0;
-            const unit = parseFloat(size.unit) || 0;
-            const total = parseFloat(size.total) || 0;
+        const marmitasParaInserir = sizes
+            .filter(size => (parseInt(size.qtd) || 0) > 0)
+            .map(size => ({
+                tamanho: size.key,
+                quantidade: parseInt(size.qtd),
+                valorUnitario: parseFloat(size.unit) || 0,
+                valorTotal: parseFloat(size.total) || 0,
+            }));
 
-            if (qtd > 0 || total > 0) {
-                const payload = {
-                    cliente: 'Venda Diária',
-                    tamanho: size.key,
-                    quantidade: qtd,
-                    valorUnitario: unit,
-                    valorTotal: total,
-                    dataEntrega: dataRef,
-                    statusRecebimento: 'pago' as const,
-                    formaPagamento: 'dinheiro' as const,
-                    observacoes: `Lote ${size.label}`
-                };
-                addMarmita(payload);
-                addedCount++;
-            }
-        });
+        if (marmitasParaInserir.length === 0) {
+            toast.error('Preencha ao menos uma quantidade.');
+            return;
+        }
 
-        if (addedCount > 0) resetForm();
-        else alert('Preencha ao menos uma quantidade.');
+        try {
+            await createLoteMutation.mutateAsync({
+                dataEntrega: dataRef,
+                marmitas: marmitasParaInserir
+            });
+            toast.success('Lançamento realizado com sucesso!');
+            resetForm();
+        } catch (err) {
+            console.error(err);
+            toast.error('Erro ao salvar lançamento.');
+        }
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string, e?: React.MouseEvent) => {
+        e?.stopPropagation();
         if (window.confirm('Excluir este lançamento permanentemente?')) {
-            deleteMarmita(id);
+            try {
+                await deleteMutation.mutateAsync(id);
+                toast.success('Lançamento excluído!');
+            } catch (err) {
+                toast.error('Erro ao excluir lançamento.');
+            }
         }
     };
 
@@ -127,11 +183,17 @@ export default function MarmitasPage() {
         return summary;
     }, [marmitas]);
 
-    const handleDeleteGroup = (dateString: string) => {
+    const handleDeleteGroup = async (dateString: string, e?: React.MouseEvent) => {
+        e?.stopPropagation();
         if (window.confirm(`Tem certeza que deseja excluir TODOS os lançamentos do dia ${dateString}? Esta ação não pode ser desfeita.`)) {
             const itemsToDelete = dailySummary[dateString]?.items || [];
-            itemsToDelete.forEach(item => deleteMarmita(item.id));
-            setSelectedDateDetails(null);
+            try {
+                await Promise.all(itemsToDelete.map(item => deleteMutation.mutateAsync(item.id)));
+                toast.success('Lançamentos do dia excluídos!');
+                setSelectedDateDetails(null);
+            } catch (err) {
+                toast.error('Erro ao excluir lançamentos do dia.');
+            }
         }
     };
 
@@ -146,21 +208,29 @@ export default function MarmitasPage() {
         setShowEditModal(true);
     };
 
-    const handleUpdate = (e: React.FormEvent) => {
+    const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (editingItem) {
-            const [y, m, d] = editData.dataEntrega.split('-').map(Number);
-            const newData = new Date(y, m - 1, d, 12, 0, 0);
+            try {
+                const [y, m, d] = editData.dataEntrega.split('-').map(Number);
+                const newData = new Date(y, m - 1, d, 12, 0, 0);
 
-            updateMarmita(editingItem.id, {
-                quantidade: parseInt(editData.qtd),
-                valorUnitario: parseFloat(editData.valorUnitario),
-                valorTotal: parseFloat(editData.valorTotal),
-                dataEntrega: newData
-            });
-            setShowEditModal(false);
-            setEditingItem(null);
-            setSelectedDateDetails(null);
+                await updateMutation.mutateAsync({
+                    id: editingItem.id,
+                    updates: {
+                        quantidade: parseInt(editData.qtd),
+                        valorUnitario: parseFloat(editData.valorUnitario),
+                        valorTotal: parseFloat(editData.valorTotal),
+                        dataEntrega: newData
+                    }
+                });
+                toast.success('Lançamento atualizado!');
+                setShowEditModal(false);
+                setEditingItem(null);
+                setSelectedDateDetails(null);
+            } catch (err) {
+                toast.error('Erro ao atualizar lançamento.');
+            }
         }
     };
 
@@ -179,60 +249,78 @@ export default function MarmitasPage() {
                     </div>
                     <div className="modern-header-badges">
                         <div className="modern-badge-summary info">
-                            <span>🍱</span> {totalQtd} totais no período
+                            <span><LuUtensils size={16} /></span> {totalQtd} totais no período
                         </div>
                     </div>
                 </div>
                 <button className="btn-modern-primary" onClick={() => setShowModal(true)}>
-                    ➕ Lançar Vendas do Dia
+                    <LuPlus size={18} /> Lançar Vendas do Dia
                 </button>
             </div>
 
-            <div className="modern-table-container">
-                <table className="modern-table">
-                    <thead>
-                        <tr>
-                            <th>DATA</th>
-                            <th style={{ textAlign: 'center' }}>P</th>
-                            <th style={{ textAlign: 'center' }}>M</th>
-                            <th style={{ textAlign: 'center' }}>G</th>
-                            <th style={{ textAlign: 'center' }}>PF</th>
-                            <th style={{ textAlign: 'center' }}>TOTAL DO DIA</th>
-                            <th style={{ textAlign: 'right' }}>AÇÕES</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedDays.length === 0 ? (
-                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Nenhuma venda registrada.</td></tr>
-                        ) : (
-                            sortedDays.map(([dateString, data]) => (
-                                <tr key={dateString} onClick={() => setSelectedDateDetails(dateString)} style={{ cursor: 'pointer' }}>
-                                    <td className="col-highlight">{dateString}</td>
-                                    <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.P}</span></td>
-                                    <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.M}</span></td>
-                                    <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.G}</span></td>
-                                    <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.PF}</span></td>
-                                    <td style={{ textAlign: 'center' }} className="col-money">
-                                        {data.totalFin.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                    </td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <button
-                                            className="btn-modern-icon"
-                                            title="Excluir dia inteiro"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteGroup(dateString);
-                                            }}
-                                            style={{ color: '#ef4444' }}
-                                        >
-                                            🗑️
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            <div className="modern-filters-container">
+                <div className="modern-filter-group">
+                    <label>Mês de Referência:</label>
+                    <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}>
+                        {monthOptions.map(m => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <div className="modern-table-container card" style={{ padding: 0 }}>
+                {isLoading ? (
+                    <div style={{ padding: '2rem' }}>
+                        <TableSkeleton rows={8} cols={7} />
+                    </div>
+                ) : isError ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>
+                        Erro ao carregar marmitas: {error instanceof Error ? error.message : 'Erro desconhecido'}
+                    </div>
+                ) : (
+                    <table className="modern-table">
+                        <thead>
+                            <tr>
+                                <th>DATA</th>
+                                <th style={{ textAlign: 'center' }}>P</th>
+                                <th style={{ textAlign: 'center' }}>M</th>
+                                <th style={{ textAlign: 'center' }}>G</th>
+                                <th style={{ textAlign: 'center' }}>PF</th>
+                                <th style={{ textAlign: 'center' }}>TOTAL DO DIA</th>
+                                <th style={{ textAlign: 'right' }}>AÇÕES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sortedDays.length === 0 ? (
+                                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Nenhuma venda registrada.</td></tr>
+                            ) : (
+                                sortedDays.map(([dateString, data]) => (
+                                    <tr key={dateString} onClick={() => setSelectedDateDetails(dateString)} style={{ cursor: 'pointer' }}>
+                                        <td className="col-highlight">{dateString}</td>
+                                        <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.P}</span></td>
+                                        <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.M}</span></td>
+                                        <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.G}</span></td>
+                                        <td style={{ textAlign: 'center' }}><span className="modern-status-badge neutral">{data.PF}</span></td>
+                                        <td style={{ textAlign: 'center' }} className="col-money">
+                                            {data.totalFin.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button
+                                                className="btn-modern-icon"
+                                                title="Excluir dia inteiro"
+                                                onClick={(e) => handleDeleteGroup(dateString, e)}
+                                                style={{ color: '#ef4444' }}
+                                            >
+                                                <LuTrash2 size={16} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             {selectedDateDetails && dailySummary[selectedDateDetails] && (
@@ -269,7 +357,7 @@ export default function MarmitasPage() {
                                     Detalhamento por tamanho • Total do Dia: <b style={{ color: '#10b981' }}>{dailySummary[selectedDateDetails].totalFin.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>
                                 </p>
                             </div>
-                            <button className="btn-modern-icon" onClick={() => setSelectedDateDetails(null)} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
+                            <button className="btn-modern-icon" onClick={() => setSelectedDateDetails(null)} style={{ width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={18} /></button>
                         </div>
                         <div className="modern-table-container" style={{ margin: '1rem', border: '1px solid #f1f5f9' }}>
                             <table className="modern-table">
@@ -294,9 +382,9 @@ export default function MarmitasPage() {
                                                 {item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                             </td>
                                             <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                <button className="btn-modern-icon" onClick={() => openEditModal(item)}>✏️</button>
+                                                <button className="btn-modern-icon" onClick={() => openEditModal(item)}><LuPencil size={16} /></button>
                                                 {user?.role === 'adm' && (
-                                                    <button className="btn-modern-icon" onClick={() => handleDelete(item.id)} style={{ color: '#ef4444' }}>🗑️</button>
+                                                    <button className="btn-modern-icon" onClick={(e) => handleDelete(item.id, e)} style={{ color: '#ef4444' }}><LuTrash2 size={16} /></button>
                                                 )}
                                             </td>
                                         </tr>
@@ -343,7 +431,7 @@ export default function MarmitasPage() {
                                 <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>Lançar Vendas</h2>
                                 <p style={{ color: '#64748b', marginTop: '4px', fontSize: '0.85rem' }}>Informe as quantidades vendidas por tamanho.</p>
                             </div>
-                            <button className="btn-modern-icon" onClick={resetForm} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
+                            <button className="btn-modern-icon" onClick={resetForm} style={{ width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={18} /></button>
                         </div>
                         <form onSubmit={handleSubmit} style={{ padding: '2rem' }}>
                             <div className="form-group" style={{ marginBottom: '2rem', maxWidth: '300px' }}>
@@ -377,7 +465,9 @@ export default function MarmitasPage() {
                                 display: 'flex', gap: '1rem', padding: '1.5rem 2rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', margin: '2rem -2rem -2rem -2rem'
                             }}>
                                 <button type="button" className="btn btn-secondary" onClick={resetForm} style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff' }}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary" style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)' }}>Salvar Lote de Vendas</button>
+                                <button type="submit" className="btn btn-primary" disabled={createLoteMutation.isPending} style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)' }}>
+                                    {createLoteMutation.isPending ? 'Salvando...' : 'Salvar Lote de Vendas'}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -414,7 +504,7 @@ export default function MarmitasPage() {
                                 <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>Editar: {editingItem.tamanho}</h3>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>Ajuste os valores do lançamento</p>
                             </div>
-                            <button className="btn-modern-icon" onClick={() => setShowEditModal(false)} style={{ width: '40px', height: '40px', borderRadius: '12px' }}>✕</button>
+                            <button className="btn-modern-icon" onClick={() => setShowEditModal(false)} style={{ width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={18} /></button>
                         </div>
                         <form onSubmit={handleUpdate} style={{ padding: '2rem' }}>
                             <div className="form-group" style={{ marginBottom: '1.25rem' }}>
@@ -455,7 +545,9 @@ export default function MarmitasPage() {
                                 display: 'flex', gap: '1rem', padding: '1.5rem 2rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', margin: '0 -2rem -2rem -2rem'
                             }}>
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)} style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff' }}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary" style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' }}>Salvar Alterações</button>
+                                <button type="submit" className="btn btn-primary" disabled={updateMutation.isPending} style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff' }}>
+                                    {updateMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                                </button>
                             </div>
                         </form>
                     </div>

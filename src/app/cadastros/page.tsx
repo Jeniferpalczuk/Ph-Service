@@ -1,22 +1,61 @@
 'use client';
 
 import { useState } from 'react';
-import { useApp } from '@/context/AppContext';
 import { Funcionario, Cliente, Fornecedor } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { MoneyInput } from '@/components/MoneyInput';
+import {
+    useFuncionariosList,
+    useCreateFuncionario,
+    useUpdateFuncionario,
+    useDeleteFuncionario,
+    useClientesList,
+    useCreateCliente,
+    useUpdateCliente,
+    useDeleteCliente,
+    useFornecedoresList,
+    useCreateFornecedor,
+    useUpdateFornecedor,
+    useDeleteFornecedor,
+} from '@/hooks/cadastros';
+import { Skeleton, TableSkeleton, SkeletonStyles } from '@/components/ui/Skeleton';
+import { toast } from 'react-hot-toast';
+import {
+    LuChefHat,
+    LuBuilding2,
+    LuTruck,
+    LuSearch,
+    LuPlus,
+    LuPencil,
+    LuTrash2,
+    LuX,
+    LuArrowLeft,
+    LuArrowRight,
+    LuPhone
+} from 'react-icons/lu';
 import './cadastros.css';
+
+
+/**
+ * - O hook `useFuncionariosList` busca apenas os dados necessários.
+ * - Mudanças em `page` ou `search` disparam nova query automaticamente.
+ */
 
 export default function CadastrosPage() {
     const { user } = useAuth();
-    const {
-        funcionarios, addFuncionario, updateFuncionario, deleteFuncionario,
-        clientes, addCliente, updateCliente, deleteCliente,
-        fornecedores, addFornecedor, updateFornecedor, deleteFornecedor
-    } = useApp();
 
+    // Inibindo o Contexto Legado (mantendo apenas para o que sobrar se houver)
+    // const { ... } = useApp();
+
+    // ========================================
+    // UI State
+    // ========================================
     const [activeTab, setActiveTab] = useState<'funcionarios' | 'clientes' | 'fornecedores'>('funcionarios');
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Paginação para Funcionários
+    const [funcPage, setFuncPage] = useState(1);
+    const pageSize = 20;
 
     // Estados dos Modais
     const [showFuncModal, setShowFuncModal] = useState(false);
@@ -35,8 +74,66 @@ export default function CadastrosPage() {
     const [clienteData, setClienteData] = useState({ nome: '', tipo: 'empresa', telefone: '', endereco: '', ativo: true });
     const [fornecData, setFornecData] = useState({ nome: '', categoria: '', contato: '', ativo: true, observacoes: '' });
 
-    // --- Handlers Funcionários ---
-    const handleFuncSubmit = (e: React.FormEvent) => {
+    // ========================================
+    // REACT QUERY - Funcionários
+    // ========================================
+    const {
+        data: funcionariosData,
+        isLoading: isLoadingFuncionarios,
+        isError: isErrorFuncionarios,
+        error: errorFuncionarios,
+    } = useFuncionariosList({
+        page: funcPage,
+        pageSize,
+        search: activeTab === 'funcionarios' ? searchTerm : '', // Só aplica search se estiver na aba
+    });
+
+    const createFuncionarioMutation = useCreateFuncionario();
+    const updateFuncionarioMutation = useUpdateFuncionario();
+    const deleteFuncionarioMutation = useDeleteFuncionario();
+
+    const funcionarios = funcionariosData?.data ?? [];
+    const totalPages = funcionariosData?.totalPages ?? 1;
+    const totalFuncionarios = funcionariosData?.count ?? 0;
+
+    // ========================================
+    // REACT QUERY - Clientes
+    // ========================================
+    const {
+        data: clientesData,
+        isLoading: isLoadingClientes,
+    } = useClientesList({
+        pageSize: 1000,
+        search: activeTab === 'clientes' ? searchTerm : '',
+    });
+
+    const createClienteMutation = useCreateCliente();
+    const updateClienteMutation = useUpdateCliente();
+    const deleteClienteMutation = useDeleteCliente();
+
+    const clientes = clientesData?.data ?? [];
+
+    // ========================================
+    // REACT QUERY - Fornecedores
+    // ========================================
+    const {
+        data: fornecedoresData,
+        isLoading: isLoadingFornecedores,
+    } = useFornecedoresList({
+        pageSize: 1000,
+        search: activeTab === 'fornecedores' ? searchTerm : '',
+    });
+
+    const createFornecedorMutation = useCreateFornecedor();
+    const updateFornecedorMutation = useUpdateFornecedor();
+    const deleteFornecedorMutation = useDeleteFornecedor();
+
+    const fornecedores = fornecedoresData?.data ?? [];
+
+    // ========================================
+    // Handlers Funcionários (Usando Mutations)
+    // ========================================
+    const handleFuncSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         let admissao = undefined;
@@ -51,7 +148,6 @@ export default function CadastrosPage() {
             demissao = new Date(yD, mD - 1, dD, 12, 0, 0);
         }
 
-        // Se tem data de demissão, considera inativo
         const isAtivo = !funcData.dataDemissao;
 
         const payload = {
@@ -64,18 +160,29 @@ export default function CadastrosPage() {
             ativo: isAtivo
         };
 
-        if (editingFunc) updateFuncionario(editingFunc.id, payload);
-        else addFuncionario(payload as any); // Type assertion needed for optional fields handling if strict
-
-        resetFuncForm();
+        try {
+            if (editingFunc) {
+                await updateFuncionarioMutation.mutateAsync({ id: editingFunc.id, updates: payload });
+                toast.success('Funcionário atualizado com sucesso!');
+            } else {
+                await createFuncionarioMutation.mutateAsync(payload as Omit<Funcionario, 'id' | 'createdAt' | 'updatedAt'>);
+                toast.success('Funcionário cadastrado com sucesso!');
+            }
+            resetFuncForm();
+        } catch (err) {
+            console.error('Erro ao salvar funcionário:', err);
+            toast.error('Erro ao salvar funcionário. Verifique os dados.');
+        }
     };
+
 
     const resetFuncForm = () => {
         setFuncData(prev => ({
             ...prev,
-            nome: '', cargo: '', telefone: '', salarioBase: '', ativo: true
+            nome: '', cargo: '', telefone: '', salarioBase: '', dataAdmissao: '', dataDemissao: '', ativo: true
         }));
-        setEditingFunc(null); setShowFuncModal(false);
+        setEditingFunc(null);
+        setShowFuncModal(false);
     };
 
     const editFunc = (f: Funcionario) => {
@@ -90,12 +197,50 @@ export default function CadastrosPage() {
         setShowFuncModal(true);
     };
 
-    // --- Handlers Clientes ---
-    const handleClienteSubmit = (e: React.FormEvent) => {
+    const handleDeleteFunc = async (id: string, e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (confirm('Excluir este funcionário permanentemente?\nO histórico financeiro pode ser afetado.')) {
+            try {
+                await deleteFuncionarioMutation.mutateAsync(id);
+                toast.success('Funcionário excluído com sucesso!');
+            } catch (err) {
+                console.error('Erro ao deletar:', err);
+                toast.error('Erro ao excluir funcionário.');
+            }
+        }
+    };
+
+    // ========================================
+    // Handlers Clientes (Usando Mutations)
+    // ========================================
+    const handleClienteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (editingCliente) updateCliente(editingCliente.id, clienteData as any);
-        else addCliente(clienteData as any);
-        resetClienteForm();
+        try {
+            if (editingCliente) {
+                await updateClienteMutation.mutateAsync({ id: editingCliente.id, updates: clienteData as any });
+                toast.success('Cliente atualizado com sucesso!');
+            } else {
+                await createClienteMutation.mutateAsync(clienteData as any);
+                toast.success('Cliente cadastrado com sucesso!');
+            }
+            resetClienteForm();
+        } catch (err) {
+            console.error('Erro ao salvar cliente:', err);
+            toast.error('Erro ao salvar cliente.');
+        }
+    };
+
+    const handleDeleteCliente = async (id: string, e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (confirm('Excluir este cliente permanentemente?')) {
+            try {
+                await deleteClienteMutation.mutateAsync(id);
+                toast.success('Cliente excluído com sucesso!');
+            } catch (err) {
+                console.error('Erro ao excluir cliente:', err);
+                toast.error('Erro ao excluir cliente.');
+            }
+        }
     };
     const resetClienteForm = () => {
         setClienteData({ nome: '', tipo: 'empresa', telefone: '', endereco: '', ativo: true });
@@ -107,12 +252,37 @@ export default function CadastrosPage() {
         setShowClienteModal(true);
     };
 
-    // --- Handlers Fornecedores ---
-    const handleFornecSubmit = (e: React.FormEvent) => {
+    // ========================================
+    // Handlers Fornecedores (Usando Mutations)
+    // ========================================
+    const handleFornecSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (editingFornec) updateFornecedor(editingFornec.id, fornecData);
-        else addFornecedor(fornecData);
-        resetFornecForm();
+        try {
+            if (editingFornec) {
+                await updateFornecedorMutation.mutateAsync({ id: editingFornec.id, updates: fornecData as any });
+                toast.success('Fornecedor atualizado com sucesso!');
+            } else {
+                await createFornecedorMutation.mutateAsync(fornecData as any);
+                toast.success('Fornecedor cadastrado com sucesso!');
+            }
+            resetFornecForm();
+        } catch (err) {
+            console.error('Erro ao salvar fornecedor:', err);
+            toast.error('Erro ao salvar fornecedor.');
+        }
+    };
+
+    const handleDeleteFornec = async (id: string, e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (confirm('Excluir este fornecedor permanentemente?')) {
+            try {
+                await deleteFornecedorMutation.mutateAsync(id);
+                toast.success('Fornecedor excluído com sucesso!');
+            } catch (err) {
+                console.error('Erro ao excluir fornecedor:', err);
+                toast.error('Erro ao excluir fornecedor.');
+            }
+        }
     };
     const resetFornecForm = () => {
         setFornecData({ nome: '', categoria: '', contato: '', ativo: true, observacoes: '' });
@@ -124,11 +294,29 @@ export default function CadastrosPage() {
         setShowFornecModal(true);
     };
 
-    // Helper para deletar (agora com verificação)
-    const handleDeleteFunc = (id: string, e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        if (confirm('Excluir este funcionário permanentemente?\nO histórico financeiro pode ser afetado.')) deleteFuncionario(id);
-    };
+    // ========================================
+    // Render Helper: Skeleton Loader
+    // ========================================
+    const renderFuncionariosSkeleton = () => (
+        <div className="grid-list">
+            {[...Array(6)].map((_, i) => (
+                <div key={i} className="entity-card skeleton" style={{
+                    background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s infinite',
+                    height: '100px',
+                    borderRadius: '12px'
+                }}>
+                    <style jsx>{`
+                        @keyframes shimmer {
+                            0% { background-position: 200% 0; }
+                            100% { background-position: -200% 0; }
+                        }
+                    `}</style>
+                </div>
+            ))}
+        </div>
+    );
 
     return (
         <div className="cadastros-page">
@@ -137,26 +325,29 @@ export default function CadastrosPage() {
             </div>
 
             <div className="tabs-container">
-                <button className={`tab-btn ${activeTab === 'funcionarios' ? 'active' : ''}`} onClick={() => setActiveTab('funcionarios')}>
-                    👨‍🍳 Funcionários
+                <button className={`tab-btn ${activeTab === 'funcionarios' ? 'active' : ''}`} onClick={() => { setActiveTab('funcionarios'); setSearchTerm(''); setFuncPage(1); }}>
+                    <LuChefHat size={18} /> Funcionários
                 </button>
-                <button className={`tab-btn ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => setActiveTab('clientes')}>
-                    🏢 Clientes / Empresas
+                <button className={`tab-btn ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => { setActiveTab('clientes'); setSearchTerm(''); }}>
+                    <LuBuilding2 size={18} /> Clientes / Empresas
                 </button>
-                <button className={`tab-btn ${activeTab === 'fornecedores' ? 'active' : ''}`} onClick={() => setActiveTab('fornecedores')}>
-                    🚚 Fornecedores
+                <button className={`tab-btn ${activeTab === 'fornecedores' ? 'active' : ''}`} onClick={() => { setActiveTab('fornecedores'); setSearchTerm(''); }}>
+                    <LuTruck size={18} /> Fornecedores
                 </button>
             </div>
 
             {/* Barra de Pesquisa */}
             <div style={{ marginBottom: '1.5rem' }}>
                 <div style={{ position: 'relative', maxWidth: '400px' }}>
-                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '1.1rem' }}>🔍</span>
+                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}><LuSearch size={18} /></span>
                     <input
                         type="text"
                         placeholder={`Buscar ${activeTab === 'funcionarios' ? 'funcionários' : activeTab === 'clientes' ? 'clientes' : 'fornecedores'}...`}
                         value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        onChange={e => {
+                            setSearchTerm(e.target.value);
+                            if (activeTab === 'funcionarios') setFuncPage(1); // Reset page on search
+                        }}
                         style={{
                             width: '100%',
                             padding: '10px 12px 10px 40px',
@@ -170,59 +361,125 @@ export default function CadastrosPage() {
             </div>
 
             <div className="tab-content card">
-                {/* FUNCIONARIOS TAB */}
+                {/* FUNCIONARIOS TAB - COM REACT QUERY */}
                 {activeTab === 'funcionarios' && (
                     <div className="entity-list">
                         <div className="list-header">
-                            <h3>Lista de Funcionários</h3>
-                            <button className="btn btn-primary" onClick={() => setShowFuncModal(true)}>+ Novo Funcionário</button>
+                            <h3>
+                                Lista de Funcionários
+                                {totalFuncionarios > 0 && (
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 400, color: '#64748b', marginLeft: '8px' }}>
+                                        ({totalFuncionarios} total)
+                                    </span>
+                                )}
+                            </h3>
+                            <button className="btn btn-primary" onClick={() => setShowFuncModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><LuPlus size={18} /> Novo Funcionário</button>
                         </div>
-                        <div className="grid-list">
-                            {funcionarios
-                                .filter(f =>
-                                (f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                    f.cargo.toLowerCase().includes(searchTerm.toLowerCase()))
-                                )
-                                .sort((a, b) => {
-                                    // Sort Active first, then by Name
-                                    if (a.ativo === b.ativo) return a.nome.localeCompare(b.nome);
-                                    return a.ativo ? -1 : 1;
-                                })
-                                .map(f => {
-                                    const isDemitido = !!f.dataDemissao;
-                                    return (
-                                        <div key={f.id} className="entity-card" style={{ borderColor: isDemitido ? 'var(--danger-500)' : undefined, background: isDemitido ? '#fff5f5' : undefined }}>
-                                            <div className="entity-info">
-                                                <h4 style={{ color: isDemitido ? 'var(--danger-600)' : undefined }}>
-                                                    {f.nome} {isDemitido && <span style={{ fontSize: '0.7rem', border: '1px solid currentColor', borderRadius: '4px', padding: '1px 4px' }}>DEMITIDO</span>}
-                                                </h4>
-                                                <p>{f.cargo}</p>
-                                                <span style={{ fontWeight: 600 }}>R$ {f.salarioBase?.toFixed(2)}</span>
-                                                {isDemitido && (
-                                                    <p style={{ fontSize: '0.8rem', color: 'var(--danger-600)', marginTop: '4px' }}>
-                                                        Demissão: {new Date(f.dataDemissao!).toLocaleDateString('pt-BR')}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="entity-actions">
-                                                <button type="button" onClick={() => editFunc(f)} style={{ cursor: 'pointer' }}>✏️</button>
-                                                {user?.role === 'adm' && (
-                                                    <button type="button" onClick={(e) => handleDeleteFunc(f.id, e)} className="btn-delete" style={{ cursor: 'pointer' }}>🗑️</button>
-                                                )}
-                                            </div>
+
+                        {/* Error State */}
+                        {isErrorFuncionarios && (
+                            <div style={{ padding: '2rem', textAlign: 'center', color: '#dc2626', background: '#fef2f2', borderRadius: '12px' }}>
+                                <p>⚠️ Erro ao carregar funcionários</p>
+                                <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>{(errorFuncionarios as Error)?.message}</p>
+                            </div>
+                        )}
+
+                        {/* Loading State - Skeleton */}
+                        {isLoadingFuncionarios && renderFuncionariosSkeleton()}
+
+                        {/* Data List */}
+                        {!isLoadingFuncionarios && !isErrorFuncionarios && (
+                            <>
+                                <div className="grid-list">
+                                    {funcionarios.length === 0 ? (
+                                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                                            Nenhum funcionário encontrado.
                                         </div>
-                                    );
-                                })}
-                        </div>
+                                    ) : (
+                                        funcionarios.map(f => {
+                                            const isDemitido = !!f.dataDemissao;
+                                            return (
+                                                <div key={f.id} className="entity-card" style={{ borderColor: isDemitido ? 'var(--danger-500)' : undefined, background: isDemitido ? '#fff5f5' : undefined }}>
+                                                    <div className="entity-info">
+                                                        <h4 style={{ color: isDemitido ? 'var(--danger-600)' : undefined }}>
+                                                            {f.nome} {isDemitido && <span style={{ fontSize: '0.7rem', border: '1px solid currentColor', borderRadius: '4px', padding: '1px 4px' }}>DEMITIDO</span>}
+                                                        </h4>
+                                                        <p>{f.cargo}</p>
+                                                        <span style={{ fontWeight: 600 }}>R$ {f.salarioBase?.toFixed(2)}</span>
+                                                        {isDemitido && (
+                                                            <p style={{ fontSize: '0.8rem', color: 'var(--danger-600)', marginTop: '4px' }}>
+                                                                Demissão: {new Date(f.dataDemissao!).toLocaleDateString('pt-BR')}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="entity-actions">
+                                                        <button type="button" onClick={() => editFunc(f)} style={{ cursor: 'pointer' }} title="Editar"><LuPencil size={18} /></button>
+                                                        {user?.role === 'adm' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => handleDeleteFunc(f.id, e)}
+                                                                className="btn-delete"
+                                                                style={{ cursor: 'pointer' }}
+                                                                disabled={deleteFuncionarioMutation.isPending}
+                                                                title="Excluir"
+                                                            >
+                                                                {deleteFuncionarioMutation.isPending ? '...' : <LuTrash2 size={18} />}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+
+                                {/* Paginação */}
+                                {totalPages > 1 && (
+                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem', padding: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                                        <button
+                                            onClick={() => setFuncPage(p => Math.max(1, p - 1))}
+                                            disabled={funcPage === 1}
+                                            style={{
+                                                padding: '8px 16px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #e2e8f0',
+                                                background: funcPage === 1 ? '#f8fafc' : 'white',
+                                                cursor: funcPage === 1 ? 'not-allowed' : 'pointer',
+                                                fontWeight: 600
+                                            }}
+                                        >
+                                            <LuArrowLeft size={16} /> Anterior
+                                        </button>
+                                        <span style={{ fontWeight: 600, color: '#475569' }}>
+                                            Página {funcPage} de {totalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => setFuncPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={funcPage === totalPages}
+                                            style={{
+                                                padding: '8px 16px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #e2e8f0',
+                                                background: funcPage === totalPages ? '#f8fafc' : 'white',
+                                                cursor: funcPage === totalPages ? 'not-allowed' : 'pointer',
+                                                fontWeight: 600
+                                            }}
+                                        >
+                                            Próxima <LuArrowRight size={16} />
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 )}
 
-                {/* CLIENTES TAB */}
+                {/* CLIENTES TAB - LEGADO */}
                 {activeTab === 'clientes' && (
                     <div className="entity-list">
                         <div className="list-header">
                             <h3>Lista de Clientes / Empresas Parceiras</h3>
-                            <button className="btn btn-primary" onClick={() => setShowClienteModal(true)}>+ Novo Cliente</button>
+                            <button className="btn btn-primary" onClick={() => setShowClienteModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><LuPlus size={18} /> Novo Cliente</button>
                         </div>
                         <div className="grid-list">
                             {clientes.filter(c =>
@@ -236,9 +493,9 @@ export default function CadastrosPage() {
                                         <p>{c.telefone}</p>
                                     </div>
                                     <div className="entity-actions">
-                                        <button type="button" onClick={() => editCliente(c)} style={{ cursor: 'pointer' }}>✏️</button>
+                                        <button type="button" onClick={() => editCliente(c)} style={{ cursor: 'pointer' }} title="Editar"><LuPencil size={18} /></button>
                                         {user?.role === 'adm' && (
-                                            <button type="button" onClick={(e) => { e.stopPropagation(); if (confirm('Excluir?')) deleteCliente(c.id) }} style={{ cursor: 'pointer' }}>🗑️</button>
+                                            <button type="button" onClick={(e) => handleDeleteCliente(c.id, e)} style={{ cursor: 'pointer' }} title="Excluir"><LuTrash2 size={18} /></button>
                                         )}
                                     </div>
                                 </div>
@@ -247,12 +504,12 @@ export default function CadastrosPage() {
                     </div>
                 )}
 
-                {/* FORNECEDORES TAB */}
+                {/* FORNECEDORES TAB - LEGADO */}
                 {activeTab === 'fornecedores' && (
                     <div className="entity-list">
                         <div className="list-header">
                             <h3>Despesas Recorrentes & Fornecedores</h3>
-                            <button className="btn btn-primary" onClick={() => setShowFornecModal(true)}>+ Novo Fornecedor</button>
+                            <button className="btn btn-primary" onClick={() => setShowFornecModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><LuPlus size={18} /> Novo Fornecedor</button>
                         </div>
                         <div className="grid-list">
                             {fornecedores.filter(f =>
@@ -263,12 +520,12 @@ export default function CadastrosPage() {
                                     <div className="entity-info">
                                         <h4>{f.nome}</h4>
                                         <span className="badge badge-warning">{f.categoria}</span>
-                                        <p>📞 {f.contato}</p>
+                                        <p style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><LuPhone size={14} /> {f.contato}</p>
                                     </div>
                                     <div className="entity-actions">
-                                        <button type="button" onClick={() => editFornec(f)} title="Editar">✏️</button>
+                                        <button type="button" onClick={() => editFornec(f)} title="Editar"><LuPencil size={18} /></button>
                                         {user?.role === 'adm' && (
-                                            <button type="button" className="btn-delete" onClick={(e) => { e.stopPropagation(); if (confirm('Excluir?')) deleteFornecedor(f.id) }} title="Excluir">🗑️</button>
+                                            <button type="button" className="btn-delete" onClick={(e) => handleDeleteFornec(f.id, e)} title="Excluir"><LuTrash2 size={18} /></button>
                                         )}
                                     </div>
                                 </div>
@@ -287,7 +544,7 @@ export default function CadastrosPage() {
                                 <h2>{editingFunc ? 'Editar' : 'Novo'} Funcionário</h2>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Gerencie as informações da sua equipe</p>
                             </div>
-                            <button onClick={resetFuncForm} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+                            <button onClick={resetFuncForm} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={24} /></button>
                         </div>
                         <div className="modal-body">
                             <form onSubmit={handleFuncSubmit}>
@@ -331,7 +588,17 @@ export default function CadastrosPage() {
                         </div>
                         <div className="modal-actions">
                             <button type="button" className="btn-secondary" onClick={resetFuncForm}>Cancelar</button>
-                            <button type="button" className="btn-primary" onClick={handleFuncSubmit}>{editingFunc ? 'Salvar Alterações' : 'Cadastrar Funcionário'}</button>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={handleFuncSubmit}
+                                disabled={createFuncionarioMutation.isPending || updateFuncionarioMutation.isPending}
+                            >
+                                {(createFuncionarioMutation.isPending || updateFuncionarioMutation.isPending)
+                                    ? 'Salvando...'
+                                    : (editingFunc ? 'Salvar Alterações' : 'Cadastrar Funcionário')
+                                }
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -346,7 +613,7 @@ export default function CadastrosPage() {
                                 <h2>{editingCliente ? 'Editar' : 'Novo'} Cliente</h2>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Cadastre um novo cliente ou empresa parceira</p>
                             </div>
-                            <button onClick={resetClienteForm} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+                            <button onClick={resetClienteForm} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={24} /></button>
                         </div>
                         <div className="modal-body">
                             <form onSubmit={handleClienteSubmit}>
@@ -375,7 +642,14 @@ export default function CadastrosPage() {
                         </div>
                         <div className="modal-actions">
                             <button type="button" className="btn-secondary" onClick={resetClienteForm}>Cancelar</button>
-                            <button type="button" className="btn-primary" onClick={handleClienteSubmit}>{editingCliente ? 'Salvar Alterações' : 'Cadastrar Cliente'}</button>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={handleClienteSubmit}
+                                disabled={createClienteMutation.isPending || updateClienteMutation.isPending}
+                            >
+                                {(createClienteMutation.isPending || updateClienteMutation.isPending) ? 'Salvando...' : (editingCliente ? 'Salvar Alterações' : 'Cadastrar Cliente')}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -390,7 +664,7 @@ export default function CadastrosPage() {
                                 <h2>{editingFornec ? 'Editar' : 'Novo'} Fornecedor</h2>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Gerencie suas despesas recorrentes e fornecedores</p>
                             </div>
-                            <button onClick={resetFornecForm} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+                            <button onClick={resetFornecForm} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={24} /></button>
                         </div>
                         <div className="modal-body">
                             <form onSubmit={handleFornecSubmit}>
@@ -412,16 +686,18 @@ export default function CadastrosPage() {
                                     <label>Observações Adicionais</label>
                                     <textarea rows={3} value={fornecData.observacoes} onChange={e => setFornecData({ ...fornecData, observacoes: e.target.value })} style={{ resize: 'vertical' }} />
                                 </div>
-                                {/* Move actions outside form if structure changed, but in CSS they are siblings. Wait, my CSS expects modal-content > modal-actions. 
-                                    I should probably put form around everything or put matching structure. 
-                                    In my CSS: modal-content is flex column. Content has header, body, actions.
-                                    So I will close body here and put actions.
-                                */}
                             </form>
                         </div>
                         <div className="modal-actions">
                             <button type="button" className="btn-secondary" onClick={resetFornecForm}>Cancelar</button>
-                            <button type="button" className="btn-primary" onClick={handleFornecSubmit}>{editingFornec ? 'Salvar Alterações' : 'Cadastrar Fornecedor'}</button>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={handleFornecSubmit}
+                                disabled={createFornecedorMutation.isPending || updateFornecedorMutation.isPending}
+                            >
+                                {(createFornecedorMutation.isPending || updateFornecedorMutation.isPending) ? 'Salvando...' : (editingFornec ? 'Salvar Alterações' : 'Cadastrar Fornecedor')}
+                            </button>
                         </div>
                     </div>
                 </div>

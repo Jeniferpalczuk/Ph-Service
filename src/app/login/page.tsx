@@ -3,6 +3,16 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
+import {
+    LuSparkles,
+    LuLayoutDashboard,
+    LuDollarSign,
+    LuShieldCheck,
+    LuMail,
+    LuLock,
+    LuTriangleAlert,
+    LuInfo
+} from 'react-icons/lu';
 import './login.css';
 
 export default function LoginPage() {
@@ -95,21 +105,21 @@ export default function LoginPage() {
 
                         <div className="login-features">
                             <div className="login-feature">
-                                <div className="login-feature-icon">📊</div>
+                                <div className="login-feature-icon"><LuLayoutDashboard size={20} /></div>
                                 <div className="login-feature-text">
                                     <h4>Dashboard em Tempo Real</h4>
                                     <p>Visualize métricas e KPIs instantaneamente</p>
                                 </div>
                             </div>
                             <div className="login-feature">
-                                <div className="login-feature-icon">💰</div>
+                                <div className="login-feature-icon"><LuDollarSign size={20} /></div>
                                 <div className="login-feature-text">
                                     <h4>Controle Financeiro</h4>
                                     <p>Gestão completa de receitas e despesas</p>
                                 </div>
                             </div>
                             <div className="login-feature">
-                                <div className="login-feature-icon">🔐</div>
+                                <div className="login-feature-icon"><LuShieldCheck size={20} /></div>
                                 <div className="login-feature-text">
                                     <h4>Segurança Avançada</h4>
                                     <p>Proteção de dados e controle de acesso</p>
@@ -125,7 +135,7 @@ export default function LoginPage() {
                         <div className="login-card-glow"></div>
 
                         <div className="login-card-header">
-                            <span className="login-welcome-badge">✨ Bem-vindo</span>
+                            <span className="login-welcome-badge"><LuSparkles size={14} /> Bem-vindo</span>
                             <h2>Acesse sua conta</h2>
                             <p>Entre com seus dados para continuar</p>
                         </div>
@@ -133,7 +143,7 @@ export default function LoginPage() {
                         <div className="login-card-body">
                             {error && (
                                 <div className="login-error">
-                                    <span>⚠️</span>
+                                    <span><LuTriangleAlert size={18} /></span>
                                     {error}
                                 </div>
                             )}
@@ -142,7 +152,7 @@ export default function LoginPage() {
                                 <div className="login-input-group">
                                     <label htmlFor="email">E-mail</label>
                                     <div className="login-input-wrapper">
-                                        <span className="login-input-icon">📧</span>
+                                        <span className="login-input-icon"><LuMail size={18} /></span>
                                         <input
                                             id="email"
                                             type="email"
@@ -157,7 +167,7 @@ export default function LoginPage() {
                                 <div className="login-input-group">
                                     <label htmlFor="password">Senha</label>
                                     <div className="login-input-wrapper">
-                                        <span className="login-input-icon">🔒</span>
+                                        <span className="login-input-icon"><LuLock size={18} /></span>
                                         <input
                                             id="password"
                                             type="password"
@@ -198,7 +208,7 @@ export default function LoginPage() {
                             </button>
 
                             <div className="login-info-box">
-                                <span className="login-info-icon">🛡️</span>
+                                <span className="login-info-icon"><LuInfo size={18} /></span>
                                 <p>Acesso restrito a usuários autorizados. Para criar uma conta, entre em contato com o suporte.</p>
                             </div>
                             */}

@@ -186,11 +186,11 @@ export interface Fornecedor {
 }
 
 export interface PagamentoFuncionario {
-  // ...
   id: string;
   funcionario: string;
   cargoFuncao: string;
   valor: number; // Valor Líquido (pago)
+  periodoReferencia?: string; // Ex: "2024-01"
   descontos?: number; // Valor dos Vales descontados
   faltas?: number; // Número de dias de falta (opcional)
   formaPagamento: PaymentMethod;

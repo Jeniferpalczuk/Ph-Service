@@ -4,6 +4,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
+import {
+    LuLayoutDashboard,
+    LuHandshake,
+    LuBarcode,
+    LuCalculator,
+    LuTrendingDown,
+    LuDollarSign,
+    LuUtensils,
+    LuUsers,
+    LuSettings,
+    LuLogOut
+} from 'react-icons/lu';
 import './Header.css';
 
 export default function Header() {
@@ -12,15 +24,15 @@ export default function Header() {
     const { logout, user } = useAuth();
 
     const menuItems = [
-        { icon: '📊', label: 'Dashboard', href: '/' },
-        { icon: '✉️', label: 'Convênios', href: '/convenios' },
-        { icon: '📋', label: 'Boletos', href: '/boletos' },
-        { icon: '🗃️', label: 'Caixa', href: '/caixa' },
-        { icon: '📤', label: 'Saídas', href: '/saidas' },
-        { icon: '💸', label: 'Vales', href: '/vales' },
-        { icon: '🍱', label: 'Marmitas', href: '/marmitas' },
-        { icon: '📁', label: 'Folha', href: '/folha-pagamento' },
-        { icon: '🗂️', label: 'Cadastros', href: '/cadastros' },
+        { icon: <LuLayoutDashboard size={20} />, label: 'Dashboard', href: '/' },
+        { icon: <LuHandshake size={20} />, label: 'Convênios', href: '/convenios' },
+        { icon: <LuBarcode size={20} />, label: 'Boletos', href: '/boletos' },
+        { icon: <LuCalculator size={20} />, label: 'Caixa', href: '/caixa' },
+        { icon: <LuTrendingDown size={20} />, label: 'Saídas', href: '/saidas' },
+        { icon: <LuDollarSign size={20} />, label: 'Vales', href: '/vales' },
+        { icon: <LuUtensils size={20} />, label: 'Marmitas', href: '/marmitas' },
+        { icon: <LuUsers size={20} />, label: 'Folha', href: '/folha-pagamento' },
+        { icon: <LuSettings size={20} />, label: 'Cadastros', href: '/cadastros' },
     ];
 
     return (
@@ -45,7 +57,7 @@ export default function Header() {
 
                 <div className="header-actions">
                     <button className="logout-btn" onClick={logout}>
-                        <span className="logout-icon">🚪</span>
+                        <span className="logout-icon"><LuLogOut size={20} /></span>
                         <span className="logout-label">Sair</span>
                     </button>
                 </div>
