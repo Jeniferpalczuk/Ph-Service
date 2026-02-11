@@ -535,19 +535,20 @@ export default function CadastrosPage() {
                 )}
             </div>
 
-            {/* MODAL FUNCIONARIO */}
+            {/* MODAL FUNCIONARIO (Standardized) */}
             {showFuncModal && (
                 <div className="modal-overlay" onClick={resetFuncForm}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <div className="modal-content card" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div>
                                 <h2>{editingFunc ? 'Editar' : 'Novo'} Funcionário</h2>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Gerencie as informações da sua equipe</p>
                             </div>
-                            <button onClick={resetFuncForm} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={24} /></button>
+                            <button className="modal-close" onClick={resetFuncForm}><LuX size={18} /></button>
                         </div>
-                        <div className="modal-body">
-                            <form onSubmit={handleFuncSubmit}>
+
+                        <form onSubmit={handleFuncSubmit}>
+                            <div className="modal-body">
                                 <div className="form-group">
                                     <label>Nome Completo *</label>
                                     <input required value={funcData.nome} onChange={e => setFuncData({ ...funcData, nome: e.target.value })} />
@@ -584,39 +585,41 @@ export default function CadastrosPage() {
                                         {funcData.dataDemissao && <small style={{ color: '#ef4444', display: 'block', marginTop: '0.5rem', fontWeight: 600 }}>⚠️ Inativar funcionário</small>}
                                     </div>
                                 </div>
-                            </form>
-                        </div>
-                        <div className="modal-actions">
-                            <button type="button" className="btn-secondary" onClick={resetFuncForm}>Cancelar</button>
-                            <button
-                                type="button"
-                                className="btn-primary"
-                                onClick={handleFuncSubmit}
-                                disabled={createFuncionarioMutation.isPending || updateFuncionarioMutation.isPending}
-                            >
-                                {(createFuncionarioMutation.isPending || updateFuncionarioMutation.isPending)
-                                    ? 'Salvando...'
-                                    : (editingFunc ? 'Salvar Alterações' : 'Cadastrar Funcionário')
-                                }
-                            </button>
-                        </div>
+                            </div>
+
+                            <div className="modal-actions">
+                                <button type="button" className="btn-secondary" onClick={resetFuncForm}>Cancelar</button>
+                                <button
+                                    type="submit"
+                                    className="btn-primary"
+                                    disabled={createFuncionarioMutation.isPending || updateFuncionarioMutation.isPending}
+                                >
+                                    {(createFuncionarioMutation.isPending || updateFuncionarioMutation.isPending)
+                                        ? 'Salvando...'
+                                        : (editingFunc ? 'Salvar Alterações' : 'Cadastrar Funcionário')
+                                    }
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
 
-            {/* MODAL CLIENTE */}
+
+            {/* MODAL CLIENTE (Standardized) */}
             {showClienteModal && (
                 <div className="modal-overlay" onClick={resetClienteForm}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <div className="modal-content card" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div>
                                 <h2>{editingCliente ? 'Editar' : 'Novo'} Cliente</h2>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Cadastre um novo cliente ou empresa parceira</p>
                             </div>
-                            <button onClick={resetClienteForm} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={24} /></button>
+                            <button className="modal-close" onClick={resetClienteForm}><LuX size={18} /></button>
                         </div>
-                        <div className="modal-body">
-                            <form onSubmit={handleClienteSubmit}>
+
+                        <form onSubmit={handleClienteSubmit}>
+                            <div className="modal-body">
                                 <div className="form-group">
                                     <label>Nome / Razão Social *</label>
                                     <input required value={clienteData.nome} onChange={e => setClienteData({ ...clienteData, nome: e.target.value })} />
@@ -638,36 +641,38 @@ export default function CadastrosPage() {
                                     <label>Endereço Completo</label>
                                     <input value={clienteData.endereco} onChange={e => setClienteData({ ...clienteData, endereco: e.target.value })} placeholder="Rua, Número, Bairro, Cidade..." />
                                 </div>
-                            </form>
-                        </div>
-                        <div className="modal-actions">
-                            <button type="button" className="btn-secondary" onClick={resetClienteForm}>Cancelar</button>
-                            <button
-                                type="button"
-                                className="btn-primary"
-                                onClick={handleClienteSubmit}
-                                disabled={createClienteMutation.isPending || updateClienteMutation.isPending}
-                            >
-                                {(createClienteMutation.isPending || updateClienteMutation.isPending) ? 'Salvando...' : (editingCliente ? 'Salvar Alterações' : 'Cadastrar Cliente')}
-                            </button>
-                        </div>
+                            </div>
+
+                            <div className="modal-actions">
+                                <button type="button" className="btn-secondary" onClick={resetClienteForm}>Cancelar</button>
+                                <button
+                                    type="submit"
+                                    className="btn-primary"
+                                    disabled={createClienteMutation.isPending || updateClienteMutation.isPending}
+                                >
+                                    {(createClienteMutation.isPending || updateClienteMutation.isPending) ? 'Salvando...' : (editingCliente ? 'Salvar Alterações' : 'Cadastrar Cliente')}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
 
-            {/* MODAL FORNECEDOR */}
+
+            {/* MODAL FORNECEDOR (Standardized) */}
             {showFornecModal && (
                 <div className="modal-overlay" onClick={resetFornecForm}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <div className="modal-content card" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div>
                                 <h2>{editingFornec ? 'Editar' : 'Novo'} Fornecedor</h2>
                                 <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '4px 0 0 0' }}>Gerencie suas despesas recorrentes e fornecedores</p>
                             </div>
-                            <button onClick={resetFornecForm} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={24} /></button>
+                            <button className="modal-close" onClick={resetFornecForm}><LuX size={18} /></button>
                         </div>
-                        <div className="modal-body">
-                            <form onSubmit={handleFornecSubmit}>
+
+                        <form onSubmit={handleFornecSubmit}>
+                            <div className="modal-body">
                                 <div className="form-group">
                                     <label>Nome da Empresa / Fantasia *</label>
                                     <input required value={fornecData.nome} onChange={e => setFornecData({ ...fornecData, nome: e.target.value })} placeholder="Ex: Atacadão, Enel, Sabesp" />
@@ -686,22 +691,23 @@ export default function CadastrosPage() {
                                     <label>Observações Adicionais</label>
                                     <textarea rows={3} value={fornecData.observacoes} onChange={e => setFornecData({ ...fornecData, observacoes: e.target.value })} style={{ resize: 'vertical' }} />
                                 </div>
-                            </form>
-                        </div>
-                        <div className="modal-actions">
-                            <button type="button" className="btn-secondary" onClick={resetFornecForm}>Cancelar</button>
-                            <button
-                                type="button"
-                                className="btn-primary"
-                                onClick={handleFornecSubmit}
-                                disabled={createFornecedorMutation.isPending || updateFornecedorMutation.isPending}
-                            >
-                                {(createFornecedorMutation.isPending || updateFornecedorMutation.isPending) ? 'Salvando...' : (editingFornec ? 'Salvar Alterações' : 'Cadastrar Fornecedor')}
-                            </button>
-                        </div>
+                            </div>
+
+                            <div className="modal-actions">
+                                <button type="button" className="btn-secondary" onClick={resetFornecForm}>Cancelar</button>
+                                <button
+                                    type="submit"
+                                    className="btn-primary"
+                                    disabled={createFornecedorMutation.isPending || updateFornecedorMutation.isPending}
+                                >
+                                    {(createFornecedorMutation.isPending || updateFornecedorMutation.isPending) ? 'Salvando...' : (editingFornec ? 'Salvar Alterações' : 'Cadastrar Fornecedor')}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

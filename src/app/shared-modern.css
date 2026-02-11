@@ -334,13 +334,19 @@
 .modal-close {
     border: none;
     background: transparent;
-    font-size: 1.5rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     cursor: pointer;
     color: var(--text-tertiary);
-    transition: color 0.2s;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-close:hover {
+    background: var(--neutral-100);
     color: var(--danger);
 }
 

@@ -21,7 +21,8 @@ import {
     LuTriangleAlert,
     LuEraser,
     LuPencil,
-    LuTrash2
+    LuTrash2,
+    LuX
 } from 'react-icons/lu';
 import '../shared-modern.css';
 
@@ -285,6 +286,7 @@ export default function ConveniosPage() {
                 )}
             </div>
 
+            {/* Modal de Cadastro (Standardized) */}
             {showModal && (
                 <div className="modal-overlay" onClick={resetForm}>
                     <div className="modal-content card" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px', width: '95%' }}>
@@ -293,78 +295,80 @@ export default function ConveniosPage() {
                                 <h2>{editingConvenio ? 'Editar Convênio' : 'Novo Convênio'}</h2>
                                 <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Configure os dados do fechamento</p>
                             </div>
-                            <button className="btn-close" onClick={resetForm}>✕</button>
+                            <button className="modal-close" onClick={resetForm}><LuX size={20} /></button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="modern-form">
-                            <div className="form-group">
-                                <label>Empresa/Cliente *</label>
-                                <select required value={formData.empresaCliente} onChange={e => setFormData({ ...formData, empresaCliente: e.target.value })}>
-                                    <option value="">Selecione...</option>
-                                    {clientes.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
-                                </select>
-                            </div>
-
-                            <div className="grid-2">
+                        <form onSubmit={handleSubmit}>
+                            <div className="modal-body">
                                 <div className="form-group">
-                                    <label>Tipo de Fechamento *</label>
-                                    <select required value={formData.tipoFechamento} onChange={e => setFormData({ ...formData, tipoFechamento: e.target.value as any })}>
-                                        <option value="mensal">Mensal</option>
-                                        <option value="quinzenal">Quinzenal</option>
-                                        <option value="semanal">Semanal</option>
-                                        <option value="personalizado">Personalizado</option>
+                                    <label>Empresa/Cliente *</label>
+                                    <select required value={formData.empresaCliente} onChange={e => setFormData({ ...formData, empresaCliente: e.target.value })}>
+                                        <option value="">Selecione...</option>
+                                        {clientes.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
                                     </select>
                                 </div>
+
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label>Tipo de Fechamento *</label>
+                                        <select required value={formData.tipoFechamento} onChange={e => setFormData({ ...formData, tipoFechamento: e.target.value as any })}>
+                                            <option value="mensal">Mensal</option>
+                                            <option value="quinzenal">Quinzenal</option>
+                                            <option value="semanal">Semanal</option>
+                                            <option value="personalizado">Personalizado</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Período *</label>
+                                        <input required placeholder="Ex: Janeiro/2024" value={formData.periodoReferencia} onChange={e => setFormData({ ...formData, periodoReferencia: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label>Data Fechamento *</label>
+                                        <input type="date" required value={formData.dataFechamento} onChange={e => setFormData({ ...formData, dataFechamento: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Valor *</label>
+                                        <MoneyInput required value={formData.valorBoleto} onChange={val => setFormData({ ...formData, valorBoleto: val.toString() })} />
+                                    </div>
+                                </div>
+
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label>Banco *</label>
+                                        <input required value={formData.banco} onChange={e => setFormData({ ...formData, banco: e.target.value })} placeholder="Ex: Itaú" />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Vencimento *</label>
+                                        <input type="date" required value={formData.dataVencimento} onChange={e => setFormData({ ...formData, dataVencimento: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label>Status *</label>
+                                        <select value={formData.statusPagamento} onChange={e => setFormData({ ...formData, statusPagamento: e.target.value as any })}>
+                                            <option value="pendente">Pendente</option>
+                                            <option value="pago">Pago</option>
+                                            <option value="vencido">Vencido</option>
+                                            <option value="parcial">Parcial</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Data Pagamento</label>
+                                        <input type="date" value={formData.dataPagamento} onChange={e => setFormData({ ...formData, dataPagamento: e.target.value })} />
+                                    </div>
+                                </div>
+
                                 <div className="form-group">
-                                    <label>Período *</label>
-                                    <input required placeholder="Ex: Janeiro/2024" value={formData.periodoReferencia} onChange={e => setFormData({ ...formData, periodoReferencia: e.target.value })} />
+                                    <label>Observações</label>
+                                    <textarea value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} rows={2} />
                                 </div>
                             </div>
 
-                            <div className="grid-2">
-                                <div className="form-group">
-                                    <label>Data Fechamento *</label>
-                                    <input type="date" required value={formData.dataFechamento} onChange={e => setFormData({ ...formData, dataFechamento: e.target.value })} />
-                                </div>
-                                <div className="form-group">
-                                    <label>Valor *</label>
-                                    <MoneyInput required value={formData.valorBoleto} onChange={val => setFormData({ ...formData, valorBoleto: val.toString() })} />
-                                </div>
-                            </div>
-
-                            <div className="grid-2">
-                                <div className="form-group">
-                                    <label>Banco *</label>
-                                    <input required value={formData.banco} onChange={e => setFormData({ ...formData, banco: e.target.value })} placeholder="Ex: Itaú" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Vencimento *</label>
-                                    <input type="date" required value={formData.dataVencimento} onChange={e => setFormData({ ...formData, dataVencimento: e.target.value })} />
-                                </div>
-                            </div>
-
-                            <div className="grid-2">
-                                <div className="form-group">
-                                    <label>Status *</label>
-                                    <select value={formData.statusPagamento} onChange={e => setFormData({ ...formData, statusPagamento: e.target.value as any })}>
-                                        <option value="pendente">Pendente</option>
-                                        <option value="pago">Pago</option>
-                                        <option value="vencido">Vencido</option>
-                                        <option value="parcial">Parcial</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>Data Pagamento</label>
-                                    <input type="date" value={formData.dataPagamento} onChange={e => setFormData({ ...formData, dataPagamento: e.target.value })} />
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Observações</label>
-                                <textarea value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} rows={2} />
-                            </div>
-
-                            <div className="modal-actions" style={{ marginTop: '2rem' }}>
+                            <div className="modal-actions">
                                 <button type="button" className="btn-secondary" onClick={resetForm}>Cancelar</button>
                                 <button type="submit" className="btn-primary" disabled={createConvenioMutation.isPending || updateConvenioMutation.isPending}>
                                     Salvar Convênio
@@ -374,6 +378,7 @@ export default function ConveniosPage() {
                     </div>
                 </div>
             )}
+
 
             <style jsx>{`
                 .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; border-top: 1px solid #f1f5f9; }

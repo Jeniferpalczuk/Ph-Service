@@ -382,7 +382,7 @@ export default function BoletosPage() {
                 )}
             </div>
 
-            {/* Modal de Cadastro (Adaptado) */}
+            {/* Modal de Cadastro (Standardized) */}
             {showModal && (
                 <div className="modal-overlay" onClick={resetForm}>
                     <div className="modal-content card" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '95%' }}>
@@ -391,67 +391,69 @@ export default function BoletosPage() {
                                 <h2>{editingBoleto ? 'Editar Boleto' : 'Novo Boleto'}</h2>
                                 <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Configure os dados do título financeiro</p>
                             </div>
-                            <button className="btn-close" onClick={resetForm}><LuX size={18} /></button>
+                            <button className="modal-close" onClick={resetForm}><LuX size={20} /></button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="modern-form">
-                            <div className="grid-2">
-                                <div className="form-group">
-                                    <label>Cliente (Fornecedor)</label>
-                                    <select
-                                        required
-                                        value={formData.cliente}
-                                        onChange={e => setFormData({ ...formData, cliente: e.target.value })}
-                                    >
-                                        <option value="">Selecione...</option>
-                                        {fornecedores.map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
-                                    </select>
+                        <form onSubmit={handleSubmit}>
+                            <div className="modal-body">
+                                <div className="grid-2">
+                                    <div className="form-group">
+                                        <label>Cliente (Fornecedor)</label>
+                                        <select
+                                            required
+                                            value={formData.cliente}
+                                            onChange={e => setFormData({ ...formData, cliente: e.target.value })}
+                                        >
+                                            <option value="">Selecione...</option>
+                                            {fornecedores.map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Banco</label>
+                                        <input required value={formData.banco} onChange={e => setFormData({ ...formData, banco: e.target.value })} placeholder="Ex: Itaú" />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Valor</label>
+                                        <MoneyInput required value={formData.valor} onChange={val => setFormData({ ...formData, valor: val.toString() })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Vencimento</label>
+                                        <input type="date" required value={formData.dataVencimento} onChange={e => setFormData({ ...formData, dataVencimento: e.target.value })} />
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label>Banco</label>
-                                    <input required value={formData.banco} onChange={e => setFormData({ ...formData, banco: e.target.value })} placeholder="Ex: Itaú" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Valor</label>
-                                    <MoneyInput required value={formData.valor} onChange={val => setFormData({ ...formData, valor: val.toString() })} />
-                                </div>
-                                <div className="form-group">
-                                    <label>Vencimento</label>
-                                    <input type="date" required value={formData.dataVencimento} onChange={e => setFormData({ ...formData, dataVencimento: e.target.value })} />
-                                </div>
-                            </div>
 
-                            {!editingBoleto && (
-                                <div className="parcelamento-section" style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 700 }}>
-                                        <input type="checkbox" checked={isParcelado} onChange={e => setIsParcelado(e.target.checked)} />
-                                        Parcelar Título?
-                                    </label>
-                                    {isParcelado && (
-                                        <div className="grid-2" style={{ marginTop: '10px' }}>
-                                            <div className="form-group">
-                                                <label>Número de Parcelas</label>
-                                                <select value={numeroParcelas} onChange={e => setNumeroParcelas(parseInt(e.target.value))}>
-                                                    {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n}x</option>)}
-                                                </select>
-                                            </div>
-                                            <div className="form-group">
-                                                <label>Valor da Parcela</label>
-                                                <div className="static-val">
-                                                    {(parseFloat(formData.valor || '0') / numeroParcelas).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                {!editingBoleto && (
+                                    <div className="parcelamento-section" style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 700 }}>
+                                            <input type="checkbox" checked={isParcelado} onChange={e => setIsParcelado(e.target.checked)} />
+                                            Parcelar Título?
+                                        </label>
+                                        {isParcelado && (
+                                            <div className="grid-2" style={{ marginTop: '10px' }}>
+                                                <div className="form-group">
+                                                    <label>Número de Parcelas</label>
+                                                    <select value={numeroParcelas} onChange={e => setNumeroParcelas(parseInt(e.target.value))}>
+                                                        {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n}x</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Valor da Parcela</label>
+                                                    <div className="static-val">
+                                                        {(parseFloat(formData.valor || '0') / numeroParcelas).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                        )}
+                                    </div>
+                                )}
 
-                            <div className="form-group" style={{ marginTop: '1rem' }}>
-                                <label>Observações</label>
-                                <textarea value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} rows={2} />
+                                <div className="form-group" style={{ marginTop: '1rem' }}>
+                                    <label>Observações</label>
+                                    <textarea value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} rows={2} />
+                                </div>
                             </div>
 
-                            <div className="modal-actions" style={{ marginTop: '2rem' }}>
+                            <div className="modal-actions">
                                 <button type="button" className="btn-secondary" onClick={resetForm}>Cancelar</button>
                                 <button type="submit" className="btn-primary" disabled={createBoletoMutation.isPending || updateBoletoMutation.isPending}>
                                     {editingBoleto ? 'Salvar Alterações' : 'Criar Boleto(s)'}
@@ -461,6 +463,7 @@ export default function BoletosPage() {
                     </div>
                 </div>
             )}
+
 
             <style jsx>{`
                 .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; border-top: 1px solid #f1f5f9; }

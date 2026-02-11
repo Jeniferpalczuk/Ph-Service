@@ -400,38 +400,14 @@ export default function MarmitasPage() {
             )}
 
             {showModal && (
-                <div className="modal-overlay animate-fade-in" onClick={resetForm} style={{
-                    position: 'fixed',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(15, 23, 42, 0.4)',
-                    backdropFilter: 'blur(8px)',
-                    zIndex: 1000,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '2rem'
-                }}>
-                    <div className="modal-content animate-scale-in" onClick={e => e.stopPropagation()} style={{
-                        background: '#ffffff',
-                        borderRadius: '24px',
-                        width: '100%',
-                        maxWidth: '850px',
-                        maxHeight: '90vh',
-                        overflowY: 'auto',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        padding: 0
-                    }}>
-                        <div className="modal-header" style={{
-                            padding: '1.5rem 2rem', borderBottom: '1px solid #f1f5f9',
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            background: 'linear-gradient(to right, #f8fafc, #ffffff)',
-                            borderTopLeftRadius: '24px', borderTopRightRadius: '24px',
-                            position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)'
-                        }}>
+                <div className="modal-overlay animate-fade-in" onClick={resetForm}>
+                    <div className="modal-content card animate-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '850px', width: '95%' }}>
+                        <div className="modal-header">
                             <div>
-                                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>Lançar Vendas</h2>
-                                <p style={{ color: '#64748b', marginTop: '4px', fontSize: '0.85rem' }}>Informe as quantidades vendidas por tamanho.</p>
+                                <h2>Lançar Vendas</h2>
+                                <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Informe as quantidades vendidas por tamanho.</p>
                             </div>
-                            <button className="btn-modern-icon" onClick={resetForm} style={{ width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><LuX size={18} /></button>
+                            <button className="modal-close" onClick={resetForm}><LuX size={18} /></button>
                         </div>
                         <form onSubmit={handleSubmit} style={{ padding: '2rem' }}>
                             <div className="form-group" style={{ marginBottom: '2rem', maxWidth: '300px' }}>

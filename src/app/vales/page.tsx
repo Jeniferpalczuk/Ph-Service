@@ -285,7 +285,7 @@ export default function ValesPage() {
                                 <h2>{editingItem ? 'Editar Vale' : 'Novo Vale'}</h2>
                                 <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Registre o adiantamento</p>
                             </div>
-                            <button className="btn-close" onClick={resetForm}><LuX size={18} /></button>
+                            <button className="modal-close" onClick={resetForm}><LuX size={18} /></button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="modern-form">
@@ -321,7 +321,7 @@ export default function ValesPage() {
                                 </select>
                             </div>
 
-                            <div className="modal-actions" style={{ marginTop: '2rem' }}>
+                            <div className="modal-actions">
                                 <button type="button" className="btn-secondary" onClick={resetForm}>Cancelar</button>
                                 <button type="submit" className="btn-primary" disabled={createValeMutation.isPending || updateValeMutation.isPending}>
                                     Salvar Vale
