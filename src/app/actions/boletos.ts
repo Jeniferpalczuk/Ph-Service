@@ -37,9 +37,10 @@ export async function createBoletoAction(
 
         const parsed = createBoletoSchema.safeParse(input);
         if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
             return {
                 success: false,
-                error: 'Dados inválidos',
+                error: errorMessages || 'Dados inválidos',
                 errors: parsed.error.format()
             };
         }
@@ -88,9 +89,10 @@ export async function updateBoletoAction(
 
         const parsed = updateBoletoSchema.safeParse(input);
         if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
             return {
                 success: false,
-                error: 'Dados inválidos',
+                error: errorMessages || 'Dados inválidos',
                 errors: parsed.error.format()
             };
         }

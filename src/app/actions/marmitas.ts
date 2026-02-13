@@ -28,7 +28,10 @@ export async function createMarmitaAction(input: CreateMarmitaInput): Promise<Ac
     try {
         const user = await getAuthenticatedUser();
         const parsed = createMarmitaSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('marmitas').insert({
@@ -53,7 +56,10 @@ export async function createMarmitasLoteAction(input: CreateMarmitasLoteInput): 
     try {
         const user = await getAuthenticatedUser();
         const parsed = createMarmitasLoteSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const inserts = parsed.data.marmitas.map(m => ({
@@ -79,7 +85,10 @@ export async function updateMarmitaAction(id: string, input: UpdateMarmitaInput)
     try {
         const user = await getAuthenticatedUser();
         const parsed = updateMarmitaSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('marmitas').update({

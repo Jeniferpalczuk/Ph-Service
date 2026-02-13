@@ -127,7 +127,8 @@ export default function ValesPage() {
             }
             resetForm();
         } catch (err) {
-            toast.error('Erro ao salvar vale.');
+            console.error('Erro ao salvar vale:', err);
+            toast.error(err instanceof Error ? err.message : 'Erro ao salvar vale.');
         }
     };
 

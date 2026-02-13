@@ -37,9 +37,10 @@ export async function createValeAction(
 
         const parsed = createValeSchema.safeParse(input);
         if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
             return {
                 success: false,
-                error: 'Dados inválidos',
+                error: errorMessages || 'Dados inválidos',
                 errors: parsed.error.format()
             };
         }
@@ -88,9 +89,10 @@ export async function updateValeAction(
 
         const parsed = updateValeSchema.safeParse(input);
         if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
             return {
                 success: false,
-                error: 'Dados inválidos',
+                error: errorMessages || 'Dados inválidos',
                 errors: parsed.error.format()
             };
         }

@@ -152,6 +152,11 @@ export default function BoletosPage() {
                 }
                 toast.success(`${numeroParcelas} parcelas criadas com sucesso!`);
             } else {
+                if (!formData.dataVencimento) {
+                    toast.error('Data de vencimento é obrigatória');
+                    return;
+                }
+
                 const [yV, mV, dV] = formData.dataVencimento.split('-').map(Number);
                 const vencAjustada = new Date(yV, mV - 1, dV, 12, 0, 0);
 
@@ -181,7 +186,8 @@ export default function BoletosPage() {
             }
             resetForm();
         } catch (err) {
-            toast.error('Erro ao salvar boleto.');
+            console.error('Erro ao salvar boleto:', err); // Log full error
+            toast.error(err instanceof Error ? err.message : 'Erro ao salvar boleto.');
         }
     };
 

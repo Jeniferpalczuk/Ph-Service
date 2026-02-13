@@ -29,7 +29,10 @@ export async function createClienteAction(input: CreateClienteInput): Promise<Ac
     try {
         const user = await getAuthenticatedUser();
         const parsed = createClienteSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('clientes').insert({
@@ -53,7 +56,10 @@ export async function updateClienteAction(id: string, input: UpdateClienteInput)
     try {
         const user = await getAuthenticatedUser();
         const parsed = updateClienteSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { error } = await supabase.from('clientes').update({
@@ -77,7 +83,10 @@ export async function createFornecedorAction(input: CreateFornecedorInput): Prom
     try {
         const user = await getAuthenticatedUser();
         const parsed = createFornecedorSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('fornecedores').insert({
@@ -100,7 +109,10 @@ export async function updateFornecedorAction(id: string, input: UpdateFornecedor
     try {
         const user = await getAuthenticatedUser();
         const parsed = updateFornecedorSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { error } = await supabase.from('fornecedores').update({

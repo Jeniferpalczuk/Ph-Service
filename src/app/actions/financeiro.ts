@@ -37,7 +37,10 @@ export async function createConvenioAction(input: CreateConvenioInput): Promise<
     try {
         const user = await getAuthenticatedUser();
         const parsed = createConvenioSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('convenios').insert({
@@ -64,7 +67,10 @@ export async function updateConvenioAction(id: string, input: UpdateConvenioInpu
     try {
         const user = await getAuthenticatedUser();
         const parsed = updateConvenioSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('convenios').update({
@@ -107,7 +113,10 @@ export async function createSaidaAction(input: CreateSaidaInput): Promise<Action
     try {
         const user = await getAuthenticatedUser();
         const parsed = createSaidaSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('saidas').insert({
@@ -133,7 +142,10 @@ export async function updateSaidaAction(id: string, input: UpdateSaidaInput): Pr
     try {
         const user = await getAuthenticatedUser();
         const parsed = updateSaidaSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('saidas').update({
@@ -176,7 +188,10 @@ export async function createCaixaAction(input: CreateCaixaInput): Promise<Action
     try {
         const user = await getAuthenticatedUser();
         const parsed = createCaixaSchema.safeParse(input);
-        if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
+        }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('fechamentos_caixa').insert({

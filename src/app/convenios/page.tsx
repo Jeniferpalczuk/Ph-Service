@@ -85,6 +85,15 @@ export default function ConveniosPage() {
         e.preventDefault();
 
         try {
+            if (!formData.dataFechamento) {
+                toast.error('Data de fechamento é obrigatória');
+                return;
+            }
+            if (!formData.dataVencimento) {
+                toast.error('Data de vencimento é obrigatória');
+                return;
+            }
+
             const [yF, mF, dF] = formData.dataFechamento.split('-').map(Number);
             const dataFechAjustada = new Date(yF, mF - 1, dF, 12, 0, 0);
 
@@ -119,7 +128,8 @@ export default function ConveniosPage() {
             }
             resetForm();
         } catch (err) {
-            toast.error('Erro ao salvar convênio.');
+            console.error('Erro ao salvar convênio:', err);
+            toast.error(err instanceof Error ? err.message : 'Erro ao salvar convênio.');
         }
     };
 
