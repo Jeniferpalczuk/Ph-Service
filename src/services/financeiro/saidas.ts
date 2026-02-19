@@ -142,5 +142,5 @@ export async function getSaidasTotal(startDate: string, endDate: string): Promis
 
     if (error) throw new Error(`Erro ao buscar total de saídas: ${error.message}`);
 
-    return (data || []).reduce((sum, item) => sum + parseFloat(item.valor as string || '0'), 0);
+    return (data || []).reduce((sum: any, item: any) => sum + parseFloat(item.valor as string || '0'), 0);
 }

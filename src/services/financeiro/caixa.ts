@@ -93,7 +93,7 @@ export async function getCaixaSummary(startDate: string, endDate: string) {
 
     if (error) throw error;
 
-    const summary = (data || []).reduce((acc, row) => {
+    const summary = (data || []).reduce((acc: any, row: any) => {
         acc.entradas += (row.entrada_dinheiro || 0) + (row.entrada_pix || 0) +
             (row.entrada_credito || 0) + (row.entrada_debito || 0) +
             (row.entrada_alimentacao || 0);

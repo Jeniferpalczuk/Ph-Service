@@ -180,13 +180,13 @@ export async function getFolhaStats(
 
     return {
         totalPago: pagamentos
-            .filter(p => p.status_pagamento === 'pago')
-            .reduce((sum, p) => sum + parseFloat(p.valor as string || '0'), 0),
+            .filter((p: any) => p.status_pagamento === 'pago')
+            .reduce((sum: any, p: any) => sum + parseFloat(p.valor as string || '0'), 0),
         totalPendente: pagamentos
-            .filter(p => p.status_pagamento === 'pendente')
-            .reduce((sum, p) => sum + parseFloat(p.valor as string || '0'), 0),
+            .filter((p: any) => p.status_pagamento === 'pendente')
+            .reduce((sum: any, p: any) => sum + parseFloat(p.valor as string || '0'), 0),
         totalDescontos: pagamentos
-            .reduce((sum, p) => sum + parseFloat(p.descontos as string || '0'), 0),
+            .reduce((sum: any, p: any) => sum + parseFloat(p.descontos as string || '0'), 0),
         quantidadePagamentos: pagamentos.length,
     };
 }

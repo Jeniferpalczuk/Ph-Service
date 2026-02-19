@@ -112,12 +112,14 @@ export default function ConveniosPage() {
                 tipoFechamento: formData.tipoFechamento,
                 periodoReferencia: formData.periodoReferencia,
                 dataFechamento: dataFechAjustada,
-                valor: parseFloat(formData.valorBoleto), // Action expects 'valor'
+                valor: parseFloat(formData.valorBoleto),
+                // Action expects 'valor'
                 banco: formData.banco,
                 dataVencimento: dataVencAjustada,
                 dataPagamento: dataPagAjustada,
                 statusPagamento: formData.statusPagamento,
                 observacoes: formData.observacoes || null,
+
             };
 
             if (editingConvenio) {

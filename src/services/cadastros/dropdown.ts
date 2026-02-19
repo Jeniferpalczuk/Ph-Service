@@ -24,7 +24,7 @@ export async function getFuncionariosDropdown(): Promise<DropdownOption[]> {
         .order('nome', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar funcionários: ${error.message}`);
-    return (data || []).map(row => ({ id: row.id, nome: row.nome }));
+    return (data || []).map((row: any) => ({ id: row.id, nome: row.nome }));
 }
 
 /**
@@ -47,7 +47,7 @@ export async function getFuncionariosFolhaDropdown(): Promise<FuncionarioFolhaOp
         .order('nome', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar funcionários: ${error.message}`);
-    return (data || []).map(row => ({
+    return (data || []).map((row: any) => ({
         id: row.id,
         nome: row.nome,
         cargo: row.cargo || '',
@@ -69,7 +69,7 @@ export async function getFornecedoresDropdown(): Promise<DropdownOption[]> {
         .order('nome', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar fornecedores: ${error.message}`);
-    return (data || []).map(row => ({ id: row.id, nome: row.nome }));
+    return (data || []).map((row: any) => ({ id: row.id, nome: row.nome }));
 }
 
 /**
@@ -85,5 +85,5 @@ export async function getClientesDropdown(): Promise<DropdownOption[]> {
         .order('nome', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar clientes: ${error.message}`);
-    return (data || []).map(row => ({ id: row.id, nome: row.nome }));
+    return (data || []).map((row: any) => ({ id: row.id, nome: row.nome }));
 }
