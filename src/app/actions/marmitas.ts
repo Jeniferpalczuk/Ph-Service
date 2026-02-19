@@ -6,23 +6,7 @@ import {
     createMarmitaSchema, updateMarmitaSchema, CreateMarmitaInput, UpdateMarmitaInput,
     createMarmitasLoteSchema, CreateMarmitasLoteInput
 } from '@/lib/validations/marmitas';
-import { z } from 'zod';
-
-type ActionResult<T> =
-    | { success: true; data: T }
-    | { success: false; error: string; errors?: z.ZodFormattedError<unknown> };
-
-function formatDateForDB(date: Date | undefined | null): string | null {
-    if (!date) return null;
-    return date instanceof Date ? date.toISOString().split('T')[0] : date;
-}
-
-async function getAuthenticatedUser() {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) throw new Error('Não autorizado');
-    return user;
-}
+import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
 
 export async function createMarmitaAction(input: CreateMarmitaInput): Promise<ActionResult<{ id: string }>> {
     try {
@@ -84,6 +68,8 @@ export async function createMarmitasLoteAction(input: CreateMarmitasLoteInput): 
 export async function updateMarmitaAction(id: string, input: UpdateMarmitaInput): Promise<ActionResult<{ id: string }>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const parsed = updateMarmitaSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
@@ -112,6 +98,8 @@ export async function updateMarmitaAction(id: string, input: UpdateMarmitaInput)
 export async function deleteMarmitaAction(id: string): Promise<ActionResult<void>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const supabase = await createClient();
         const { error } = await supabase.from('marmitas').delete().eq('id', id).eq('user_id', user.id);
         if (error) return { success: false, error: 'Erro ao excluir marmita' };

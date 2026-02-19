@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createFuncionarioSchema, updateFuncionarioSchema, CreateFuncionarioInput, UpdateFuncionarioInput } from '@/lib/validations/funcionarios';
-import { z } from 'zod';
+import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
 
 /**
  * Server Actions - Funcionários
@@ -16,29 +16,6 @@ import { z } from 'zod';
  * PADRÃO DE RETORNO:
  * { success: true, data: T } | { success: false, error: string, errors?: ZodErrors }
  */
-
-type ActionResult<T> =
-    | { success: true; data: T }
-    | { success: false; error: string; errors?: z.ZodFormattedError<unknown> };
-
-function formatDateForDB(date: Date | undefined | null): string | null {
-    if (!date) return null;
-    return date instanceof Date ? date.toISOString().split('T')[0] : date;
-}
-
-/**
- * Obtém o usuário autenticado de forma segura (do servidor)
- */
-async function getAuthenticatedUser() {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (error || !user) {
-        throw new Error('Não autorizado');
-    }
-
-    return user;
-}
 
 /**
  * Cria um novo funcionário
@@ -107,9 +84,8 @@ export async function updateFuncionarioAction(
         const user = await getAuthenticatedUser();
 
         // 2. Validação do ID
-        if (!id || typeof id !== 'string') {
-            return { success: false, error: 'ID inválido' };
-        }
+        const idError = validateId(id);
+        if (idError) return idError;
 
         // 3. Validação dos dados
         const parsed = updateFuncionarioSchema.safeParse(input);
@@ -171,9 +147,8 @@ export async function deleteFuncionarioAction(
         const user = await getAuthenticatedUser();
 
         // 2. Validação do ID
-        if (!id || typeof id !== 'string') {
-            return { success: false, error: 'ID inválido' };
-        }
+        const idError = validateId(id);
+        if (idError) return idError;
 
         // 3. Delete no DB
         const supabase = await createClient();

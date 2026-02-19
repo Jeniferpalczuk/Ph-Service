@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { FechamentoCaixa } from '@/types';
 import { PaginatedResult } from '../types';
+import { sanitizeSearch } from '@/lib/security';
 
 export interface CaixaQueryParams {
     page?: number;
@@ -45,8 +46,9 @@ export async function getFechamentosCaixa(params: CaixaQueryParams = {}): Promis
         .from('fechamentos_caixa')
         .select('*', { count: 'exact' });
 
-    if (search) {
-        query = query.ilike('funcionario', `%${search}%`);
+    const safeSearch = sanitizeSearch(search);
+    if (safeSearch) {
+        query = query.ilike('funcionario', `%${safeSearch}%`);
     }
 
     if (startDate) {

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { PagamentoFuncionario, PaymentStatus, PaymentMethod } from '@/types';
 import { PaginatedResult, BaseQueryParams, DateRangeParams, formatDateForDB, parseDBDate } from '../types';
+import { sanitizeSearch } from '@/lib/security';
 
 /**
  * Service Layer - Folha de Pagamento
@@ -49,9 +50,13 @@ export async function getFolhaPagamento(
     let query = supabase.from('folha_pagamento').select('*', { count: 'exact' });
 
     if (status !== 'all') query = query.eq('status_pagamento', status);
-    if (funcionario) query = query.ilike('funcionario', `%${funcionario}%`);
+    if (funcionario) {
+        const safeFuncionario = sanitizeSearch(funcionario);
+        if (safeFuncionario) query = query.ilike('funcionario', `%${safeFuncionario}%`);
+    }
     if (cargo) query = query.eq('cargo_funcao', cargo);
-    if (search) query = query.or(`funcionario.ilike.%${search}%,cargo_funcao.ilike.%${search}%`);
+    const safeSearch = sanitizeSearch(search);
+    if (safeSearch) query = query.or(`funcionario.ilike.%${safeSearch}%,cargo_funcao.ilike.%${safeSearch}%`);
     if (startDate) query = query.gte('data_pagamento', startDate);
     if (endDate) query = query.lte('data_pagamento', endDate);
 

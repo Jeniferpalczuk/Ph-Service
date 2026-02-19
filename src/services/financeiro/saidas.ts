@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { Saida, ExpenseCategory, PaymentMethod } from '@/types';
 import { PaginatedResult, BaseQueryParams, DateRangeParams, formatDateForDB, parseDBDate } from '../types';
+import { sanitizeSearch } from '@/lib/security';
 
 /**
  * Service Layer - Saídas (Despesas)
@@ -45,7 +46,8 @@ export async function getSaidas(
 
     if (categoria !== 'all') query = query.eq('categoria', categoria);
     if (fornecedor) query = query.eq('fornecedor', fornecedor);
-    if (search) query = query.or(`descricao.ilike.%${search}%,fornecedor.ilike.%${search}%`);
+    const safeSearch = sanitizeSearch(search);
+    if (safeSearch) query = query.or(`descricao.ilike.%${safeSearch}%,fornecedor.ilike.%${safeSearch}%`);
     if (startDate) query = query.gte('data', startDate);
     if (endDate) query = query.lte('data', endDate);
 

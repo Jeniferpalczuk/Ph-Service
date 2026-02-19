@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ProtectedLayout from "@/components/ProtectedLayout";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "PH Service - Gestão de Restaurante",
@@ -18,6 +19,7 @@ export default function RootLayout({
         <ProtectedLayout>
           {children}
         </ProtectedLayout>
+        <Toaster position="top-right" />
       </body>
     </html>
   );

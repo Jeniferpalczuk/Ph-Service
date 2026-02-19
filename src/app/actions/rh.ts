@@ -6,23 +6,7 @@ import {
     createFolhaPagamentoSchema, CreateFolhaPagamentoInput,
     updateFolhaPagamentoSchema, UpdateFolhaPagamentoInput
 } from '@/lib/validations/folha-pagamento';
-import { z } from 'zod';
-
-type ActionResult<T> =
-    | { success: true; data: T }
-    | { success: false; error: string; errors?: z.ZodFormattedError<unknown> };
-
-function formatDateForDB(date: Date | undefined | null): string | null {
-    if (!date) return null;
-    return date instanceof Date ? date.toISOString().split('T')[0] : date;
-}
-
-async function getAuthenticatedUser() {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) throw new Error('Não autorizado');
-    return user;
-}
+import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
 
 // ===========================================
 // FOLHA DE PAGAMENTO
@@ -67,6 +51,8 @@ export async function createFolhaPagamentoAction(input: CreateFolhaPagamentoInpu
 export async function updateFolhaPagamentoAction(id: string, input: UpdateFolhaPagamentoInput): Promise<ActionResult<{ id: string }>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const parsed = updateFolhaPagamentoSchema.safeParse(input);
         if (!parsed.success) return { success: false, error: 'Dados inválidos', errors: parsed.error.format() };
 
@@ -102,6 +88,8 @@ export async function updateFolhaPagamentoAction(id: string, input: UpdateFolhaP
 export async function deleteFolhaPagamentoAction(id: string): Promise<ActionResult<void>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const supabase = await createClient();
         const { error } = await supabase.from('folha_pagamento').delete().eq('id', id).eq('user_id', user.id);
         if (error) return { success: false, error: 'Erro ao excluir folha' };

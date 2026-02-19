@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { Fornecedor } from '@/types';
-import { PaginatedResult, BaseQueryParams } from '../types';
+import { PaginatedResult, BaseQueryParams, formatDateForDB } from '../types';
+import { sanitizeSearch } from '@/lib/security';
 
 /**
  * Service Layer - Fornecedores
@@ -10,8 +11,8 @@ function dbToFornecedor(row: Record<string, unknown>): Fornecedor {
     return {
         id: row.id as string,
         nome: row.nome as string,
-        contato: row.contato as string,
-        categoria: row.categoria as string,
+        telefone: row.telefone as string, // Antes contato
+        servico: row.servico as string, // Antes categoria
         ativo: row.ativo as boolean,
         observacoes: row.observacoes as string | undefined,
         createdAt: new Date(row.created_at as string),
@@ -20,7 +21,7 @@ function dbToFornecedor(row: Record<string, unknown>): Fornecedor {
 }
 
 export interface FornecedoresQueryParams extends BaseQueryParams {
-    categoria?: string;
+    servico?: string;
     ativo?: boolean | 'all';
 }
 
@@ -28,13 +29,14 @@ export async function getFornecedores(
     params: FornecedoresQueryParams = {}
 ): Promise<PaginatedResult<Fornecedor>> {
     const supabase = createClient();
-    const { page = 1, pageSize = 20, search = '', categoria, ativo = 'all' } = params;
+    const { page = 1, pageSize = 20, search = '', servico, ativo = 'all' } = params;
 
     let query = supabase.from('fornecedores').select('*', { count: 'exact' });
 
-    if (categoria) query = query.eq('categoria', categoria);
+    if (servico) query = query.eq('servico', servico);
     if (ativo !== 'all') query = query.eq('ativo', ativo);
-    if (search) query = query.or(`nome.ilike.%${search}%,categoria.ilike.%${search}%`);
+    const safeSearch = sanitizeSearch(search);
+    if (safeSearch) query = query.or(`nome.ilike.%${safeSearch}%,servico.ilike.%${safeSearch}%`);
 
     query = query.order('nome', { ascending: true });
 
@@ -75,8 +77,8 @@ export async function createFornecedor(
         .insert({
             user_id: userId,
             nome: fornecedor.nome,
-            contato: fornecedor.contato,
-            categoria: fornecedor.categoria,
+            telefone: fornecedor.telefone, // Antes contato
+            servico: fornecedor.servico, // Antes categoria
             ativo: fornecedor.ativo ?? true,
             observacoes: fornecedor.observacoes,
         })
@@ -92,8 +94,8 @@ export async function updateFornecedor(id: string, updates: Partial<Fornecedor>)
     const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
     if (updates.nome !== undefined) updateData.nome = updates.nome;
-    if (updates.contato !== undefined) updateData.contato = updates.contato;
-    if (updates.categoria !== undefined) updateData.categoria = updates.categoria;
+    if (updates.telefone !== undefined) updateData.telefone = updates.telefone; // Antes contato
+    if (updates.servico !== undefined) updateData.servico = updates.servico; // Antes categoria
     if (updates.ativo !== undefined) updateData.ativo = updates.ativo;
     if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
 

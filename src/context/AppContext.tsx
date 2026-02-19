@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from './AuthContext';
 
@@ -13,7 +13,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
     // Load theme preference
@@ -32,7 +32,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
         };
         loadTheme();
-    }, [user, supabase]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
 
     const toggleTheme = async () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';

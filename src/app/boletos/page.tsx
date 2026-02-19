@@ -12,8 +12,9 @@ import {
     useMarcarBoletoPago,
     useBoletosStats
 } from '@/hooks/financeiro/useBoletos';
-import { useFornecedoresList } from '@/hooks/cadastros/useFornecedores';
+import { useFornecedoresDropdown } from '@/hooks/cadastros/useDropdown';
 import { Skeleton, TableSkeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
 import {
     LuPlus,
@@ -42,8 +43,8 @@ export default function BoletosPage() {
     const { data: statsData } = useBoletosStats();
 
     // Hooks de Cadastros (Migrados)
-    const { data: fornecedoresData } = useFornecedoresList({ pageSize: 1000 });
-    const fornecedores = fornecedoresData?.data ?? [];
+    const { data: fornecedoresDD } = useFornecedoresDropdown();
+    const fornecedores = fornecedoresDD ?? [];
 
     const [showModal, setShowModal] = useState(false);
     const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
@@ -377,13 +378,11 @@ export default function BoletosPage() {
                             </tbody>
                         </table>
 
-                        {totalPages > 1 && (
-                            <div className="pagination">
-                                <button disabled={page === 1} onClick={() => setPage(prev => prev - 1)}>Anterior</button>
-                                <span>Página {page} de {totalPages}</span>
-                                <button disabled={page === totalPages} onClick={() => setPage(prev => prev + 1)}>Próxima</button>
-                            </div>
-                        )}
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={(p) => setPage(p)}
+                        />
                     </>
                 )}
             </div>
@@ -435,17 +434,36 @@ export default function BoletosPage() {
                                             Parcelar Título?
                                         </label>
                                         {isParcelado && (
-                                            <div className="grid-2" style={{ marginTop: '10px' }}>
-                                                <div className="form-group">
-                                                    <label>Número de Parcelas</label>
-                                                    <select value={numeroParcelas} onChange={e => setNumeroParcelas(parseInt(e.target.value))}>
-                                                        {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n}x</option>)}
-                                                    </select>
+                                            <div style={{ marginTop: '10px' }}>
+                                                <div className="grid-2">
+                                                    <div className="form-group">
+                                                        <label>Número de Parcelas</label>
+                                                        <select value={numeroParcelas} onChange={e => setNumeroParcelas(parseInt(e.target.value))}>
+                                                            {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n}x</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label>Valor da Parcela</label>
+                                                        <div className="static-val">
+                                                            {(parseFloat(formData.valor || '0') / numeroParcelas).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="form-group">
-                                                    <label>Valor da Parcela</label>
-                                                    <div className="static-val">
-                                                        {(parseFloat(formData.valor || '0') / numeroParcelas).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+
+                                                <div style={{ marginTop: '1rem' }}>
+                                                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Datas de Vencimento das Parcelas:</label>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                                        {parcelasDates.map((date, index) => (
+                                                            <div key={index} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>Parcela {index + 1}</span>
+                                                                <input
+                                                                    type="date"
+                                                                    value={date}
+                                                                    onChange={(e) => handleParcelaDateChange(index, e.target.value)}
+                                                                    style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                                                                />
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
                                             </div>

@@ -122,6 +122,21 @@ export default function DashboardPage() {
 
   const totalExpenses = expenseDistributionData.reduce((s, d) => s + d.value, 0);
 
+  // Cálculos reais para marmitas (sem dados hardcoded)
+  const hoje = new Date();
+  const vendidasHoje = rawData.marmitas
+    .filter(m => new Date(m.dataEntrega).toDateString() === hoje.toDateString())
+    .reduce((sum, m) => sum + (m.quantidade || 0), 0);
+
+  const faturamentoHoje = rawData.marmitas
+    .filter(m => new Date(m.dataEntrega).toDateString() === hoje.toDateString())
+    .reduce((sum, m) => sum + m.valorTotal, 0);
+
+  const diasUnicos = rawData.marmitas.length > 0
+    ? new Set(rawData.marmitas.map(m => new Date(m.dataEntrega).toDateString())).size
+    : 1;
+  const mediaDiaria = Math.round(rawData.marmitas.reduce((s, m) => s + (m.quantidade || 0), 0) / diasUnicos);
+
   return (
     <div className="dashboard-page">
       {/* TOP METRICS */}
@@ -175,9 +190,8 @@ export default function DashboardPage() {
               <div className="title-icon"><LuTrendingUp /></div>
               <h3>Evolução de Receita</h3>
             </div>
-            <select className="period-select">
-              <option>Últimos 15 dias</option>
-              <option>Último mês</option>
+            <select className="period-select" disabled title="Controlado pelos filtros acima">
+              <option>{month === 'all' ? 'Ano completo' : 'Mês atual'}</option>
             </select>
           </div>
           <div className="chart-body">
@@ -241,11 +255,13 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-            <div className="alert-box">
-              <LuTriangleAlert />
-              <span>Despesas acima da média</span>
-              <small>+ 9% vs mês anterior</small>
-            </div>
+            {totalExpenses > (stats?.faturamentoTotal || 1) * 0.7 && (
+              <div className="alert-box">
+                <LuTriangleAlert />
+                <span>Despesas acima de 70% da receita</span>
+                <small>Atenção ao equilíbrio financeiro</small>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -256,9 +272,9 @@ export default function DashboardPage() {
           <div className="chart-header">
             <h3>Vendas de Marmitas</h3>
             <div className="marmitas-stats">
-              <div className="m-stat"><span className="badge">Vendidas hoje</span> <LuTrendingUp color="#10b981" /> 132</div>
-              <div className="m-stat"><span className="badge orange">Faturamento</span> R$ 1.980 <LuTrendingUp color="#10b981" /> 118</div>
-              <div className="m-stat"><span className="badge teal">Média diária</span> 118 <LuTrendingUp color="#10b981" /> 118</div>
+              <div className="m-stat"><span className="badge">Vendidas hoje</span> <LuTrendingUp color="#10b981" /> {vendidasHoje}</div>
+              <div className="m-stat"><span className="badge orange">Faturamento</span> R$ {faturamentoHoje.toLocaleString('pt-BR')} </div>
+              <div className="m-stat"><span className="badge teal">Média diária</span> {mediaDiaria}</div>
             </div>
           </div>
           <div className="chart-body">

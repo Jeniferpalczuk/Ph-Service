@@ -38,7 +38,7 @@ export default function MarmitasPage() {
     // Fetch Marmitas via React Query
     const lastDay = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate().toString().padStart(2, '0');
     const { data: marmitasData, isLoading, isError, error } = useMarmitasList({
-        pageSize: 1000,
+        pageSize: 200, // ~30 dias * 4 tamanhos = max ~120 registros/mês
         startDate: `${selectedMonth}-01`,
         endDate: `${selectedMonth}-${lastDay}`
     });

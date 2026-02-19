@@ -10,9 +10,10 @@ import {
     useDeleteSaida,
     useSaidasTotal
 } from '@/hooks/financeiro/useSaidas';
-import { useFornecedoresList } from '@/hooks/cadastros/useFornecedores';
+import { useFornecedoresDropdown } from '@/hooks/cadastros/useDropdown';
 import { MoneyInput } from '@/components/MoneyInput';
 import { TableSkeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
 import {
     LuPlus,
@@ -61,8 +62,8 @@ export default function SaidasPage() {
     const { data: totalSaidasVal } = useSaidasTotal(`${selectedMonth}-01`, `${selectedMonth}-${lastDay}`);
 
     // Fetch Fornecedores
-    const { data: fornecedoresData } = useFornecedoresList({ pageSize: 1000 });
-    const fornecedores = fornecedoresData?.data ?? [];
+    const { data: fornecedoresDD } = useFornecedoresDropdown();
+    const fornecedores = fornecedoresDD ?? [];
 
     const [showModal, setShowModal] = useState(false);
     const [editingSaida, setEditingSaida] = useState<Saida | null>(null);
@@ -253,13 +254,11 @@ export default function SaidasPage() {
                                 )}
                             </tbody>
                         </table>
-                        {totalPages > 1 && (
-                            <div className="pagination">
-                                <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
-                                <span>Página {page} de {totalPages}</span>
-                                <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Próxima</button>
-                            </div>
-                        )}
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={(p) => setPage(p)}
+                        />
                     </>
                 )}
             </div>

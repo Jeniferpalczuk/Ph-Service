@@ -9,9 +9,10 @@ import {
     useUpdateConvenio,
     useDeleteConvenio
 } from '@/hooks/financeiro/useConvenios';
-import { useClientesList } from '@/hooks/cadastros/useClientes';
+import { useClientesDropdown } from '@/hooks/cadastros/useDropdown';
 import { MoneyInput } from '@/components/MoneyInput';
 import { TableSkeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
 import {
     LuPlus,
@@ -38,8 +39,8 @@ export default function ConveniosPage() {
     const deleteConvenioMutation = useDeleteConvenio();
 
     // Hooks de Cadastros
-    const { data: clientesData } = useClientesList({ pageSize: 1000 });
-    const clientes = clientesData?.data ?? [];
+    const { data: clientesDD } = useClientesDropdown();
+    const clientes = clientesDD ?? [];
 
     const [showModal, setShowModal] = useState(false);
     const [editingConvenio, setEditingConvenio] = useState<Convenio | null>(null);
@@ -285,13 +286,11 @@ export default function ConveniosPage() {
                             </tbody>
                         </table>
 
-                        {totalPages > 1 && (
-                            <div className="pagination">
-                                <button disabled={page === 1} onClick={() => setPage(prev => prev - 1)}>Anterior</button>
-                                <span>Página {page} de {totalPages}</span>
-                                <button disabled={page === totalPages} onClick={() => setPage(prev => prev + 1)}>Próxima</button>
-                            </div>
-                        )}
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={(p) => setPage(p)}
+                        />
                     </>
                 )}
             </div>

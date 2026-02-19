@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { Funcionario } from '@/types';
 import { PaginatedResult, BaseQueryParams, formatDateForDB, parseDBDate } from '../types';
+import { sanitizeSearch } from '@/lib/security';
 
 /**
  * Service Layer - Funcionários
@@ -76,7 +77,8 @@ export async function getFuncionarios(
     }
 
     if (search) {
-        query = query.or(`nome.ilike.%${search}%,cargo.ilike.%${search}%`);
+        const safeSearch = sanitizeSearch(search);
+        if (safeSearch) query = query.or(`nome.ilike.%${safeSearch}%,cargo.ilike.%${safeSearch}%`);
     }
 
     // Ordenação: Ativos primeiro, depois por nome

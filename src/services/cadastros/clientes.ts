@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { Cliente } from '@/types';
 import { PaginatedResult, BaseQueryParams, formatDateForDB } from '../types';
+import { sanitizeSearch } from '@/lib/security';
 
 /**
  * Service Layer - Clientes
@@ -34,7 +35,8 @@ export async function getClientes(
 
     if (tipo !== 'all') query = query.eq('tipo', tipo);
     if (ativo !== 'all') query = query.eq('ativo', ativo);
-    if (search) query = query.or(`nome.ilike.%${search}%,telefone.ilike.%${search}%`);
+    const safeSearch = sanitizeSearch(search);
+    if (safeSearch) query = query.or(`nome.ilike.%${safeSearch}%,telefone.ilike.%${safeSearch}%`);
 
     query = query.order('nome', { ascending: true });
 

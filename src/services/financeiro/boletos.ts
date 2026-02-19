@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { Boleto, PaymentStatus } from '@/types';
 import { PaginatedResult, BaseQueryParams, DateRangeParams, formatDateForDB, parseDBDate } from '../types';
+import { sanitizeSearch } from '@/lib/security';
 
 /**
  * Service Layer - Boletos
@@ -46,7 +47,8 @@ export async function getBoletos(
 
     if (status !== 'all') query = query.eq('status_pagamento', status);
     if (banco) query = query.eq('banco', banco);
-    if (search) query = query.or(`cliente.ilike.%${search}%,observacoes.ilike.%${search}%`);
+    const safeSearch = sanitizeSearch(search);
+    if (safeSearch) query = query.or(`cliente.ilike.%${safeSearch}%,observacoes.ilike.%${safeSearch}%`);
     if (startDate) query = query.gte('data_vencimento', startDate);
     if (endDate) query = query.lte('data_vencimento', endDate);
 

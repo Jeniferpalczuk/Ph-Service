@@ -72,7 +72,7 @@ export default function CadastrosPage() {
         dataAdmissao: '', dataDemissao: '', ativo: true
     });
     const [clienteData, setClienteData] = useState({ nome: '', tipo: 'empresa', telefone: '', endereco: '', ativo: true });
-    const [fornecData, setFornecData] = useState({ nome: '', categoria: '', contato: '', ativo: true, observacoes: '' });
+    const [fornecData, setFornecData] = useState({ nome: '', servico: '', telefone: '', ativo: true, observacoes: '' });
 
     // ========================================
     // REACT QUERY - Funcionários
@@ -99,11 +99,15 @@ export default function CadastrosPage() {
     // ========================================
     // REACT QUERY - Clientes
     // ========================================
+    const [clientePage, setClientePage] = useState(1);
     const {
         data: clientesData,
         isLoading: isLoadingClientes,
+        isError: isErrorClientes,
+        error: errorClientes,
     } = useClientesList({
-        pageSize: 1000,
+        page: clientePage,
+        pageSize: 20,
         search: activeTab === 'clientes' ? searchTerm : '',
     });
 
@@ -112,15 +116,21 @@ export default function CadastrosPage() {
     const deleteClienteMutation = useDeleteCliente();
 
     const clientes = clientesData?.data ?? [];
+    const totalClientePages = clientesData?.totalPages ?? 1;
+    const totalClientesCount = clientesData?.count ?? 0;
 
     // ========================================
     // REACT QUERY - Fornecedores
     // ========================================
+    const [fornecPage, setFornecPage] = useState(1);
     const {
         data: fornecedoresData,
         isLoading: isLoadingFornecedores,
+        isError: isErrorFornecedores, // Adicionado estado de erro explícito
+        error: errorFornecedores,
     } = useFornecedoresList({
-        pageSize: 1000,
+        page: fornecPage, // Usa paginação server-side
+        pageSize: 20, // Paginação real
         search: activeTab === 'fornecedores' ? searchTerm : '',
     });
 
@@ -129,6 +139,8 @@ export default function CadastrosPage() {
     const deleteFornecedorMutation = useDeleteFornecedor();
 
     const fornecedores = fornecedoresData?.data ?? [];
+    const totalFornecPages = fornecedoresData?.totalPages ?? 1; // Para controle da paginação
+    const totalFornecedoresCount = fornecedoresData?.count ?? 0;
 
     // ========================================
     // Handlers Funcionários (Usando Mutations)
@@ -171,7 +183,7 @@ export default function CadastrosPage() {
             resetFuncForm();
         } catch (err) {
             console.error('Erro ao salvar funcionário:', err);
-            toast.error('Erro ao salvar funcionário. Verifique os dados.');
+            toast.error(err instanceof Error ? err.message : 'Erro ao salvar funcionário.');
         }
     };
 
@@ -226,7 +238,7 @@ export default function CadastrosPage() {
             resetClienteForm();
         } catch (err) {
             console.error('Erro ao salvar cliente:', err);
-            toast.error('Erro ao salvar cliente.');
+            toast.error(err instanceof Error ? err.message : 'Erro ao salvar cliente.');
         }
     };
 
@@ -268,7 +280,7 @@ export default function CadastrosPage() {
             resetFornecForm();
         } catch (err) {
             console.error('Erro ao salvar fornecedor:', err);
-            toast.error('Erro ao salvar fornecedor.');
+            toast.error(err instanceof Error ? err.message : 'Erro ao salvar fornecedor.');
         }
     };
 
@@ -284,13 +296,20 @@ export default function CadastrosPage() {
             }
         }
     };
+
     const resetFornecForm = () => {
-        setFornecData({ nome: '', categoria: '', contato: '', ativo: true, observacoes: '' });
+        setFornecData({ nome: '', servico: '', telefone: '', ativo: true, observacoes: '' });
         setEditingFornec(null); setShowFornecModal(false);
     };
     const editFornec = (f: Fornecedor) => {
         setEditingFornec(f);
-        setFornecData({ nome: f.nome, categoria: f.categoria, contato: f.contato, ativo: f.ativo, observacoes: f.observacoes || '' });
+        setFornecData({
+            nome: f.nome,
+            servico: f.servico || '',
+            telefone: f.telefone || '',
+            ativo: f.ativo,
+            observacoes: f.observacoes || ''
+        });
         setShowFornecModal(true);
     };
 
@@ -328,10 +347,10 @@ export default function CadastrosPage() {
                 <button className={`tab-btn ${activeTab === 'funcionarios' ? 'active' : ''}`} onClick={() => { setActiveTab('funcionarios'); setSearchTerm(''); setFuncPage(1); }}>
                     <LuChefHat size={18} /> Funcionários
                 </button>
-                <button className={`tab-btn ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => { setActiveTab('clientes'); setSearchTerm(''); }}>
+                <button className={`tab-btn ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => { setActiveTab('clientes'); setSearchTerm(''); setClientePage(1); }}>
                     <LuBuilding2 size={18} /> Clientes / Empresas
                 </button>
-                <button className={`tab-btn ${activeTab === 'fornecedores' ? 'active' : ''}`} onClick={() => { setActiveTab('fornecedores'); setSearchTerm(''); }}>
+                <button className={`tab-btn ${activeTab === 'fornecedores' ? 'active' : ''}`} onClick={() => { setActiveTab('fornecedores'); setSearchTerm(''); setFornecPage(1); }}>
                     <LuTruck size={18} /> Fornecedores
                 </button>
             </div>
@@ -346,7 +365,9 @@ export default function CadastrosPage() {
                         value={searchTerm}
                         onChange={e => {
                             setSearchTerm(e.target.value);
-                            if (activeTab === 'funcionarios') setFuncPage(1); // Reset page on search
+                            if (activeTab === 'funcionarios') setFuncPage(1);
+                            if (activeTab === 'clientes') setClientePage(1);
+                            if (activeTab === 'fornecedores') setFornecPage(1);
                         }}
                         style={{
                             width: '100%',
@@ -478,29 +499,90 @@ export default function CadastrosPage() {
                 {activeTab === 'clientes' && (
                     <div className="entity-list">
                         <div className="list-header">
-                            <h3>Lista de Clientes / Empresas Parceiras</h3>
+                            <h3>
+                                Lista de Clientes / Empresas Parceiras
+                                {totalClientesCount > 0 && (
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 400, color: '#64748b', marginLeft: '8px' }}>
+                                        ({totalClientesCount} total)
+                                    </span>
+                                )}
+                            </h3>
                             <button className="btn btn-primary" onClick={() => setShowClienteModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><LuPlus size={18} /> Novo Cliente</button>
                         </div>
-                        <div className="grid-list">
-                            {clientes.filter(c =>
-                                c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                (c.telefone || '').toLowerCase().includes(searchTerm.toLowerCase())
-                            ).map(c => (
-                                <div key={c.id} className="entity-card">
-                                    <div className="entity-info">
-                                        <h4>{c.nome}</h4>
-                                        <span className="badge badge-neutral">{c.tipo === 'empresa' ? 'Empresa' : 'Pessoa Física'}</span>
-                                        <p>{c.telefone}</p>
-                                    </div>
-                                    <div className="entity-actions">
-                                        <button type="button" onClick={() => editCliente(c)} style={{ cursor: 'pointer' }} title="Editar"><LuPencil size={18} /></button>
-                                        {user?.role === 'adm' && (
-                                            <button type="button" onClick={(e) => handleDeleteCliente(c.id, e)} style={{ cursor: 'pointer' }} title="Excluir"><LuTrash2 size={18} /></button>
-                                        )}
-                                    </div>
+
+                        {isLoadingClientes && renderFuncionariosSkeleton()}
+
+                        {isErrorClientes && (
+                            <div style={{ padding: '2rem', textAlign: 'center', color: '#dc2626', background: '#fef2f2', borderRadius: '12px' }}>
+                                <p>⚠️ Erro ao carregar clientes</p>
+                                <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>{(errorClientes as Error)?.message}</p>
+                            </div>
+                        )}
+
+                        {!isLoadingClientes && !isErrorClientes && (
+                            <>
+                                <div className="grid-list">
+                                    {clientes.length === 0 ? (
+                                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                                            Nenhum cliente encontrado.
+                                        </div>
+                                    ) : (
+                                        clientes.map(c => (
+                                            <div key={c.id} className="entity-card">
+                                                <div className="entity-info">
+                                                    <h4>{c.nome}</h4>
+                                                    <span className="badge badge-neutral">{c.tipo === 'empresa' ? 'Empresa' : 'Pessoa Física'}</span>
+                                                    <p>{c.telefone}</p>
+                                                </div>
+                                                <div className="entity-actions">
+                                                    <button type="button" onClick={() => editCliente(c)} style={{ cursor: 'pointer' }} title="Editar"><LuPencil size={18} /></button>
+                                                    {user?.role === 'adm' && (
+                                                        <button type="button" onClick={(e) => handleDeleteCliente(c.id, e)} style={{ cursor: 'pointer' }} title="Excluir"><LuTrash2 size={18} /></button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
-                            ))}
-                        </div>
+
+                                {/* Paginação */}
+                                {totalClientePages > 1 && (
+                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem', padding: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                                        <button
+                                            onClick={() => setClientePage(p => Math.max(1, p - 1))}
+                                            disabled={clientePage === 1}
+                                            style={{
+                                                padding: '8px 16px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #e2e8f0',
+                                                background: clientePage === 1 ? '#f8fafc' : 'white',
+                                                cursor: clientePage === 1 ? 'not-allowed' : 'pointer',
+                                                fontWeight: 600
+                                            }}
+                                        >
+                                            <LuArrowLeft size={16} /> Anterior
+                                        </button>
+                                        <span style={{ fontWeight: 600, color: '#475569' }}>
+                                            Página {clientePage} de {totalClientePages}
+                                        </span>
+                                        <button
+                                            onClick={() => setClientePage(p => Math.min(totalClientePages, p + 1))}
+                                            disabled={clientePage === totalClientePages}
+                                            style={{
+                                                padding: '8px 16px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #e2e8f0',
+                                                background: clientePage === totalClientePages ? '#f8fafc' : 'white',
+                                                cursor: clientePage === totalClientePages ? 'not-allowed' : 'pointer',
+                                                fontWeight: 600
+                                            }}
+                                        >
+                                            Próxima <LuArrowRight size={16} />
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 )}
 
@@ -512,15 +594,12 @@ export default function CadastrosPage() {
                             <button className="btn btn-primary" onClick={() => setShowFornecModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><LuPlus size={18} /> Novo Fornecedor</button>
                         </div>
                         <div className="grid-list">
-                            {fornecedores.filter(f =>
-                                f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                f.categoria.toLowerCase().includes(searchTerm.toLowerCase())
-                            ).map(f => (
+                            {fornecedores.map(f => (
                                 <div key={f.id} className="entity-card supplier-card">
                                     <div className="entity-info">
                                         <h4>{f.nome}</h4>
-                                        <span className="badge badge-warning">{f.categoria}</span>
-                                        <p style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><LuPhone size={14} /> {f.contato}</p>
+                                        <span className="badge badge-warning">{f.servico}</span>
+                                        <p style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><LuPhone size={14} /> {f.telefone}</p>
                                     </div>
                                     <div className="entity-actions">
                                         <button type="button" onClick={() => editFornec(f)} title="Editar"><LuPencil size={18} /></button>
@@ -531,6 +610,43 @@ export default function CadastrosPage() {
                                 </div>
                             ))}
                         </div>
+
+                        {/* Paginação do Fornecedor */}
+                        {totalFornecPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem', padding: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                                <button
+                                    onClick={() => setFornecPage(p => Math.max(1, p - 1))}
+                                    disabled={fornecPage === 1}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e2e8f0',
+                                        background: fornecPage === 1 ? '#f8fafc' : 'white',
+                                        cursor: fornecPage === 1 ? 'not-allowed' : 'pointer',
+                                        fontWeight: 600
+                                    }}
+                                >
+                                    <LuArrowLeft size={16} /> Anterior
+                                </button>
+                                <span style={{ fontWeight: 600, color: '#475569' }}>
+                                    Página {fornecPage} de {totalFornecPages}
+                                </span>
+                                <button
+                                    onClick={() => setFornecPage(p => Math.min(totalFornecPages, p + 1))}
+                                    disabled={fornecPage === totalFornecPages}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e2e8f0',
+                                        background: fornecPage === totalFornecPages ? '#f8fafc' : 'white',
+                                        cursor: fornecPage === totalFornecPages ? 'not-allowed' : 'pointer',
+                                        fontWeight: 600
+                                    }}
+                                >
+                                    Próxima <LuArrowRight size={16} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -679,12 +795,12 @@ export default function CadastrosPage() {
                                 </div>
                                 <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                     <div className="form-group">
-                                        <label>Categoria de Despesa *</label>
-                                        <input required value={fornecData.categoria} onChange={e => setFornecData({ ...fornecData, categoria: e.target.value })} placeholder="Ex: Bebidas, Energia, Aluguel" />
+                                        <label>Serviço / Categoria *</label>
+                                        <input required value={fornecData.servico} onChange={e => setFornecData({ ...fornecData, servico: e.target.value })} placeholder="Ex: Bebidas, Energia, Aluguel" />
                                     </div>
                                     <div className="form-group">
-                                        <label>Contato / Referência</label>
-                                        <input value={fornecData.contato} onChange={e => setFornecData({ ...fornecData, contato: e.target.value })} />
+                                        <label>Contato / Telefone</label>
+                                        <input value={fornecData.telefone} onChange={e => setFornecData({ ...fornecData, telefone: e.target.value })} />
                                     </div>
                                 </div>
                                 <div className="form-group">

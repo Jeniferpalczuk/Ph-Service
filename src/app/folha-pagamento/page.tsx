@@ -10,10 +10,11 @@ import {
     useDeletePagamento,
     calcularValorLiquido
 } from '@/hooks/rh/useFolhaPagamento';
-import { useFuncionariosList } from '@/hooks/cadastros/useFuncionarios';
+import { useFuncionariosFolhaDropdown } from '@/hooks/cadastros/useDropdown';
 import { useTotalValesPendentes, useQuitarValesFuncionario } from '@/hooks/rh/useVales';
 import { MoneyInput } from '@/components/MoneyInput';
 import { TableSkeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
 import {
     LuPlus,
@@ -48,8 +49,8 @@ export default function FolhaPagamentoPage() {
     const folhaItems = folhaData?.data ?? [];
     const totalPages = folhaData?.totalPages ?? 1;
 
-    const { data: funcionariosData } = useFuncionariosList({ pageSize: 1000 });
-    const employees = funcionariosData?.data ?? [];
+    const { data: funcionariosDD } = useFuncionariosFolhaDropdown();
+    const employees = funcionariosDD ?? [];
 
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState<PagamentoFuncionario | null>(null);
@@ -219,13 +220,11 @@ export default function FolhaPagamentoPage() {
                                 ))}
                             </tbody>
                         </table>
-                        {totalPages > 1 && (
-                            <div className="pagination">
-                                <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
-                                <span>Página {page} de {totalPages}</span>
-                                <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Próxima</button>
-                            </div>
-                        )}
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={(p) => setPage(p)}
+                        />
                     </>
                 )}
             </div>

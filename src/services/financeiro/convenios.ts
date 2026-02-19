@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { Convenio, PaymentStatus, ClosingType } from '@/types';
 import { PaginatedResult, BaseQueryParams, DateRangeParams, formatDateForDB, parseDBDate } from '../types';
+import { sanitizeSearch } from '@/lib/security';
 
 /**
  * Service Layer - Convênios
@@ -50,7 +51,8 @@ export async function getConvenios(
 
     if (status !== 'all') query = query.eq('status_pagamento', status);
     if (empresa) query = query.eq('empresa_cliente', empresa);
-    if (search) query = query.or(`empresa_cliente.ilike.%${search}%,periodo_referencia.ilike.%${search}%`);
+    const safeSearch = sanitizeSearch(search);
+    if (safeSearch) query = query.or(`empresa_cliente.ilike.%${safeSearch}%,periodo_referencia.ilike.%${safeSearch}%`);
     if (startDate) query = query.gte('data_vencimento', startDate);
     if (endDate) query = query.lte('data_vencimento', endDate);
 

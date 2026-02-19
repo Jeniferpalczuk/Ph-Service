@@ -3,31 +3,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createValeSchema, updateValeSchema, CreateValeInput, UpdateValeInput } from '@/lib/validations/vales';
-import { z } from 'zod';
+import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
 
 /**
  * Server Actions - Vales
  */
-
-type ActionResult<T> =
-    | { success: true; data: T }
-    | { success: false; error: string; errors?: z.ZodFormattedError<unknown> };
-
-function formatDateForDB(date: Date | undefined | null): string | null {
-    if (!date) return null;
-    return date instanceof Date ? date.toISOString().split('T')[0] : date;
-}
-
-async function getAuthenticatedUser() {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (error || !user) {
-        throw new Error('Não autorizado');
-    }
-
-    return user;
-}
 
 export async function createValeAction(
     input: CreateValeInput
@@ -83,9 +63,8 @@ export async function updateValeAction(
     try {
         const user = await getAuthenticatedUser();
 
-        if (!id || typeof id !== 'string') {
-            return { success: false, error: 'ID inválido' };
-        }
+        const idError = validateId(id);
+        if (idError) return idError;
 
         const parsed = updateValeSchema.safeParse(input);
         if (!parsed.success) {
@@ -137,9 +116,8 @@ export async function deleteValeAction(
     try {
         const user = await getAuthenticatedUser();
 
-        if (!id || typeof id !== 'string') {
-            return { success: false, error: 'ID inválido' };
-        }
+        const idError = validateId(id);
+        if (idError) return idError;
 
         const supabase = await createClient();
         const { error } = await supabase
@@ -172,9 +150,8 @@ export async function quitarValeAction(
     try {
         const user = await getAuthenticatedUser();
 
-        if (!id || typeof id !== 'string') {
-            return { success: false, error: 'ID inválido' };
-        }
+        const idError = validateId(id);
+        if (idError) return idError;
 
         const supabase = await createClient();
 

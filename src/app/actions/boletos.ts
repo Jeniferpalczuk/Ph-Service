@@ -3,31 +3,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createBoletoSchema, updateBoletoSchema, CreateBoletoInput, UpdateBoletoInput } from '@/lib/validations/boletos';
-import { z } from 'zod';
+import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
 
 /**
  * Server Actions - Boletos
  */
-
-type ActionResult<T> =
-    | { success: true; data: T }
-    | { success: false; error: string; errors?: z.ZodFormattedError<unknown> };
-
-function formatDateForDB(date: Date | undefined | null): string | null {
-    if (!date) return null;
-    return date instanceof Date ? date.toISOString().split('T')[0] : date;
-}
-
-async function getAuthenticatedUser() {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (error || !user) {
-        throw new Error('Não autorizado');
-    }
-
-    return user;
-}
 
 export async function createBoletoAction(
     input: CreateBoletoInput
@@ -83,9 +63,8 @@ export async function updateBoletoAction(
     try {
         const user = await getAuthenticatedUser();
 
-        if (!id || typeof id !== 'string') {
-            return { success: false, error: 'ID inválido' };
-        }
+        const idError = validateId(id);
+        if (idError) return idError;
 
         const parsed = updateBoletoSchema.safeParse(input);
         if (!parsed.success) {
@@ -136,9 +115,8 @@ export async function deleteBoletoAction(
     try {
         const user = await getAuthenticatedUser();
 
-        if (!id || typeof id !== 'string') {
-            return { success: false, error: 'ID inválido' };
-        }
+        const idError = validateId(id);
+        if (idError) return idError;
 
         const supabase = await createClient();
         const { error } = await supabase
@@ -171,9 +149,8 @@ export async function marcarBoletoPagoAction(
     try {
         const user = await getAuthenticatedUser();
 
-        if (!id || typeof id !== 'string') {
-            return { success: false, error: 'ID inválido' };
-        }
+        const idError = validateId(id);
+        if (idError) return idError;
 
         const supabase = await createClient();
         const { error } = await supabase

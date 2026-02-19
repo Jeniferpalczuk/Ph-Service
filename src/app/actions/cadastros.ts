@@ -8,18 +8,7 @@ import {
 import {
     createFornecedorSchema, updateFornecedorSchema, CreateFornecedorInput, UpdateFornecedorInput
 } from '@/lib/validations/fornecedores';
-import { z } from 'zod';
-
-type ActionResult<T> =
-    | { success: true; data: T }
-    | { success: false; error: string; errors?: z.ZodFormattedError<unknown> };
-
-async function getAuthenticatedUser() {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) throw new Error('Não autorizado');
-    return user;
-}
+import { ActionResult, getAuthenticatedUser, validateId } from './shared';
 
 // ===========================================
 // CLIENTES
@@ -55,17 +44,29 @@ export async function createClienteAction(input: CreateClienteInput): Promise<Ac
 export async function updateClienteAction(id: string, input: UpdateClienteInput): Promise<ActionResult<{ id: string }>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
+
         const parsed = updateClienteSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
             return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
 
+        // Mapeamento explícito — evita enviar campos inesperados ao DB
+        const updateData: Record<string, unknown> = {
+            updated_at: new Date().toISOString()
+        };
+        if (parsed.data.nome !== undefined) updateData.nome = parsed.data.nome;
+        if (parsed.data.tipo !== undefined) updateData.tipo = parsed.data.tipo;
+        if (parsed.data.telefone !== undefined) updateData.telefone = parsed.data.telefone;
+        if (parsed.data.endereco !== undefined) updateData.endereco = parsed.data.endereco;
+        if (parsed.data.ativo !== undefined) updateData.ativo = parsed.data.ativo;
+
         const supabase = await createClient();
-        const { error } = await supabase.from('clientes').update({
-            ...parsed.data,
-            updated_at: new Date().toISOString(),
-        }).eq('id', id).eq('user_id', user.id);
+        const { error } = await supabase.from('clientes')
+            .update(updateData)
+            .eq('id', id).eq('user_id', user.id);
 
         if (error) return { success: false, error: 'Erro ao atualizar cliente' };
         revalidatePath('/cadastros');
@@ -108,17 +109,28 @@ export async function createFornecedorAction(input: CreateFornecedorInput): Prom
 export async function updateFornecedorAction(id: string, input: UpdateFornecedorInput): Promise<ActionResult<{ id: string }>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
+
         const parsed = updateFornecedorSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
             return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
 
+        // Mapeamento explícito — evita enviar campos inesperados ao DB
+        const updateData: Record<string, unknown> = {
+            updated_at: new Date().toISOString()
+        };
+        if (parsed.data.nome !== undefined) updateData.nome = parsed.data.nome;
+        if (parsed.data.servico !== undefined) updateData.servico = parsed.data.servico;
+        if (parsed.data.telefone !== undefined) updateData.telefone = parsed.data.telefone;
+        if (parsed.data.ativo !== undefined) updateData.ativo = parsed.data.ativo;
+
         const supabase = await createClient();
-        const { error } = await supabase.from('fornecedores').update({
-            ...parsed.data,
-            updated_at: new Date().toISOString(),
-        }).eq('id', id).eq('user_id', user.id);
+        const { error } = await supabase.from('fornecedores')
+            .update(updateData)
+            .eq('id', id).eq('user_id', user.id);
 
         if (error) return { success: false, error: 'Erro ao atualizar fornecedor' };
         revalidatePath('/cadastros');
@@ -131,6 +143,8 @@ export async function updateFornecedorAction(id: string, input: UpdateFornecedor
 export async function deleteClienteAction(id: string): Promise<ActionResult<void>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const supabase = await createClient();
         const { error } = await supabase.from('clientes').delete().eq('id', id).eq('user_id', user.id);
         if (error) return { success: false, error: 'Erro ao excluir cliente' };
@@ -144,6 +158,8 @@ export async function deleteClienteAction(id: string): Promise<ActionResult<void
 export async function deleteFornecedorAction(id: string): Promise<ActionResult<void>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const supabase = await createClient();
         const { error } = await supabase.from('fornecedores').delete().eq('id', id).eq('user_id', user.id);
         if (error) return { success: false, error: 'Erro ao excluir fornecedor' };

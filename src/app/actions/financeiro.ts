@@ -11,23 +11,7 @@ import {
 import {
     createCaixaSchema, updateCaixaSchema, CreateCaixaInput, UpdateCaixaInput
 } from '@/lib/validations/caixa';
-import { z } from 'zod';
-
-type ActionResult<T> =
-    | { success: true; data: T }
-    | { success: false; error: string; errors?: z.ZodFormattedError<unknown> };
-
-function formatDateForDB(date: Date | undefined | null): string | null {
-    if (!date) return null;
-    return date instanceof Date ? date.toISOString().split('T')[0] : date;
-}
-
-async function getAuthenticatedUser() {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) throw new Error('Não autorizado');
-    return user;
-}
+import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
 
 // ===========================================
 // CONVÊNIOS
@@ -66,6 +50,8 @@ export async function createConvenioAction(input: CreateConvenioInput): Promise<
 export async function updateConvenioAction(id: string, input: UpdateConvenioInput): Promise<ActionResult<{ id: string }>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const parsed = updateConvenioSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
@@ -95,6 +81,8 @@ export async function updateConvenioAction(id: string, input: UpdateConvenioInpu
 export async function deleteConvenioAction(id: string): Promise<ActionResult<void>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const supabase = await createClient();
         const { error } = await supabase.from('convenios').delete().eq('id', id).eq('user_id', user.id);
         if (error) return { success: false, error: 'Erro ao excluir convênio' };
@@ -141,6 +129,8 @@ export async function createSaidaAction(input: CreateSaidaInput): Promise<Action
 export async function updateSaidaAction(id: string, input: UpdateSaidaInput): Promise<ActionResult<{ id: string }>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const parsed = updateSaidaSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
@@ -169,6 +159,8 @@ export async function updateSaidaAction(id: string, input: UpdateSaidaInput): Pr
 export async function deleteSaidaAction(id: string): Promise<ActionResult<void>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const supabase = await createClient();
         const { error } = await supabase.from('saidas').delete().eq('id', id).eq('user_id', user.id);
         if (error) return { success: false, error: 'Erro ao excluir saída' };
@@ -189,6 +181,8 @@ export async function createCaixaAction(input: CreateCaixaInput): Promise<Action
         const user = await getAuthenticatedUser();
         const parsed = createCaixaSchema.safeParse(input);
         if (!parsed.success) {
+            console.error('CreateCaixa Validation Error:', parsed.error.issues);
+            console.error('Received Input:', input);
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
             return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
@@ -203,12 +197,15 @@ export async function createCaixaAction(input: CreateCaixaInput): Promise<Action
             entrada_pix: parsed.data.entradas.pix,
             entrada_credito: parsed.data.entradas.credito,
             entrada_debito: parsed.data.entradas.debito,
-            entrada_alimentacao: parsed.data.entradas.alimentacao,
+            // entrada_alimentacao: parsed.data.entradas.alimentacao, // Coluna não existe no DB
             saidas: parsed.data.saidas,
             observacoes: parsed.data.observacoes,
         }).select('id').single();
 
-        if (error) return { success: false, error: 'Erro ao criar fechamento de caixa' };
+        if (error) {
+            console.error('[createCaixaAction] DB Error Full:', JSON.stringify(error, null, 2));
+            return { success: false, error: `Erro ao criar fechamento: ${error.message} (${error.code})` };
+        }
         revalidatePath('/caixa');
         revalidatePath('/dashboard');
         return { success: true, data: { id: data.id } };
@@ -220,6 +217,8 @@ export async function createCaixaAction(input: CreateCaixaInput): Promise<Action
 export async function deleteCaixaAction(id: string): Promise<ActionResult<void>> {
     try {
         const user = await getAuthenticatedUser();
+        const idError = validateId(id);
+        if (idError) return idError;
         const supabase = await createClient();
         const { error } = await supabase.from('fechamentos_caixa').delete().eq('id', id).eq('user_id', user.id);
         if (error) return { success: false, error: 'Erro ao excluir fechamento' };

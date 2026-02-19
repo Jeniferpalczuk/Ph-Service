@@ -28,14 +28,14 @@ export function useDashboardStatistics(year: number, month: string | 'all') {
     }
 
     // Fetch all collections in parallel
-    // We fetch a large enough pageSize for stats calculation, or we could implement a summary action.
-    // For now, let's fetch enough to cover the dashboard needs.
+    // TODO: FASE 3 — Substituir por Server Actions de agregação (SUM, COUNT)
+    // para não carregar todos os registros no client. Ex: getDashboardStats()
     const queryParams = { startDate, endDate, pageSize: 2000 };
 
     const { data: marmitas, isLoading: loadingMarmitas } = useMarmitasList(queryParams);
     const { data: saidas, isLoading: loadingSaidas } = useSaidasList(queryParams);
     const { data: boletos, isLoading: loadingBoletos } = useBoletosList(queryParams);
-    const { data: convenios, isLoading: loadingConvenios } = useConveniosList({ ...queryParams, pageSize: 1000 });
+    const { data: convenios, isLoading: loadingConvenios } = useConveniosList(queryParams);
     const { data: caixa, isLoading: loadingCaixa } = useCaixaList(queryParams);
     const { data: vales, isLoading: loadingVales } = useValesList(queryParams);
     const { data: folha, isLoading: loadingFolha } = useFolhaPagamentoList(queryParams);

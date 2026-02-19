@@ -9,9 +9,10 @@ import {
     useDeleteCaixa,
     useCaixaSummary
 } from '@/hooks/financeiro/useCaixa';
-import { useFuncionariosList } from '@/hooks/cadastros/useFuncionarios';
+import { useFuncionariosDropdown } from '@/hooks/cadastros/useDropdown';
 import { MoneyInput } from '@/components/MoneyInput';
 import { TableSkeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
 import {
     LuPlus,
@@ -62,8 +63,8 @@ export default function CaixaPage() {
     const { data: summary } = useCaixaSummary(`${selectedMonth}-01`, `${selectedMonth}-${lastDay}`);
 
     // Fetch Funcionários
-    const { data: funcionariosData } = useFuncionariosList({ pageSize: 1000 });
-    const employees = funcionariosData?.data ?? [];
+    const { data: funcionariosDD } = useFuncionariosDropdown();
+    const employees = funcionariosDD ?? [];
 
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState<FechamentoCaixa | null>(null);
@@ -110,13 +111,13 @@ export default function CaixaPage() {
                 funcionario: formData.funcionario,
                 turno: formData.turno,
                 entradas: {
-                    dinheiro: parseFloat(formData.dinheiro) || 0,
-                    pix: parseFloat(formData.pix) || 0,
-                    credito: parseFloat(formData.credito) || 0,
-                    debito: parseFloat(formData.debito) || 0,
-                    alimentacao: parseFloat(formData.alimentacao) || 0,
+                    dinheiro: Number(formData.dinheiro) || 0,
+                    pix: Number(formData.pix) || 0,
+                    credito: Number(formData.credito) || 0,
+                    debito: Number(formData.debito) || 0,
+                    alimentacao: Number(formData.alimentacao) || 0,
                 },
-                saidas: parseFloat(formData.saidas) || 0,
+                saidas: Number(formData.saidas) || 0,
                 observacoes: formData.observacoes || null
             };
 
@@ -128,7 +129,8 @@ export default function CaixaPage() {
             }
             resetForm();
         } catch (err) {
-            toast.error('Erro ao salvar fechamento.');
+            console.error('Erro ao salvar fechamento:', err);
+            toast.error(err instanceof Error ? err.message : 'Erro ao salvar fechamento.');
         }
     };
 
@@ -252,11 +254,11 @@ export default function CaixaPage() {
                             </tbody>
                         </table>
 
-                        <div className="pagination">
-                            <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
-                            <span>Página {page} de {totalPages}</span>
-                            <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Próxima</button>
-                        </div>
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={(p) => setPage(p)}
+                        />
                     </>
                 )}
             </div>

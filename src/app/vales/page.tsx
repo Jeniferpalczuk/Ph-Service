@@ -11,9 +11,10 @@ import {
     useQuitarVale,
     useTotalValesPendentes
 } from '@/hooks/rh/useVales';
-import { useFuncionariosList } from '@/hooks/cadastros/useFuncionarios';
+import { useFuncionariosDropdown } from '@/hooks/cadastros/useDropdown';
 import { MoneyInput } from '@/components/MoneyInput';
 import { Skeleton, TableSkeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
 import {
     LuPlus,
@@ -57,8 +58,8 @@ export default function ValesPage() {
     const totalPages = valesData?.totalPages ?? 1;
 
     // Fetch Funcionários
-    const { data: funcionariosData } = useFuncionariosList({ pageSize: 1000 });
-    const funcionariosList = funcionariosData?.data ?? [];
+    const { data: funcionariosDD } = useFuncionariosDropdown();
+    const funcionariosList = funcionariosDD ?? [];
 
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState<Vale | null>(null);
@@ -267,13 +268,11 @@ export default function ValesPage() {
                             </tbody>
                         </table>
 
-                        {totalPages > 1 && (
-                            <div className="pagination">
-                                <button disabled={page === 1} onClick={() => setPage(prev => prev - 1)}>Anterior</button>
-                                <span>Página {page} de {totalPages}</span>
-                                <button disabled={page === totalPages} onClick={() => setPage(prev => prev + 1)}>Próxima</button>
-                            </div>
-                        )}
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={(p) => setPage(p)}
+                        />
                     </>
                 )}
             </div>

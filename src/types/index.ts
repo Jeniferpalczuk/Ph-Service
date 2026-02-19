@@ -177,8 +177,8 @@ export interface Cliente {
 export interface Fornecedor {
   id: string;
   nome: string;
-  contato: string;
-  categoria: string;
+  servico: string; // Antes categoria
+  telefone: string; // Antes contato
   ativo: boolean;
   observacoes?: string;
   createdAt: Date;
