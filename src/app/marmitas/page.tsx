@@ -17,7 +17,11 @@ import {
     LuUtensils,
     LuPencil,
     LuTrash2,
-    LuX
+    LuX,
+    LuShoppingBag,
+    LuCalendar,
+    LuTrendingUp,
+    LuCircleCheck
 } from 'react-icons/lu';
 import '../shared-modern.css';
 
@@ -253,8 +257,13 @@ export default function MarmitasPage() {
                         </div>
                     </div>
                 </div>
-                <button className="btn-modern-primary" onClick={() => setShowModal(true)}>
-                    <LuPlus size={18} /> Lançar Vendas do Dia
+                <button className="btn-lancar-vendas" onClick={() => setShowModal(true)}>
+                    <span className="btn-lancar-icon"><LuShoppingBag size={20} /></span>
+                    <span className="btn-lancar-text">
+                        <span className="btn-lancar-label">Lançar Vendas</span>
+                        <span className="btn-lancar-sublabel">do Dia</span>
+                    </span>
+                    <span className="btn-lancar-badge"><LuPlus size={14} /></span>
                 </button>
             </div>
 
@@ -399,56 +408,167 @@ export default function MarmitasPage() {
                 </div>
             )}
 
-            {showModal && (
-                <div className="modal-overlay animate-fade-in" onClick={resetForm}>
-                    <div className="modal-content card animate-scale-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '850px', width: '95%' }}>
-                        <div className="modal-header">
-                            <div>
-                                <h2>Lançar Vendas</h2>
-                                <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Informe as quantidades vendidas por tamanho.</p>
-                            </div>
-                            <button className="modal-close" onClick={resetForm}><LuX size={18} /></button>
-                        </div>
-                        <form onSubmit={handleSubmit} style={{ padding: '2rem' }}>
-                            <div className="form-group" style={{ marginBottom: '2rem', maxWidth: '300px' }}>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data da Venda</label>
-                                <input type="date" required value={formData.dataEntrega} onChange={e => setFormData({ ...formData, dataEntrega: e.target.value })} style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }} />
-                            </div>
+            {showModal && (() => {
+                const marmitaTypes = [
+                    { key: 'P', label: 'Pequena', emoji: '🥡', accent: '#3b82f6', accentLight: '#eff6ff', accentBorder: '#bfdbfe', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' },
+                    { key: 'M', label: 'Média', emoji: '🍱', accent: '#10b981', accentLight: '#ecfdf5', accentBorder: '#a7f3d0', gradient: 'linear-gradient(135deg, #10b981, #059669)' },
+                    { key: 'G', label: 'Grande', emoji: '🍛', accent: '#8b5cf6', accentLight: '#f5f3ff', accentBorder: '#ddd6fe', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+                    { key: 'PF', label: 'Prato Feito', emoji: '🍽️', accent: '#f59e0b', accentLight: '#fffbeb', accentBorder: '#fde68a', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+                ];
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem' }}>
-                                {['P', 'M', 'G', 'PF'].map(type => (
-                                    <div key={type} style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '20px', border: '1px solid #e2e8f0', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#94a3b8', marginBottom: '1.25rem', display: 'flex', justifyContent: 'baseline', gap: '0.5rem' }}>
-                                            {type} <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#cbd5e1', textTransform: 'uppercase' }}>{type === 'PF' ? 'Prato Feito' : 'Marmita'}</span>
-                                        </div>
-                                        <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Qtd</label>
-                                            <input type="number" min="0" placeholder="0" value={(formData as any)[`qtd${type}`]} onChange={e => handleCalcChange('qtd', e.target.value, type as any)} style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem', fontWeight: 800 }} />
-                                        </div>
-                                        <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Unitário (R$)</label>
-                                            <input type="number" step="0.01" value={(formData as any)[`unit${type}`]} onChange={e => handleCalcChange('unit', e.target.value, type as any)} style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '1rem' }} />
-                                        </div>
-                                        <div className="form-group">
-                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Total</label>
-                                            <input type="number" step="0.01" value={(formData as any)[`total${type}`]} readOnly style={{ background: '#ffffff', fontWeight: 900, color: '#10b981', border: '2px solid #10b981', width: '100%', padding: '0.6rem 0.75rem', borderRadius: '10px', fontSize: '1rem' }} />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                const grandTotal = marmitaTypes.reduce((sum, t) => {
+                    return sum + (parseFloat((formData as any)[`total${t.key}`]) || 0);
+                }, 0);
 
-                            <div className="modal-actions" style={{
-                                display: 'flex', gap: '1rem', padding: '1.5rem 2rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', margin: '2rem -2rem -2rem -2rem'
-                            }}>
-                                <button type="button" className="btn btn-secondary" onClick={resetForm} style={{ flex: 1, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: '1px solid #e2e8f0', background: '#ffffff' }}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary" disabled={createLoteMutation.isPending} style={{ flex: 2, padding: '1rem', borderRadius: '14px', fontWeight: 700, border: 'none', background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#ffffff', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)' }}>
-                                    {createLoteMutation.isPending ? 'Salvando...' : 'Salvar Lote de Vendas'}
+                const totalQtdModal = marmitaTypes.reduce((sum, t) => {
+                    return sum + (parseInt((formData as any)[`qtd${t.key}`]) || 0);
+                }, 0);
+
+                return (
+                    <div className="modal-overlay animate-fade-in" onClick={resetForm}>
+                        <div className="marmita-modal-content" onClick={e => e.stopPropagation()}>
+
+                            {/* Header Premium */}
+                            <div className="marmita-modal-header">
+                                <div className="marmita-modal-header-icon">
+                                    <LuShoppingBag size={24} />
+                                </div>
+                                <div className="marmita-modal-header-text">
+                                    <h2>Lançar Vendas do Dia</h2>
+                                    <p>Informe as quantidades e valores por tamanho de marmita</p>
+                                </div>
+                                <button className="marmita-modal-close" onClick={resetForm}>
+                                    <LuX size={18} />
                                 </button>
                             </div>
-                        </form>
+
+                            <form onSubmit={handleSubmit}>
+                                <div className="marmita-modal-body">
+
+                                    {/* Data */}
+                                    <div className="marmita-date-section">
+                                        <div className="marmita-date-icon"><LuCalendar size={18} /></div>
+                                        <div className="marmita-date-field">
+                                            <label>Data da Venda</label>
+                                            <input
+                                                type="date"
+                                                required
+                                                value={formData.dataEntrega}
+                                                onChange={e => setFormData({ ...formData, dataEntrega: e.target.value })}
+                                                className="marmita-date-input"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Cards de Tamanho */}
+                                    <div className="marmita-types-grid">
+                                        {marmitaTypes.map(t => {
+                                            const qtdVal = (formData as any)[`qtd${t.key}`];
+                                            const unitVal = (formData as any)[`unit${t.key}`];
+                                            const totalVal = (formData as any)[`total${t.key}`];
+                                            const hasValue = (parseInt(qtdVal) || 0) > 0;
+
+                                            return (
+                                                <div
+                                                    key={t.key}
+                                                    className={`marmita-type-card${hasValue ? ' marmita-type-card--active' : ''}`}
+                                                    style={{
+                                                        '--card-accent': t.accent,
+                                                        '--card-accent-light': t.accentLight,
+                                                        '--card-accent-border': t.accentBorder,
+                                                    } as React.CSSProperties}
+                                                >
+                                                    {/* Card Header */}
+                                                    <div className="marmita-card-header">
+                                                        <div className="marmita-card-emoji">{t.emoji}</div>
+                                                        <div className="marmita-card-title">
+                                                            <span className="marmita-card-key">{t.key}</span>
+                                                            <span className="marmita-card-label">{t.label}</span>
+                                                        </div>
+                                                        {hasValue && (
+                                                            <div className="marmita-card-check">
+                                                                <LuCircleCheck size={16} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Qty Input */}
+                                                    <div className="marmita-card-field">
+                                                        <label>Quantidade</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            placeholder="0"
+                                                            value={qtdVal}
+                                                            onChange={e => handleCalcChange('qtd', e.target.value, t.key as any)}
+                                                            className="marmita-card-input marmita-card-input--qty"
+                                                        />
+                                                    </div>
+
+                                                    {/* Unit Price Input */}
+                                                    <div className="marmita-card-field">
+                                                        <label>Valor Unitário</label>
+                                                        <div className="marmita-card-input-prefix">
+                                                            <span className="marmita-prefix-label">R$</span>
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                placeholder="0,00"
+                                                                value={unitVal}
+                                                                onChange={e => handleCalcChange('unit', e.target.value, t.key as any)}
+                                                                className="marmita-card-input"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Total (read-only) */}
+                                                    <div className="marmita-card-total">
+                                                        <span className="marmita-card-total-label">Total</span>
+                                                        <span className="marmita-card-total-value">
+                                                            {totalVal
+                                                                ? parseFloat(totalVal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                                                                : 'R$ 0,00'
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Grand Total */}
+                                    <div className="marmita-grand-total">
+                                        <div className="marmita-grand-total-left">
+                                            <LuTrendingUp size={20} />
+                                            <div>
+                                                <div className="marmita-grand-label">Total Geral do Lançamento</div>
+                                                <div className="marmita-grand-sub">{totalQtdModal} marmita{totalQtdModal !== 1 ? 's' : ''} no total</div>
+                                            </div>
+                                        </div>
+                                        <div className="marmita-grand-value">
+                                            {grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer Actions */}
+                                <div className="marmita-modal-footer">
+                                    <button type="button" className="marmita-btn-cancel" onClick={resetForm}>
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" className="marmita-btn-submit" disabled={createLoteMutation.isPending}>
+                                        {createLoteMutation.isPending ? (
+                                            <><span className="marmita-btn-spinner" /> Salvando...</>
+                                        ) : (
+                                            <><LuCircleCheck size={18} /> Salvar Lançamento</>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {showEditModal && editingItem && (
                 <div className="modal-overlay animate-fade-in" onClick={() => setShowEditModal(false)} style={{

@@ -467,3 +467,635 @@
         opacity: 1;
     }
 }
+
+/* ================================================
+   BOTÃO PREMIUM — LANÇAR VENDAS DO DIA
+   ================================================ */
+.btn-lancar-vendas {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem 0.75rem 1rem;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    box-shadow:
+        0 8px 20px -4px rgba(249, 115, 22, 0.5),
+        0 4px 8px -2px rgba(249, 115, 22, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+.btn-lancar-vendas::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.btn-lancar-vendas::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #f97316, #dc2626);
+    opacity: 0;
+    z-index: -1;
+    filter: blur(12px);
+    transition: opacity 0.3s;
+}
+
+.btn-lancar-vendas:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+        0 16px 32px -6px rgba(249, 115, 22, 0.55),
+        0 8px 16px -4px rgba(249, 115, 22, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn-lancar-vendas:hover::after {
+    opacity: 0.5;
+}
+
+.btn-lancar-vendas:active {
+    transform: translateY(-1px) scale(0.99);
+}
+
+.btn-lancar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    flex-shrink: 0;
+    backdrop-filter: blur(4px);
+}
+
+.btn-lancar-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+}
+
+.btn-lancar-label {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.btn-lancar-sublabel {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.85;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.btn-lancar-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    flex-shrink: 0;
+    backdrop-filter: blur(4px);
+    margin-left: 0.25rem;
+}
+
+/* ================================================
+   MODAL PREMIUM — MARMITAS
+   ================================================ */
+.marmita-modal-content {
+    background: var(--surface, #ffffff);
+    width: 95%;
+    max-width: 920px;
+    border-radius: 28px;
+    box-shadow:
+        0 32px 64px -16px rgba(0, 0, 0, 0.2),
+        0 16px 32px -8px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(0, 0, 0, 0.06);
+    animation: scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+    overflow: hidden;
+}
+
+/* Modal Header */
+.marmita-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 40%, #dc2626 100%);
+    border-radius: 28px 28px 0 0;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.marmita-modal-header::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -5%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.marmita-modal-header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 14px;
+    color: #ffffff;
+    flex-shrink: 0;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.25);
+}
+
+.marmita-modal-header-text {
+    flex: 1;
+}
+
+.marmita-modal-header-text h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+.marmita-modal-header-text p {
+    margin: 3px 0 0;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.82);
+    font-weight: 500;
+}
+
+.marmita-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    cursor: pointer;
+    color: #ffffff;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.marmita-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Modal Body */
+.marmita-modal-body {
+    padding: 1.75rem 2rem;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    background: var(--background, #f8fafc);
+}
+
+/* Date Section */
+.marmita-date-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.marmita-date-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    border-radius: 10px;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.marmita-date-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    max-width: 280px;
+}
+
+.marmita-date-field label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.marmita-date-input {
+    width: 100%;
+    padding: 0.55rem 0.9rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border, #e2e8f0);
+    background: var(--background, #f8fafc);
+    color: var(--text-primary, #0f172a);
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.marmita-date-input:focus {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+    background: var(--surface, #ffffff);
+}
+
+/* Types Grid */
+.marmita-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+/* Type Card */
+.marmita-type-card {
+    background: var(--surface, #ffffff);
+    border: 2px solid var(--border, #e2e8f0);
+    border-radius: 20px;
+    padding: 1.25rem;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.marmita-type-card:hover {
+    border-color: var(--card-accent, #3b82f6);
+    box-shadow:
+        0 8px 24px -6px rgba(0,0,0,0.1),
+        0 0 0 1px var(--card-accent, #3b82f6);
+    transform: translateY(-2px);
+}
+
+.marmita-type-card--active {
+    background: var(--card-accent-light, #eff6ff);
+    border-color: var(--card-accent, #3b82f6);
+    box-shadow:
+        0 8px 24px -6px rgba(0,0,0,0.1),
+        0 0 0 1px var(--card-accent-border, #bfdbfe);
+}
+
+/* Card Header */
+.marmita-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.marmita-card-emoji {
+    font-size: 1.6rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.marmita-card-title {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.marmita-card-key {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--card-accent, #3b82f6);
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.marmita-card-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+.marmita-card-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--card-accent, #3b82f6);
+    border-radius: 8px;
+    color: #ffffff;
+    flex-shrink: 0;
+    animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Card Fields */
+.marmita-card-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.marmita-card-field label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.marmita-card-input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border, #e2e8f0);
+    background: var(--background, #f8fafc);
+    color: var(--text-primary, #0f172a);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    transition: all 0.2s;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.marmita-card-input:focus {
+    border-color: var(--card-accent, #3b82f6);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--card-accent, #3b82f6) 15%, transparent);
+    background: var(--surface, #ffffff);
+}
+
+.marmita-card-input--qty {
+    font-size: 1.25rem;
+    font-weight: 900;
+    text-align: center;
+}
+
+.marmita-card-input-prefix {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    background: var(--background, #f8fafc);
+    overflow: hidden;
+    transition: all 0.2s;
+}
+
+.marmita-card-input-prefix:focus-within {
+    border-color: var(--card-accent, #3b82f6);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--card-accent, #3b82f6) 15%, transparent);
+    background: var(--surface, #ffffff);
+}
+
+.marmita-prefix-label {
+    padding: 0 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary, #64748b);
+    background: var(--border, #e2e8f0);
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    border-right: 1.5px solid var(--border, #e2e8f0);
+}
+
+.marmita-card-input-prefix .marmita-card-input {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding-left: 0.6rem;
+}
+
+.marmita-card-input-prefix .marmita-card-input:focus {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+/* Card Total */
+.marmita-card-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card-accent-light, #eff6ff);
+    border: 1.5px solid var(--card-accent-border, #bfdbfe);
+    border-radius: 12px;
+    padding: 0.6rem 0.9rem;
+    margin-top: 0.1rem;
+}
+
+.marmita-card-total-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--card-accent, #3b82f6);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.marmita-card-total-value {
+    font-size: 1rem;
+    font-weight: 900;
+    color: var(--card-accent, #3b82f6);
+    letter-spacing: -0.02em;
+}
+
+/* Grand Total */
+.marmita-grand-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.marmita-grand-total-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: rgba(255,255,255,0.7);
+}
+
+.marmita-grand-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.marmita-grand-sub {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.55);
+    margin-top: 2px;
+}
+
+.marmita-grand-value {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #34d399;
+    letter-spacing: -0.03em;
+    text-align: right;
+}
+
+/* Modal Footer */
+.marmita-modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1.25rem 2rem;
+    background: var(--surface, #ffffff);
+    border-top: 1px solid var(--border, #e2e8f0);
+    border-radius: 0 0 28px 28px;
+    flex-shrink: 0;
+}
+
+.marmita-btn-cancel {
+    flex: 1;
+    padding: 0.85rem 1.5rem;
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--background, #f8fafc);
+    color: var(--text-secondary, #64748b);
+    border: 1.5px solid var(--border, #e2e8f0);
+    transition: all 0.2s;
+}
+
+.marmita-btn-cancel:hover {
+    background: var(--surface-hover, #f1f5f9);
+    border-color: var(--neutral-300, #cbd5e1);
+    color: var(--text-primary, #0f172a);
+}
+
+.marmita-btn-submit {
+    flex: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem 2rem;
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 0.98rem;
+    font-weight: 800;
+    cursor: pointer;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%);
+    color: #ffffff;
+    border: none;
+    box-shadow:
+        0 8px 20px -4px rgba(249, 115, 22, 0.4),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    letter-spacing: -0.01em;
+}
+
+.marmita-btn-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow:
+        0 14px 28px -6px rgba(249, 115, 22, 0.5),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+.marmita-btn-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.marmita-btn-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid rgba(255,255,255,0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 0.6s linear infinite;
+    flex-shrink: 0;
+}
+
+/* Responsivo */
+@media (max-width: 640px) {
+    .marmita-modal-content {
+        border-radius: 20px;
+        max-height: 95vh;
+    }
+
+    .marmita-types-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .marmita-modal-body {
+        padding: 1.25rem;
+    }
+
+    .marmita-modal-footer {
+        padding: 1rem 1.25rem;
+    }
+
+    .marmita-grand-value {
+        font-size: 1.3rem;
+    }
+
+    .btn-lancar-vendas {
+        padding: 0.65rem 1.1rem;
+    }
+
+    .btn-lancar-sublabel {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .marmita-types-grid {
+        grid-template-columns: 1fr;
+    }
+}
