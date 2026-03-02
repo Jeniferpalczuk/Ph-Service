@@ -176,98 +176,43 @@ export async function deleteSaidaAction(id: string): Promise<ActionResult<void>>
 // CAIXA
 // ===========================================
 
-export async function createCaixaAction(
-    input: CreateCaixaInput
-): Promise<ActionResult<{ id: string }>> {
+export async function createCaixaAction(input: CreateCaixaInput): Promise<ActionResult<{ id: string }>> {
     try {
         const user = await getAuthenticatedUser();
-
         const parsed = createCaixaSchema.safeParse(input);
         if (!parsed.success) {
+            console.error('CreateCaixa Validation Error:', parsed.error.issues);
+            console.error('Received Input:', input);
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
-            return {
-                success: false,
-                error: errorMessages || 'Dados inválidos',
-                errors: parsed.error.format()
-            };
+            return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
 
         const supabase = await createClient();
-        const dataFormatada = formatDateForDB(parsed.data.data);
-
-        // Valores originais digitados
-        let creditoFinal = parsed.data.entradas.credito;
-        let debitoFinal = parsed.data.entradas.debito;
-
-        // 🔵 SE FOR TURNO DA TARDE → BUSCAR MANHÃ
-        if (parsed.data.turno === 'tarde') {
-
-            const { data: turnoManha, error: erroBusca } = await supabase
-                .from('fechamentos_caixa')
-                .select('*')
-                .eq('data', dataFormatada)
-                .eq('turno', 'manha')
-                .eq('user_id', user.id)
-                .single();
-
-            if (erroBusca || !turnoManha) {
-                return {
-                    success: false,
-                    error: 'Cadastre primeiro o turno da manhã'
-                };
-            }
-
-            // 🔥 SUBTRAÇÃO
-            creditoFinal = creditoFinal - (turnoManha.entrada_credito || 0);
-            debitoFinal = debitoFinal - (turnoManha.entrada_debito || 0);
-
-            // ⚠️ VALIDAÇÃO DE NEGATIVO
-            if (creditoFinal < 0 || debitoFinal < 0) {
-                return {
-                    success: false,
-                    error: 'Valor informado menor que o turno da manhã'
-                };
-            }
-        }
-
-        // 🔥 AGORA INSERE COM VALORES AJUSTADOS
-        const { data, error } = await supabase
-            .from('fechamentos_caixa')
-            .insert({
-                user_id: user.id,
-                data: dataFormatada,
-                funcionario: parsed.data.funcionario,
-                turno: parsed.data.turno,
-                entrada_dinheiro: parsed.data.entradas.dinheiro,
-                entrada_pix: parsed.data.entradas.pix,
-                entrada_credito: creditoFinal,
-                entrada_debito: debitoFinal,
-                saidas: parsed.data.saidas,
-                observacoes: parsed.data.observacoes,
-            })
-            .select('id')
-            .single();
+        const { data, error } = await supabase.from('fechamentos_caixa').insert({
+            user_id: user.id,
+            data: formatDateForDB(parsed.data.data),
+            funcionario: parsed.data.funcionario,
+            turno: parsed.data.turno,
+            entrada_dinheiro: parsed.data.entradas.dinheiro,
+            entrada_pix: parsed.data.entradas.pix,
+            entrada_credito: parsed.data.entradas.credito,
+            entrada_debito: parsed.data.entradas.debito,
+            entrada_alimentacao: parsed.data.entradas.alimentacao,
+            saidas: parsed.data.saidas,
+            observacoes: parsed.data.observacoes,
+        }).select('id').single();
 
         if (error) {
-            return {
-                success: false,
-                error: `Erro ao criar fechamento: ${error.message}`
-            };
+            console.error('[createCaixaAction] DB Error Full:', JSON.stringify(error, null, 2));
+            return { success: false, error: `Erro ao criar fechamento: ${error.message} (${error.code})` };
         }
-
         revalidatePath('/caixa');
         revalidatePath('/dashboard');
-
         return { success: true, data: { id: data.id } };
-
     } catch (err) {
-        return {
-            success: false,
-            error: err instanceof Error ? err.message : 'Erro desconhecido'
-        };
+        return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };
     }
 }
-
 
 export async function deleteCaixaAction(id: string): Promise<ActionResult<void>> {
     try {

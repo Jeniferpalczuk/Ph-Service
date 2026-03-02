@@ -498,7 +498,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 60%);
     border-radius: inherit;
     pointer-events: none;
 }
@@ -508,7 +508,7 @@
     position: absolute;
     inset: -4px;
     border-radius: 20px;
-    background: linear-gradient(135deg, #f97316, #dc2626);
+    background: linear-gradient(135deg, #5d5dee, #5d5dee);
     opacity: 0;
     z-index: -1;
     filter: blur(12px);
@@ -616,7 +616,7 @@
     right: -5%;
     width: 200px;
     height: 200px;
-    background: rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 50%;
     pointer-events: none;
 }
@@ -632,7 +632,7 @@
     color: #ffffff;
     flex-shrink: 0;
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.25);
+    border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .marmita-modal-header-text {
@@ -693,7 +693,7 @@
     border: 1px solid var(--border, #e2e8f0);
     border-radius: 16px;
     padding: 1rem 1.25rem;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .marmita-date-icon {
@@ -761,13 +761,13 @@
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .marmita-type-card:hover {
     border-color: var(--card-accent, #3b82f6);
     box-shadow:
-        0 8px 24px -6px rgba(0,0,0,0.1),
+        0 8px 24px -6px rgba(0, 0, 0, 0.1),
         0 0 0 1px var(--card-accent, #3b82f6);
     transform: translateY(-2px);
 }
@@ -776,7 +776,7 @@
     background: var(--card-accent-light, #eff6ff);
     border-color: var(--card-accent, #3b82f6);
     box-shadow:
-        0 8px 24px -6px rgba(0,0,0,0.1),
+        0 8px 24px -6px rgba(0, 0, 0, 0.1),
         0 0 0 1px var(--card-accent-border, #bfdbfe);
 }
 
@@ -958,7 +958,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .marmita-grand-label {
@@ -969,7 +969,7 @@
 
 .marmita-grand-sub {
     font-size: 0.78rem;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255, 255, 255, 0.55);
     margin-top: 2px;
 }
 
@@ -1029,7 +1029,7 @@
     border: none;
     box-shadow:
         0 8px 20px -4px rgba(249, 115, 22, 0.4),
-        inset 0 1px 0 rgba(255,255,255,0.2);
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     letter-spacing: -0.01em;
 }
@@ -1038,7 +1038,7 @@
     transform: translateY(-2px);
     box-shadow:
         0 14px 28px -6px rgba(249, 115, 22, 0.5),
-        inset 0 1px 0 rgba(255,255,255,0.25);
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .marmita-btn-submit:disabled {
@@ -1048,13 +1048,15 @@
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .marmita-btn-spinner {
     width: 18px;
     height: 18px;
-    border: 2.5px solid rgba(255,255,255,0.35);
+    border: 2.5px solid rgba(255, 255, 255, 0.35);
     border-top-color: #ffffff;
     border-radius: 50%;
     display: inline-block;
