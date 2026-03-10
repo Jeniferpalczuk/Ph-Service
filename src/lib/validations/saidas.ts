@@ -22,7 +22,13 @@ export const saidaSchema = z.object({
         .min(2, 'Categoria deve ter pelo menos 2 caracteres')
         .max(50, 'Categoria deve ter no máximo 50 caracteres')
         .trim(),
-    metodoPagamento: z
+    fornecedor: z
+        .string()
+        .min(2, 'Fornecedor deve ter pelo menos 2 caracteres')
+        .max(100, 'Fornecedor deve ter no máximo 100 caracteres')
+        .optional()
+        .nullable(),
+    formaPagamento: z
         .string()
         .optional()
         .nullable(),

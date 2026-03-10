@@ -135,9 +135,12 @@ export default function SaidasPage() {
                 valor: parseFloat(formData.valor),
                 data: dataAjustada,
                 categoria: formData.categoria,
-                metodoPagamento: formData.formaPagamento,
+                fornecedor: formData.fornecedor || null,
+                formaPagamento: formData.formaPagamento,
                 observacoes: formData.observacoes || null,
             };
+
+            console.log('[handleSubmit Saida] payload:', payload);
 
             if (editingSaida) {
                 await updateSaidaMutation.mutateAsync({ id: editingSaida.id, updates: payload });
@@ -274,6 +277,7 @@ export default function SaidasPage() {
                         </div>
                         <form onSubmit={handleSubmit} className="modern-form">
                             <div className="form-group"><label>Descrição *</label><input required value={formData.descricao} onChange={e => setFormData({ ...formData, descricao: e.target.value })} /></div>
+                            <div className="form-group"><label>Fornecedor</label><input value={formData.fornecedor} onChange={e => setFormData({ ...formData, fornecedor: e.target.value })} /></div>
                             <div className="grid-2">
                                 <div className="form-group"><label>Valor *</label><MoneyInput required value={formData.valor} onChange={val => setFormData({ ...formData, valor: val.toString() })} /></div>
                                 <div className="form-group"><label>Data *</label><input type="date" required value={formData.data} onChange={e => setFormData({ ...formData, data: e.target.value })} /></div>

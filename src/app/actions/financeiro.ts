@@ -114,6 +114,8 @@ export async function createSaidaAction(input: CreateSaidaInput): Promise<Action
         const parsed = createSaidaSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            console.error('[createSaidaAction] Validation Error:', parsed.error.issues);
+            console.error('[createSaidaAction] Input recebido:', JSON.stringify(input, null, 2));
             return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
 
@@ -124,7 +126,8 @@ export async function createSaidaAction(input: CreateSaidaInput): Promise<Action
             valor: parsed.data.valor,
             data: formatDateForDB(parsed.data.data),
             categoria: parsed.data.categoria,
-            metodo_pagamento: parsed.data.metodoPagamento,
+            fornecedor: parsed.data.fornecedor,
+            forma_pagamento: parsed.data.formaPagamento, // column name matches service
             observacoes: parsed.data.observacoes,
         }).select('id').single();
 
@@ -145,6 +148,8 @@ export async function updateSaidaAction(id: string, input: UpdateSaidaInput): Pr
         const parsed = updateSaidaSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            console.error('[updateSaidaAction] Validation Error:', parsed.error.issues);
+            console.error('[updateSaidaAction] Input recebido:', JSON.stringify(input, null, 2));
             return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
 
@@ -154,7 +159,8 @@ export async function updateSaidaAction(id: string, input: UpdateSaidaInput): Pr
             valor: parsed.data.valor,
             data: formatDateForDB(parsed.data.data),
             categoria: parsed.data.categoria,
-            metodo_pagamento: parsed.data.metodoPagamento,
+            fornecedor: parsed.data.fornecedor,
+            forma_pagamento: parsed.data.formaPagamento, // keep consistent
             observacoes: parsed.data.observacoes,
         }).eq('id', id).eq('user_id', user.id).select('id').single();
 
