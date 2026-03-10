@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { PagamentoFuncionario, PaymentMethod, PaymentStatus } from '@/types';
+import { PagamentoFuncionario, PaymentStatus } from '@/types';
+import { CreateFolhaPagamentoInput } from '@/lib/validations/folha-pagamento';
 import {
     useFolhaPagamentoList,
     useCreatePagamento,
@@ -97,10 +98,10 @@ export default function FolhaPagamentoPage() {
         setFormData({
             funcionario: item.funcionario,
             cargo: item.cargoFuncao || '',
-            salarioBase: item.valor.toString(), // Simplified for now
+            salarioBase: item.valor.toString(),
             dataPagamento: new Date(item.dataPagamento).toISOString().split('T')[0],
             periodoReferencia: item.periodoReferencia || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
-            status: (item.statusPagamento as any) === 'pago' ? 'pago' : 'pendente',
+            status: item.statusPagamento === 'pago' ? 'pago' : 'pendente',
             faltas: (item.faltas || 0).toString(),
             horasExtras: '0',
             vales: (item.descontos || 0).toString(),
@@ -118,21 +119,21 @@ export default function FolhaPagamentoPage() {
             const [y, m, d] = formData.dataPagamento.split('-').map(Number);
             const dataAjustada = new Date(y, m - 1, d, 12, 0, 0);
 
-            const vLiquido = parseFloat(formData.salarioBase) - (parseFloat(formData.vales) + parseFloat(formData.marmitas) + parseFloat(formData.outrosDescontos));
+            const totalDescontos = (parseFloat(formData.vales) || 0)
+                + (parseFloat(formData.marmitas) || 0)
+                + (parseFloat(formData.outrosDescontos) || 0);
 
-            const payload: any = {
+            const payload: CreateFolhaPagamentoInput = {
                 funcionario: formData.funcionario,
-                cargo: formData.cargo,
-                salarioBase: parseFloat(formData.salarioBase),
+                cargoFuncao: formData.cargo || null,
+                valor: parseFloat(formData.salarioBase),
+                descontos: totalDescontos,
+                faltas: parseFloat(formData.faltas) || 0,
+                formaPagamento: 'pix',
+                statusPagamento: formData.status === 'pago' ? 'pago' : 'pendente',
                 dataPagamento: dataAjustada,
                 periodoReferencia: formData.periodoReferencia,
-                status: formData.status,
-                faltas: parseFloat(formData.faltas),
-                valorLiquido: vLiquido,
-                vales: parseFloat(formData.vales) || (valesPendentes || 0),
-                marmitas: parseFloat(formData.marmitas),
-                outrosDescontos: parseFloat(formData.outrosDescontos),
-                observacoes: formData.observacoes || null
+                observacoes: formData.observacoes || null,
             };
 
             if (editingItem) {
@@ -150,6 +151,7 @@ export default function FolhaPagamentoPage() {
             }
             resetForm();
         } catch (err) {
+            console.error('Erro ao processar folha:', err);
             toast.error('Erro ao processar folha.');
         }
     };

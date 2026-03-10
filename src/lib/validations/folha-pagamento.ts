@@ -2,34 +2,35 @@ import { z } from 'zod';
 
 /**
  * Zod Schemas - Folha de Pagamento
+ * 
+ * Schema alinhado com o banco real:
+ * cargo_funcao, valor, descontos, faltas, forma_pagamento, status_pagamento, data_pagamento
  */
+
+const paymentStatusValues = ['pago', 'pendente', 'vencido', 'parcial'] as const;
+const paymentMethodValues = ['dinheiro', 'pix', 'cartao_credito', 'cartao_debito', 'transferencia', 'boleto', 'vale'] as const;
 
 export const folhaPagamentoSchema = z.object({
     funcionario: z
         .string()
         .min(2, 'Funcionário deve ter pelo menos 2 caracteres')
         .trim(),
-    cargo: z.string().optional().nullable(),
-    salarioBase: z.number().min(0),
-    dataPagamento: z.date(),
-    periodoReferencia: z.string().regex(/^\d{4}-\d{2}$/),
-
-    // Proventos
-    horasExtras: z.number().min(0).default(0),
-    valorHorasExtras: z.number().min(0).default(0),
-    adicionalNoturno: z.number().min(0).default(0),
-    outrosProventos: z.number().min(0).default(0),
-
-    // Descontos
-    faltas: z.number().min(0).default(0),
-    valorFaltas: z.number().min(0).default(0),
-    vales: z.number().min(0).default(0),
-    marmitas: z.number().min(0).default(0),
-    outrosDescontos: z.number().min(0).default(0),
-
-    // Totais
-    valorLiquido: z.number(),
-    status: z.enum(['pago', 'pendente', 'cancelado']).default('pago'),
+    cargoFuncao: z.string().optional().nullable(),
+    valor: z
+        .number()
+        .min(0.01, 'Valor deve ser maior que zero'),
+    descontos: z.number().min(0).default(0).nullable().optional(),
+    faltas: z.number().min(0).default(0).nullable().optional(),
+    formaPagamento: z.enum(paymentMethodValues, {
+        message: 'Forma de pagamento inválida',
+    }).default('pix'),
+    statusPagamento: z.enum(paymentStatusValues, {
+        message: 'Status inválido',
+    }).default('pago'),
+    dataPagamento: z.date({
+        message: 'Data de pagamento é obrigatória',
+    }),
+    periodoReferencia: z.string().optional().nullable(),
     observacoes: z.string().optional().nullable(),
 });
 
