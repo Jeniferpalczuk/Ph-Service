@@ -98,6 +98,10 @@ export default function ConveniosPage() {
                 toast.error('Data de vencimento é obrigatória');
                 return;
             }
+            if (!formData.banco) {
+                toast.error('Campo banco é obrigatório');
+                return;
+            }
 
             // Validar valor antes de enviar
             const valorNum = parseFloat(formData.valorBoleto);
@@ -121,6 +125,7 @@ export default function ConveniosPage() {
             const payload = {
                 empresa: formData.empresaCliente,
                 tipoFechamento: formData.tipoFechamento,
+                banco: formData.banco,
                 periodoReferencia: formData.periodoReferencia || null,
                 dataFechamento: dataFechAjustada,
                 valor: valorNum,

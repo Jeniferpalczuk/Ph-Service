@@ -17,6 +17,11 @@ export const convenioSchema = z.object({
         .number()
         .min(0.01, 'Valor deve ser maior que zero')
         .max(1000000, 'Valor muito alto'),
+    banco: z
+        .string()
+        .min(2, 'Banco deve ter pelo menos 2 caracteres')
+        .max(100, 'Banco deve ter no máximo 100 caracteres')
+        .trim(),
     periodoReferencia: z
         .string()
         .optional()

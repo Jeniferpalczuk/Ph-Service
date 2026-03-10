@@ -34,6 +34,7 @@ export async function createConvenioAction(input: CreateConvenioInput): Promise<
             empresa_cliente: parsed.data.empresa,
             tipo_fechamento: parsed.data.tipoFechamento,
             valor_boleto: parsed.data.valor,
+            banco: parsed.data.banco,
             periodo_referencia: parsed.data.periodoReferencia,
             data_fechamento: formatDateForDB(parsed.data.dataFechamento),
             data_vencimento: formatDateForDB(parsed.data.dataVencimento),
@@ -68,6 +69,7 @@ export async function updateConvenioAction(id: string, input: UpdateConvenioInpu
         if (parsed.data.empresa !== undefined) updateConvenioData.empresa_cliente = parsed.data.empresa;
         if (parsed.data.tipoFechamento !== undefined) updateConvenioData.tipo_fechamento = parsed.data.tipoFechamento;
         if (parsed.data.valor !== undefined) updateConvenioData.valor_boleto = parsed.data.valor;
+        if (parsed.data.banco !== undefined) updateConvenioData.banco = parsed.data.banco;
         if (parsed.data.periodoReferencia !== undefined) updateConvenioData.periodo_referencia = parsed.data.periodoReferencia;
         if (parsed.data.dataFechamento !== undefined) updateConvenioData.data_fechamento = formatDateForDB(parsed.data.dataFechamento);
         if (parsed.data.dataVencimento !== undefined) updateConvenioData.data_vencimento = formatDateForDB(parsed.data.dataVencimento);
