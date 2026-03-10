@@ -694,7 +694,6 @@ export default function MarmitasPage() {
                     </div>
                 </div>
             )}
-        </div>
             {/* page-specific styling for more professional look */}
             <style jsx>{`
                 /* neutralize header badge color */
