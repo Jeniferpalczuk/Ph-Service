@@ -29,8 +29,9 @@ export async function createConvenioAction(input: CreateConvenioInput): Promise<
         const supabase = await createClient();
         const { data, error } = await supabase.from('convenios').insert({
             user_id: user.id,
-            empresa: parsed.data.empresa,
-            valor: parsed.data.valor,
+            empresa_cliente: parsed.data.empresa,
+            tipo_fechamento: parsed.data.tipoFechamento,
+            valor_boleto: parsed.data.valor,
             periodo_referencia: parsed.data.periodoReferencia,
             data_fechamento: formatDateForDB(parsed.data.dataFechamento),
             data_vencimento: formatDateForDB(parsed.data.dataVencimento),
@@ -59,16 +60,22 @@ export async function updateConvenioAction(id: string, input: UpdateConvenioInpu
         }
 
         const supabase = await createClient();
-        const { data, error } = await supabase.from('convenios').update({
-            empresa: parsed.data.empresa,
-            valor: parsed.data.valor,
-            periodo_referencia: parsed.data.periodoReferencia,
-            data_fechamento: formatDateForDB(parsed.data.dataFechamento),
-            data_vencimento: formatDateForDB(parsed.data.dataVencimento),
-            data_pagamento: formatDateForDB(parsed.data.dataPagamento),
-            status_pagamento: parsed.data.statusPagamento,
-            observacoes: parsed.data.observacoes,
-        }).eq('id', id).eq('user_id', user.id).select('id').single();
+        const updateConvenioData: Record<string, unknown> = {
+            updated_at: new Date().toISOString()
+        };
+        if (parsed.data.empresa !== undefined) updateConvenioData.empresa_cliente = parsed.data.empresa;
+        if (parsed.data.tipoFechamento !== undefined) updateConvenioData.tipo_fechamento = parsed.data.tipoFechamento;
+        if (parsed.data.valor !== undefined) updateConvenioData.valor_boleto = parsed.data.valor;
+        if (parsed.data.periodoReferencia !== undefined) updateConvenioData.periodo_referencia = parsed.data.periodoReferencia;
+        if (parsed.data.dataFechamento !== undefined) updateConvenioData.data_fechamento = formatDateForDB(parsed.data.dataFechamento);
+        if (parsed.data.dataVencimento !== undefined) updateConvenioData.data_vencimento = formatDateForDB(parsed.data.dataVencimento);
+        if (parsed.data.dataPagamento !== undefined) updateConvenioData.data_pagamento = formatDateForDB(parsed.data.dataPagamento);
+        if (parsed.data.statusPagamento !== undefined) updateConvenioData.status_pagamento = parsed.data.statusPagamento;
+        if (parsed.data.observacoes !== undefined) updateConvenioData.observacoes = parsed.data.observacoes;
+
+        const { data, error } = await supabase.from('convenios')
+            .update(updateConvenioData)
+            .eq('id', id).eq('user_id', user.id).select('id').single();
 
         if (error) return { success: false, error: 'Erro ao atualizar convênio' };
         revalidatePath('/convenios');

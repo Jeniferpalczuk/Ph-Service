@@ -108,18 +108,15 @@ export default function ConveniosPage() {
             }
 
             const payload = {
-                empresa: formData.empresaCliente, // Action expects 'empresa'
+                empresa: formData.empresaCliente,
                 tipoFechamento: formData.tipoFechamento,
                 periodoReferencia: formData.periodoReferencia,
                 dataFechamento: dataFechAjustada,
                 valor: parseFloat(formData.valorBoleto),
-                // Action expects 'valor'
-                banco: formData.banco,
                 dataVencimento: dataVencAjustada,
                 dataPagamento: dataPagAjustada,
                 statusPagamento: formData.statusPagamento,
                 observacoes: formData.observacoes || null,
-
             };
 
             if (editingConvenio) {
@@ -137,30 +134,41 @@ export default function ConveniosPage() {
     };
 
     const resetForm = () => {
-        setFormData(prev => ({
-            ...prev,
+        setFormData({
             empresaCliente: '',
+            tipoFechamento: 'mensal',
+            periodoReferencia: '',
+            dataFechamento: '',
             valorBoleto: '',
+            banco: '',
+            dataVencimento: '',
+            dataPagamento: '',
             statusPagamento: 'pendente',
             notaFiscal: '',
             enviadoPara: '',
             observacoes: '',
-        }));
+        });
         setEditingConvenio(null);
         setShowModal(false);
     };
 
     const handleEdit = (convenio: Convenio) => {
         setEditingConvenio(convenio);
+
+        const toDateStr = (val: Date | string | undefined | null) => {
+            if (!val) return '';
+            try { return new Date(val).toISOString().split('T')[0]; } catch { return ''; }
+        };
+
         setFormData({
             empresaCliente: convenio.empresaCliente,
             tipoFechamento: convenio.tipoFechamento,
             periodoReferencia: convenio.periodoReferencia,
-            dataFechamento: new Date(convenio.dataFechamento).toISOString().split('T')[0],
+            dataFechamento: toDateStr(convenio.dataFechamento),
             valorBoleto: convenio.valorBoleto.toString(),
-            banco: convenio.banco,
-            dataVencimento: new Date(convenio.dataVencimento).toISOString().split('T')[0],
-            dataPagamento: convenio.dataPagamento ? new Date(convenio.dataPagamento).toISOString().split('T')[0] : '',
+            banco: convenio.banco || '',
+            dataVencimento: toDateStr(convenio.dataVencimento),
+            dataPagamento: toDateStr(convenio.dataPagamento),
             statusPagamento: convenio.statusPagamento,
             notaFiscal: convenio.notaFiscal || '',
             enviadoPara: convenio.enviadoPara || '',
