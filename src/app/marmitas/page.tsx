@@ -10,6 +10,7 @@ import {
     useUpdateMarmita,
     useDeleteMarmita
 } from '@/hooks/financeiro/useMarmitas';
+import { useClientesDropdown } from '@/hooks/cadastros/useDropdown';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { toast } from 'react-hot-toast';
 import {
@@ -38,6 +39,10 @@ export default function MarmitasPage() {
     const createLoteMutation = useCreateMarmitasLote();
     const updateMutation = useUpdateMarmita();
     const deleteMutation = useDeleteMarmita();
+
+    // Clientes dropdown for selecting cliente
+    const { data: clientesDD } = useClientesDropdown();
+    const clientes = clientesDD ?? [];
 
     // Fetch Marmitas via React Query
     const lastDay = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate().toString().padStart(2, '0');
@@ -71,10 +76,11 @@ export default function MarmitasPage() {
     // Edição Individual
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingItem, setEditingItem] = useState<Marmita | null>(null);
-    const [editData, setEditData] = useState({ qtd: '', valorUnitario: '', valorTotal: '', dataEntrega: '' });
+    const [editData, setEditData] = useState({ cliente: '', qtd: '', valorUnitario: '', valorTotal: '', dataEntrega: '' });
 
     // Form State (Lançamento Diário)
     const [formData, setFormData] = useState({
+        cliente: '',
         dataEntrega: new Date().toISOString().split('T')[0],
         qtdP: '', unitP: '', totalP: '',
         qtdM: '', unitM: '', totalM: '',
@@ -85,6 +91,7 @@ export default function MarmitasPage() {
     const resetForm = () => {
         setFormData(prev => ({
             ...prev,
+            cliente: '',
             qtdP: '', unitP: '', totalP: '',
             qtdM: '', unitM: '', totalM: '',
             qtdG: '', unitG: '', totalG: '',
@@ -137,6 +144,10 @@ export default function MarmitasPage() {
                 valorTotal: parseFloat(size.total) || 0,
             }));
 
+        if (!formData.cliente) {
+            toast.error('Selecione um cliente');
+            return;
+        }
         if (marmitasParaInserir.length === 0) {
             toast.error('Preencha ao menos uma quantidade.');
             return;
@@ -145,6 +156,7 @@ export default function MarmitasPage() {
         try {
             await createLoteMutation.mutateAsync({
                 dataEntrega: dataRef,
+                cliente: formData.cliente || '',
                 marmitas: marmitasParaInserir
             });
             toast.success('Lançamento realizado com sucesso!');
@@ -204,6 +216,7 @@ export default function MarmitasPage() {
     const openEditModal = (item: Marmita) => {
         setEditingItem(item);
         setEditData({
+            cliente: item.cliente || '',
             qtd: item.quantidade ? item.quantidade.toString() : '1',
             valorUnitario: item.valorUnitario ? item.valorUnitario.toString() : '',
             valorTotal: item.valorTotal.toString(),
@@ -222,6 +235,7 @@ export default function MarmitasPage() {
                 await updateMutation.mutateAsync({
                     id: editingItem.id,
                     updates: {
+                        cliente: editData.cliente,
                         quantidade: parseInt(editData.qtd),
                         valorUnitario: parseFloat(editData.valorUnitario),
                         valorTotal: parseFloat(editData.valorTotal),
@@ -245,7 +259,7 @@ export default function MarmitasPage() {
 
     return (
         <div className="modern-page">
-            <div className="modern-header">
+            <div className="modern-header marmitas-page">
                 <div className="modern-header-info">
                     <div className="modern-header-subtitle">Controle de Marmitas</div>
                     <div className="modern-header-title">
@@ -372,6 +386,7 @@ export default function MarmitasPage() {
                             <table className="modern-table">
                                 <thead>
                                     <tr>
+                                        <th>Cliente</th>
                                         <th>Tamanho</th>
                                         <th style={{ textAlign: 'center' }}>Qtd</th>
                                         <th style={{ textAlign: 'center' }}>Unit.</th>
@@ -382,7 +397,8 @@ export default function MarmitasPage() {
                                 <tbody>
                                     {dailySummary[selectedDateDetails].items.map(item => (
                                         <tr key={item.id}>
-                                            <td className="col-highlight">{item.tamanho}</td>
+                                            <td>{item.cliente || '-'}</td>
+                                        <td className="col-highlight">{item.tamanho}</td>
                                             <td style={{ textAlign: 'center' }}>{item.quantidade || 1}</td>
                                             <td style={{ textAlign: 'center', color: '#64748b' }}>
                                                 {item.valorUnitario ? item.valorUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}
@@ -445,6 +461,23 @@ export default function MarmitasPage() {
                             <form onSubmit={handleSubmit}>
                                 <div className="marmita-modal-body">
 
+                                    {/* Data */}
+                                    {/* Cliente selector */}
+                                    <div className="marmita-date-section">
+                                        <div className="marmita-date-icon"><LuUtensils size={18} /></div>
+                                        <div className="marmita-date-field">
+                                            <label>Cliente</label>
+                                            <select
+                                                required
+                                                value={formData.cliente}
+                                                onChange={e => setFormData({ ...formData, cliente: e.target.value })}
+                                                className="marmita-date-input"
+                                            >
+                                                <option value="">Selecione...</option>
+                                                {clientes.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
                                     {/* Data */}
                                     <div className="marmita-date-section">
                                         <div className="marmita-date-icon"><LuCalendar size={18} /></div>
@@ -604,6 +637,18 @@ export default function MarmitasPage() {
                         </div>
                         <form onSubmit={handleUpdate} style={{ padding: '2rem' }}>
                             <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Cliente</label>
+                                <select
+                                    required
+                                    value={editData.cliente}
+                                    onChange={e => setEditData({ ...editData, cliente: e.target.value })}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem' }}
+                                >
+                                    <option value="">Selecione...</option>
+                                    {clientes.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
                                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>Data da Entrega</label>
                                 <input
                                     type="date"
@@ -649,6 +694,33 @@ export default function MarmitasPage() {
                     </div>
                 </div>
             )}
+        </div>
+            {/* page-specific styling for more professional look */}
+            <style jsx>{`
+                /* neutralize header badge color */
+                .marmitas-page .modern-header-badges .modern-badge-summary.info {
+                    background: var(--neutral-100);
+                    color: var(--text-secondary);
+                }
+                /* tone down launch button */
+                .btn-lancar-vendas {
+                    background: var(--surface);
+                    color: var(--text-primary);
+                    box-shadow: var(--shadow-soft);
+                    border: 1px solid var(--border);
+                }
+                .btn-lancar-vendas:hover {
+                    transform: none;
+                    box-shadow: var(--shadow-soft);
+                }
+                /* remove accent gradients on cards and use neutral accent */
+                .marmita-type-card {
+                    background: var(--surface);
+                    --card-accent: var(--neutral-300) !important;
+                    --card-accent-light: var(--neutral-100) !important;
+                    --card-accent-border: var(--border) !important;
+                }
+            `}</style>
         </div>
     );
 }

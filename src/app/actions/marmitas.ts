@@ -14,12 +14,15 @@ export async function createMarmitaAction(input: CreateMarmitaInput): Promise<Ac
         const parsed = createMarmitaSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            console.error('[createMarmitaAction] validation error', parsed.error.issues);
+            console.error('[createMarmitaAction] input', input);
             return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('marmitas').insert({
             user_id: user.id,
+            cliente: parsed.data.cliente,
             tamanho: parsed.data.tamanho,
             quantidade: parsed.data.quantidade,
             valor_unitario: parsed.data.valorUnitario,
@@ -42,12 +45,15 @@ export async function createMarmitasLoteAction(input: CreateMarmitasLoteInput): 
         const parsed = createMarmitasLoteSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            console.error('[createMarmitasLoteAction] validation error', parsed.error.issues);
+            console.error('[createMarmitasLoteAction] input', input);
             return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
 
         const supabase = await createClient();
         const inserts = parsed.data.marmitas.map(m => ({
             user_id: user.id,
+            cliente: parsed.data.cliente || '',
             tamanho: m.tamanho,
             quantidade: m.quantidade,
             valor_unitario: m.valorUnitario,
@@ -73,11 +79,14 @@ export async function updateMarmitaAction(id: string, input: UpdateMarmitaInput)
         const parsed = updateMarmitaSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            console.error('[updateMarmitaAction] validation error', parsed.error.issues);
+            console.error('[updateMarmitaAction] input', input);
             return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
 
         const supabase = await createClient();
         const { data, error } = await supabase.from('marmitas').update({
+            cliente: parsed.data.cliente,
             tamanho: parsed.data.tamanho,
             quantidade: parsed.data.quantidade,
             valor_unitario: parsed.data.valorUnitario,

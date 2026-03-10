@@ -5,6 +5,11 @@ import { z } from 'zod';
  */
 
 export const marmitaSchema = z.object({
+    cliente: z
+        .string()
+        .min(1, 'Cliente obrigatório')
+        .max(100, 'Cliente muito longo')
+        .trim(),
     tamanho: z.enum(['P', 'M', 'G', 'PF']),
     quantidade: z.number().min(1, 'Quantidade deve ser pelo menos 1'),
     valorUnitario: z.number().min(0),
@@ -22,6 +27,7 @@ export type UpdateMarmitaInput = z.infer<typeof updateMarmitaSchema>;
 // Input para criação em lote (diário)
 export const createMarmitasLoteSchema = z.object({
     dataEntrega: z.date(),
+    cliente: z.string().optional().nullable(),
     marmitas: z.array(z.object({
         tamanho: z.enum(['P', 'M', 'G', 'PF']),
         quantidade: z.number().min(1),
