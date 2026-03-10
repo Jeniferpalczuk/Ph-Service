@@ -23,6 +23,8 @@ export async function createConvenioAction(input: CreateConvenioInput): Promise<
         const parsed = createConvenioSchema.safeParse(input);
         if (!parsed.success) {
             const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            console.error('[createConvenioAction] Validation Error:', parsed.error.issues);
+            console.error('[createConvenioAction] Input recebido:', JSON.stringify(input, null, 2));
             return { success: false, error: errorMessages || 'Dados inválidos', errors: parsed.error.format() };
         }
 

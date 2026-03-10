@@ -86,12 +86,23 @@ export default function ConveniosPage() {
         e.preventDefault();
 
         try {
+            if (!formData.empresaCliente) {
+                toast.error('Selecione um cliente/empresa');
+                return;
+            }
             if (!formData.dataFechamento) {
                 toast.error('Data de fechamento é obrigatória');
                 return;
             }
             if (!formData.dataVencimento) {
                 toast.error('Data de vencimento é obrigatória');
+                return;
+            }
+
+            // Validar valor antes de enviar
+            const valorNum = parseFloat(formData.valorBoleto);
+            if (!formData.valorBoleto || isNaN(valorNum) || valorNum <= 0) {
+                toast.error('Informe um valor válido maior que zero');
                 return;
             }
 
@@ -110,14 +121,16 @@ export default function ConveniosPage() {
             const payload = {
                 empresa: formData.empresaCliente,
                 tipoFechamento: formData.tipoFechamento,
-                periodoReferencia: formData.periodoReferencia,
+                periodoReferencia: formData.periodoReferencia || null,
                 dataFechamento: dataFechAjustada,
-                valor: parseFloat(formData.valorBoleto),
+                valor: valorNum,
                 dataVencimento: dataVencAjustada,
                 dataPagamento: dataPagAjustada,
                 statusPagamento: formData.statusPagamento,
                 observacoes: formData.observacoes || null,
             };
+
+            console.log('[handleSubmit] payload enviado:', payload);
 
             if (editingConvenio) {
                 await updateConvenioMutation.mutateAsync({ id: editingConvenio.id, updates: payload });
