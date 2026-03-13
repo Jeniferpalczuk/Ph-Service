@@ -53,7 +53,7 @@ export async function createMarmitasLoteAction(input: CreateMarmitasLoteInput): 
         const supabase = await createClient();
         const inserts = parsed.data.marmitas.map(m => ({
             user_id: user.id,
-            cliente: parsed.data.cliente || '',
+            cliente: parsed.data.cliente,
             tamanho: m.tamanho,
             quantidade: m.quantidade,
             valor_unitario: m.valorUnitario,
@@ -63,7 +63,10 @@ export async function createMarmitasLoteAction(input: CreateMarmitasLoteInput): 
 
         const { error } = await supabase.from('marmitas').insert(inserts);
 
-        if (error) return { success: false, error: 'Erro ao criar marmitas em lote' };
+        if (error) {
+            console.error('[createMarmitasLoteAction] DB Error:', error);
+            return { success: false, error: `Erro ao criar marmitas em lote: ${error.message}` };
+        }
         revalidatePath('/marmitas');
         return { success: true, data: { count: inserts.length } };
     } catch (err) {

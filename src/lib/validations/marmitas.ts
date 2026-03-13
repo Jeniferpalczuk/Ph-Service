@@ -27,7 +27,7 @@ export type UpdateMarmitaInput = z.infer<typeof updateMarmitaSchema>;
 // Input para criação em lote (diário)
 export const createMarmitasLoteSchema = z.object({
     dataEntrega: z.date(),
-    cliente: z.string().optional().nullable(),
+    cliente: z.string().min(1, 'Cliente obrigatório'),
     marmitas: z.array(z.object({
         tamanho: z.enum(['P', 'M', 'G', 'PF']),
         quantidade: z.number().min(1),

@@ -298,7 +298,7 @@ export default function MarmitasPage() {
                         <TableSkeleton rows={8} cols={7} />
                     </div>
                 ) : isError ? (
-                    <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#201ea3' }}>
                         Erro ao carregar marmitas: {error instanceof Error ? error.message : 'Erro desconhecido'}
                     </div>
                 ) : (
@@ -333,7 +333,7 @@ export default function MarmitasPage() {
                                                 className="btn-modern-icon"
                                                 title="Excluir dia inteiro"
                                                 onClick={(e) => handleDeleteGroup(dateString, e)}
-                                                style={{ color: '#ef4444' }}
+                                                style={{ color: '#201ea3' }}
                                             >
                                                 <LuTrash2 size={16} />
                                             </button>
