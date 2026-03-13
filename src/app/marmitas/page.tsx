@@ -426,10 +426,10 @@ export default function MarmitasPage() {
 
             {showModal && (() => {
                 const marmitaTypes = [
-                    { key: 'P', label: 'Pequena', emoji: '🥡', accent: '#3b82f6', accentLight: '#eff6ff', accentBorder: '#bfdbfe', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' },
-                    { key: 'M', label: 'Média', emoji: '🍱', accent: '#10b981', accentLight: '#ecfdf5', accentBorder: '#a7f3d0', gradient: 'linear-gradient(135deg, #10b981, #059669)' },
-                    { key: 'G', label: 'Grande', emoji: '🍛', accent: '#8b5cf6', accentLight: '#f5f3ff', accentBorder: '#ddd6fe', gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
-                    { key: 'PF', label: 'Prato Feito', emoji: '🍽️', accent: '#f59e0b', accentLight: '#fffbeb', accentBorder: '#fde68a', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+                    { key: 'P', label: 'Pequena' },
+                    { key: 'M', label: 'Média' },
+                    { key: 'G', label: 'Grande' },
+                    { key: 'PF', label: 'Prato Feito' },
                 ];
 
                 const grandTotal = marmitaTypes.reduce((sum, t) => {
@@ -505,15 +505,9 @@ export default function MarmitasPage() {
                                                 <div
                                                     key={t.key}
                                                     className={`marmita-type-card${hasValue ? ' marmita-type-card--active' : ''}`}
-                                                    style={{
-                                                        '--card-accent': t.accent,
-                                                        '--card-accent-light': t.accentLight,
-                                                        '--card-accent-border': t.accentBorder,
-                                                    } as React.CSSProperties}
                                                 >
                                                     {/* Card Header */}
                                                     <div className="marmita-card-header">
-                                                        <div className="marmita-card-emoji">{t.emoji}</div>
                                                         <div className="marmita-card-title">
                                                             <span className="marmita-card-key">{t.key}</span>
                                                             <span className="marmita-card-label">{t.label}</span>
