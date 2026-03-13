@@ -28,6 +28,8 @@ export async function createMarmitaAction(input: CreateMarmitaInput): Promise<Ac
             valor_unitario: parsed.data.valorUnitario,
             valor_total: parsed.data.valorTotal,
             data_entrega: formatDateForDB(parsed.data.dataEntrega),
+            forma_pagamento: parsed.data.formaPagamento,
+            status_recebimento: parsed.data.statusRecebimento,
             observacoes: parsed.data.observacoes,
         }).select('id').single();
 
@@ -59,6 +61,8 @@ export async function createMarmitasLoteAction(input: CreateMarmitasLoteInput): 
             valor_unitario: m.valorUnitario,
             valor_total: m.valorTotal,
             data_entrega: formatDateForDB(parsed.data.dataEntrega),
+            forma_pagamento: 'dinheiro',
+            status_recebimento: 'pendente',
         }));
 
         const { error } = await supabase.from('marmitas').insert(inserts);
@@ -95,6 +99,8 @@ export async function updateMarmitaAction(id: string, input: UpdateMarmitaInput)
             valor_unitario: parsed.data.valorUnitario,
             valor_total: parsed.data.valorTotal,
             data_entrega: formatDateForDB(parsed.data.dataEntrega),
+            forma_pagamento: parsed.data.formaPagamento,
+            status_recebimento: parsed.data.statusRecebimento,
             observacoes: parsed.data.observacoes,
             updated_at: new Date().toISOString(),
         }).eq('id', id).eq('user_id', user.id).select('id').single();

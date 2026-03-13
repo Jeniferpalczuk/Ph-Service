@@ -15,6 +15,8 @@ export const marmitaSchema = z.object({
     valorUnitario: z.number().min(0),
     valorTotal: z.number().min(0),
     dataEntrega: z.date(),
+    formaPagamento: z.enum(['dinheiro', 'pix', 'cartao_credito', 'cartao_debito', 'transferencia', 'boleto', 'vale']).default('dinheiro'),
+    statusRecebimento: z.enum(['pago', 'pendente', 'vencido', 'parcial']).default('pendente'),
     observacoes: z.string().optional().nullable(),
 });
 
