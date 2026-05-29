@@ -11,8 +11,8 @@ function dbToFornecedor(row: Record<string, unknown>): Fornecedor {
     return {
         id: row.id as string,
         nome: row.nome as string,
-        telefone: row.telefone as string, // Antes contato
-        servico: row.servico as string, // Antes categoria
+        telefone: (row.contato ?? row.telefone) as string, // Map contato to telefone
+        servico: (row.categoria ?? row.servico) as string, // Map categoria to servico
         ativo: row.ativo as boolean,
         observacoes: row.observacoes as string | undefined,
         createdAt: new Date(row.created_at as string),
@@ -33,10 +33,10 @@ export async function getFornecedores(
 
     let query = supabase.from('fornecedores').select('*', { count: 'exact' });
 
-    if (servico) query = query.eq('servico', servico);
+    if (servico) query = query.eq('categoria', servico);
     if (ativo !== 'all') query = query.eq('ativo', ativo);
     const safeSearch = sanitizeSearch(search);
-    if (safeSearch) query = query.or(`nome.ilike.%${safeSearch}%,servico.ilike.%${safeSearch}%`);
+    if (safeSearch) query = query.or(`nome.ilike.%${safeSearch}%,categoria.ilike.%${safeSearch}%`);
 
     query = query.order('nome', { ascending: true });
 
@@ -77,8 +77,8 @@ export async function createFornecedor(
         .insert({
             user_id: userId,
             nome: fornecedor.nome,
-            telefone: fornecedor.telefone, // Antes contato
-            servico: fornecedor.servico, // Antes categoria
+            contato: fornecedor.telefone,
+            categoria: fornecedor.servico,
             ativo: fornecedor.ativo ?? true,
             observacoes: fornecedor.observacoes,
         })
@@ -94,8 +94,8 @@ export async function updateFornecedor(id: string, updates: Partial<Fornecedor>)
     const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
     if (updates.nome !== undefined) updateData.nome = updates.nome;
-    if (updates.telefone !== undefined) updateData.telefone = updates.telefone; // Antes contato
-    if (updates.servico !== undefined) updateData.servico = updates.servico; // Antes categoria
+    if (updates.telefone !== undefined) updateData.contato = updates.telefone;
+    if (updates.servico !== undefined) updateData.categoria = updates.servico;
     if (updates.ativo !== undefined) updateData.ativo = updates.ativo;
     if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
 

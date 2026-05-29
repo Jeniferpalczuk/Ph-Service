@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Funcionario, Cliente, Fornecedor } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { MoneyInput } from '@/components/MoneyInput';
@@ -93,6 +93,15 @@ export default function CadastrosPage() {
     const deleteFuncionarioMutation = useDeleteFuncionario();
 
     const funcionarios = funcionariosData?.data ?? [];
+    const sortedFuncionarios = useMemo(() => {
+        return [...funcionarios].sort((a, b) => {
+            const aDemitido = !!a.dataDemissao;
+            const bDemitido = !!b.dataDemissao;
+            if (aDemitido && !bDemitido) return 1;
+            if (!aDemitido && bDemitido) return -1;
+            return a.nome.localeCompare(b.nome);
+        });
+    }, [funcionarios]);
     const totalPages = funcionariosData?.totalPages ?? 1;
     const totalFuncionarios = funcionariosData?.count ?? 0;
 
@@ -228,11 +237,16 @@ export default function CadastrosPage() {
     const handleClienteSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const cleanedCliente = {
+                ...clienteData,
+                telefone: clienteData.telefone?.trim() || null,
+                endereco: clienteData.endereco?.trim() || null,
+            };
             if (editingCliente) {
-                await updateClienteMutation.mutateAsync({ id: editingCliente.id, updates: clienteData as any });
+                await updateClienteMutation.mutateAsync({ id: editingCliente.id, updates: cleanedCliente as any });
                 toast.success('Cliente atualizado com sucesso!');
             } else {
-                await createClienteMutation.mutateAsync(clienteData as any);
+                await createClienteMutation.mutateAsync(cleanedCliente as any);
                 toast.success('Cliente cadastrado com sucesso!');
             }
             resetClienteForm();
@@ -270,11 +284,17 @@ export default function CadastrosPage() {
     const handleFornecSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const cleanedFornec = {
+                nome: fornecData.nome,
+                servico: fornecData.servico,
+                telefone: fornecData.telefone?.trim() || null,
+                ativo: fornecData.ativo,
+            };
             if (editingFornec) {
-                await updateFornecedorMutation.mutateAsync({ id: editingFornec.id, updates: fornecData as any });
+                await updateFornecedorMutation.mutateAsync({ id: editingFornec.id, updates: cleanedFornec as any });
                 toast.success('Fornecedor atualizado com sucesso!');
             } else {
-                await createFornecedorMutation.mutateAsync(fornecData as any);
+                await createFornecedorMutation.mutateAsync(cleanedFornec as any);
                 toast.success('Fornecedor cadastrado com sucesso!');
             }
             resetFornecForm();
@@ -412,23 +432,31 @@ export default function CadastrosPage() {
                         {!isLoadingFuncionarios && !isErrorFuncionarios && (
                             <>
                                 <div className="grid-list">
-                                    {funcionarios.length === 0 ? (
+                                                                    {sortedFuncionarios.length === 0 ? (
                                         <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
                                             Nenhum funcionário encontrado.
                                         </div>
                                     ) : (
-                                        funcionarios.map(f => {
+                                        sortedFuncionarios.map(f => {
                                             const isDemitido = !!f.dataDemissao;
                                             return (
-                                                <div key={f.id} className="entity-card" style={{ borderColor: isDemitido ? 'var(--danger-500)' : undefined, background: isDemitido ? '#fff5f5' : undefined }}>
+                                                <div
+                                                    key={f.id}
+                                                    className="entity-card"
+                                                    style={{
+                                                        border: isDemitido ? '2px solid #ef4444' : undefined,
+                                                        backgroundColor: isDemitido ? '#fef2f2' : undefined,
+                                                        boxShadow: isDemitido ? '0 10px 15px -3px rgba(239, 68, 68, 0.05)' : undefined
+                                                    }}
+                                                >
                                                     <div className="entity-info">
-                                                        <h4 style={{ color: isDemitido ? 'var(--danger-600)' : undefined }}>
-                                                            {f.nome} {isDemitido && <span style={{ fontSize: '0.7rem', border: '1px solid currentColor', borderRadius: '4px', padding: '1px 4px' }}>DEMITIDO</span>}
+                                                        <h4 style={{ color: isDemitido ? '#dc2626' : undefined }}>
+                                                            {f.nome} {isDemitido && <span style={{ fontSize: '0.7rem', border: '1px solid #dc2626', color: '#dc2626', borderRadius: '4px', padding: '2px 6px', marginLeft: '6px', fontWeight: 700, backgroundColor: '#fee2e2' }}>DEMITIDO</span>}
                                                         </h4>
-                                                        <p>{f.cargo}</p>
-                                                        <span style={{ fontWeight: 600 }}>R$ {f.salarioBase?.toFixed(2)}</span>
+                                                        <p style={{ color: isDemitido ? '#b91c1c' : undefined }}>{f.cargo}</p>
+                                                        <span style={{ fontWeight: 600, color: isDemitido ? '#b91c1c' : undefined }}>R$ {f.salarioBase?.toFixed(2)}</span>
                                                         {isDemitido && (
-                                                            <p style={{ fontSize: '0.8rem', color: 'var(--danger-600)', marginTop: '4px' }}>
+                                                            <p style={{ fontSize: '0.8rem', color: '#b91c1c', marginTop: '6px', fontWeight: 600 }}>
                                                                 Demissão: {new Date(f.dataDemissao!).toLocaleDateString('pt-BR')}
                                                             </p>
                                                         )}

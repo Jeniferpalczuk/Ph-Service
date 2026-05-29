@@ -35,12 +35,29 @@ import '../shared-modern.css';
 export default function BoletosPage() {
     const { user } = useAuth();
 
+    // Filter States
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(1);
+
+    // Stats parameters matching the selected month
+    const statsParams = useMemo(() => {
+        const lastDay = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate().toString().padStart(2, '0');
+        return {
+            startDate: `${selectedMonth}-01`,
+            endDate: `${selectedMonth}-${lastDay}`,
+        };
+    }, [selectedMonth]);
+
     // Hooks do Financeiro (Migrados)
     const createBoletoMutation = useCreateBoleto();
     const updateBoletoMutation = useUpdateBoleto();
     const deleteBoletoMutation = useDeleteBoleto();
     const marcarPagoMutation = useMarcarBoletoPago();
-    const { data: statsData } = useBoletosStats();
+    const { data: statsData } = useBoletosStats(statsParams);
 
     // Hooks de Cadastros (Migrados)
     const { data: fornecedoresDD } = useFornecedoresDropdown();
@@ -49,14 +66,6 @@ export default function BoletosPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
     const [showNotification, setShowNotification] = useState(true);
-
-    // Filter States
-    const [selectedMonth, setSelectedMonth] = useState(() => {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    });
-    const [searchTerm, setSearchTerm] = useState('');
-    const [page, setPage] = useState(1);
 
     // Fetch Boletos via React Query
     const { data: boletosData, isLoading: isLoadingBoletos, isError: isErrorBoletos, error: errorBoletos } = useBoletosList({
@@ -292,10 +301,10 @@ export default function BoletosPage() {
                     <div className="modern-header-title">Gestão de Boletos</div>
                     <div className="modern-header-badges">
                         <div className="modern-badge-summary success">
-                            <LuCheck size={16} /> {statsData?.totalPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} pagos
+                            <LuCheck size={16} /> {statsData?.quantidadePago ?? 0} pago(s) — {statsData?.totalPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </div>
                         <div className="modern-badge-summary warning">
-                            <LuClock size={16} /> {statsData?.totalPendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} pendentes
+                            <LuClock size={16} /> {statsData?.quantidadePendente ?? 0} pendente(s) — {statsData?.totalPendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </div>
                     </div>
                 </div>

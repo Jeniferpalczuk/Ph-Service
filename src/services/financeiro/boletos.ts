@@ -135,21 +135,43 @@ export async function deleteBoleto(id: string): Promise<void> {
 /**
  * Busca resumo de boletos para dashboard
  */
-export async function getBoletosStats(): Promise<{
+export async function getBoletosStats(
+    params: { startDate?: string; endDate?: string } = {}
+): Promise<{
     totalPendente: number;
     totalPago: number;
     totalVencido: number;
     quantidadePendente: number;
+    quantidadePago: number;
     quantidadeVencido: number;
 }> {
     const supabase = createClient();
+    const { startDate, endDate } = params;
 
     const today = new Date().toISOString().split('T')[0];
 
+    // Pendente: boletos pendentes com vencimento dentro do período selecionado e >= hoje
+    let queryPendente = supabase.from('boletos').select('valor').eq('status_pagamento', 'pendente').gte('data_vencimento', today);
+    // Pago: filtrar pela DATA DE PAGAMENTO (não vencimento) para mostrar quantos foram pagos no mês selecionado
+    let queryPago = supabase.from('boletos').select('valor').eq('status_pagamento', 'pago');
+    // Vencido: pendentes com vencimento antes de hoje
+    let queryVencido = supabase.from('boletos').select('valor').eq('status_pagamento', 'pendente').lt('data_vencimento', today);
+
+    if (startDate) {
+        queryPendente = queryPendente.gte('data_vencimento', startDate);
+        queryPago = queryPago.gte('data_vencimento', startDate);
+        queryVencido = queryVencido.gte('data_vencimento', startDate);
+    }
+    if (endDate) {
+        queryPendente = queryPendente.lte('data_vencimento', endDate);
+        queryPago = queryPago.lte('data_vencimento', endDate);
+        queryVencido = queryVencido.lte('data_vencimento', endDate);
+    }
+
     const [pendentes, pagos, vencidos] = await Promise.all([
-        supabase.from('boletos').select('valor').eq('status_pagamento', 'pendente').gte('data_vencimento', today),
-        supabase.from('boletos').select('valor').eq('status_pagamento', 'pago'),
-        supabase.from('boletos').select('valor').eq('status_pagamento', 'pendente').lt('data_vencimento', today),
+        queryPendente,
+        queryPago,
+        queryVencido,
     ]);
 
     const sumValues = (items: { valor: unknown }[] | null) =>
@@ -160,6 +182,7 @@ export async function getBoletosStats(): Promise<{
         totalPago: sumValues(pagos.data),
         totalVencido: sumValues(vencidos.data),
         quantidadePendente: (pendentes.data || []).length,
+        quantidadePago: (pagos.data || []).length,
         quantidadeVencido: (vencidos.data || []).length,
     };
 }

@@ -93,15 +93,19 @@ export async function createFornecedorAction(input: CreateFornecedorInput): Prom
         const { data, error } = await supabase.from('fornecedores').insert({
             user_id: user.id,
             nome: parsed.data.nome,
-            servico: parsed.data.servico,
-            telefone: parsed.data.telefone,
+            categoria: parsed.data.servico, // Map to categoria in DB
+            contato: parsed.data.telefone,   // Map to contato in DB
             ativo: parsed.data.ativo,
         }).select('id').single();
 
-        if (error) return { success: false, error: 'Erro ao criar fornecedor' };
+        if (error) {
+            console.error('[createFornecedorAction] DB Error:', error);
+            return { success: false, error: `Erro ao criar fornecedor: ${error.message}` };
+        }
         revalidatePath('/cadastros');
         return { success: true, data: { id: data.id } };
     } catch (err) {
+        console.error('[createFornecedorAction] Error:', err);
         return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };
     }
 }
@@ -123,8 +127,8 @@ export async function updateFornecedorAction(id: string, input: UpdateFornecedor
             updated_at: new Date().toISOString()
         };
         if (parsed.data.nome !== undefined) updateData.nome = parsed.data.nome;
-        if (parsed.data.servico !== undefined) updateData.servico = parsed.data.servico;
-        if (parsed.data.telefone !== undefined) updateData.telefone = parsed.data.telefone;
+        if (parsed.data.servico !== undefined) updateData.categoria = parsed.data.servico; // Map to categoria in DB
+        if (parsed.data.telefone !== undefined) updateData.contato = parsed.data.telefone;   // Map to contato in DB
         if (parsed.data.ativo !== undefined) updateData.ativo = parsed.data.ativo;
 
         const supabase = await createClient();
@@ -132,10 +136,14 @@ export async function updateFornecedorAction(id: string, input: UpdateFornecedor
             .update(updateData)
             .eq('id', id).eq('user_id', user.id);
 
-        if (error) return { success: false, error: 'Erro ao atualizar fornecedor' };
+        if (error) {
+            console.error('[updateFornecedorAction] DB Error:', error);
+            return { success: false, error: `Erro ao atualizar fornecedor: ${error.message}` };
+        }
         revalidatePath('/cadastros');
         return { success: true, data: { id } };
     } catch (err) {
+        console.error('[updateFornecedorAction] Error:', err);
         return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };
     }
 }

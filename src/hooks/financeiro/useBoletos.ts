@@ -28,7 +28,7 @@ export const boletosKeys = {
     list: (params: BoletosQueryParams) => [...boletosKeys.lists(), params] as const,
     details: () => [...boletosKeys.all, 'detail'] as const,
     detail: (id: string) => [...boletosKeys.details(), id] as const,
-    stats: () => [...boletosKeys.all, 'stats'] as const,
+    stats: (params?: any) => [...boletosKeys.all, 'stats', params] as const,
 };
 
 export function useBoletosList(params: BoletosQueryParams = {}) {
@@ -46,10 +46,10 @@ export function useBoletoById(id: string | null) {
     });
 }
 
-export function useBoletosStats() {
+export function useBoletosStats(params?: { startDate?: string; endDate?: string }) {
     return useQuery({
-        queryKey: boletosKeys.stats(),
-        queryFn: getBoletosStats,
+        queryKey: boletosKeys.stats(params),
+        queryFn: () => getBoletosStats(params),
     });
 }
 
