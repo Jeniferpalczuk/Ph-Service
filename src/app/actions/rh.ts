@@ -8,6 +8,94 @@ import {
 } from '@/lib/validations/folha-pagamento';
 import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
 
+const FOLHA_SAIDA_MARKER_PREFIX = '[FOLHA_PAGAMENTO:';
+
+function getFolhaSaidaMarker(folhaId: string) {
+    return `${FOLHA_SAIDA_MARKER_PREFIX}${folhaId}]`;
+}
+
+function getFolhaSaidaPayload(
+    folhaId: string,
+    folha: {
+        funcionario: string;
+        valor: number;
+        formaPagamento: string;
+        dataPagamento: Date;
+        periodoReferencia?: string | null;
+        observacoes?: string | null;
+    }
+) {
+    const marker = getFolhaSaidaMarker(folhaId);
+    const periodo = folha.periodoReferencia ? ` - ${folha.periodoReferencia}` : '';
+    const observacoes = [marker, folha.observacoes].filter(Boolean).join(' ');
+
+    return {
+        descricao: `Pagamento de funcionário - ${folha.funcionario}${periodo}`,
+        valor: folha.valor,
+        data: formatDateForDB(folha.dataPagamento),
+        categoria: 'funcionarios',
+        fornecedor: folha.funcionario,
+        forma_pagamento: folha.formaPagamento,
+        observacoes,
+    };
+}
+
+async function syncFolhaPagamentoSaida(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    userId: string,
+    folhaId: string,
+    folha: {
+        funcionario: string;
+        valor: number;
+        formaPagamento: string;
+        statusPagamento: string;
+        dataPagamento: Date;
+        periodoReferencia?: string | null;
+        observacoes?: string | null;
+    }
+) {
+    const marker = getFolhaSaidaMarker(folhaId);
+
+    if (folha.statusPagamento !== 'pago') {
+        const { error } = await supabase
+            .from('saidas')
+            .delete()
+            .eq('user_id', userId)
+            .ilike('observacoes', `%${marker}%`);
+
+        if (error) throw new Error(`Erro ao remover despesa da folha: ${error.message}`);
+        return;
+    }
+
+    const payload = getFolhaSaidaPayload(folhaId, folha);
+    const { data: existing, error: findError } = await supabase
+        .from('saidas')
+        .select('id')
+        .eq('user_id', userId)
+        .ilike('observacoes', `%${marker}%`)
+        .maybeSingle();
+
+    if (findError) throw new Error(`Erro ao buscar despesa da folha: ${findError.message}`);
+
+    if (existing?.id) {
+        const { error } = await supabase
+            .from('saidas')
+            .update({ ...payload, updated_at: new Date().toISOString() })
+            .eq('id', existing.id)
+            .eq('user_id', userId);
+
+        if (error) throw new Error(`Erro ao atualizar despesa da folha: ${error.message}`);
+        return;
+    }
+
+    const { error } = await supabase.from('saidas').insert({
+        user_id: userId,
+        ...payload,
+    });
+
+    if (error) throw new Error(`Erro ao criar despesa da folha: ${error.message}`);
+}
+
 // ===========================================
 // FOLHA DE PAGAMENTO
 // Alinhado com schema real do banco:
@@ -42,7 +130,20 @@ export async function createFolhaPagamentoAction(input: CreateFolhaPagamentoInpu
             console.error('[createFolhaPagamentoAction] DB Error:', JSON.stringify(error));
             return { success: false, error: 'Erro ao registrar pagamento' };
         }
+
+        await syncFolhaPagamentoSaida(supabase, user.id, data.id, {
+            funcionario: parsed.data.funcionario,
+            valor: parsed.data.valor,
+            formaPagamento: parsed.data.formaPagamento,
+            statusPagamento: parsed.data.statusPagamento,
+            dataPagamento: parsed.data.dataPagamento,
+            periodoReferencia: parsed.data.periodoReferencia,
+            observacoes: parsed.data.observacoes,
+        });
+
         revalidatePath('/folha-pagamento');
+        revalidatePath('/saidas');
+        revalidatePath('/dashboard');
         return { success: true, data: { id: data.id } };
     } catch (err) {
         console.error('[createFolhaPagamentoAction] Error:', err);
@@ -83,7 +184,32 @@ export async function updateFolhaPagamentoAction(id: string, input: UpdateFolhaP
             console.error('[updateFolhaPagamentoAction] DB Error:', JSON.stringify(error));
             return { success: false, error: 'Erro ao atualizar pagamento' };
         }
+
+        const { data: folhaAtualizada, error: folhaError } = await supabase
+            .from('folha_pagamento')
+            .select('funcionario, valor, forma_pagamento, status_pagamento, data_pagamento, periodo_referencia, observacoes')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+        if (folhaError) {
+            console.error('[updateFolhaPagamentoAction] Sync Fetch Error:', JSON.stringify(folhaError));
+            return { success: false, error: 'Pagamento atualizado, mas houve erro ao sincronizar despesa' };
+        }
+
+        await syncFolhaPagamentoSaida(supabase, user.id, id, {
+            funcionario: folhaAtualizada.funcionario,
+            valor: parseFloat(folhaAtualizada.valor as string),
+            formaPagamento: folhaAtualizada.forma_pagamento,
+            statusPagamento: folhaAtualizada.status_pagamento,
+            dataPagamento: new Date(`${folhaAtualizada.data_pagamento}T12:00:00`),
+            periodoReferencia: folhaAtualizada.periodo_referencia,
+            observacoes: folhaAtualizada.observacoes,
+        });
+
         revalidatePath('/folha-pagamento');
+        revalidatePath('/saidas');
+        revalidatePath('/dashboard');
         return { success: true, data: { id: data.id } };
     } catch (err) {
         console.error('[updateFolhaPagamentoAction] Error:', err);
@@ -97,9 +223,20 @@ export async function deleteFolhaPagamentoAction(id: string): Promise<ActionResu
         const idError = validateId(id);
         if (idError) return idError;
         const supabase = await createClient();
+        const marker = getFolhaSaidaMarker(id);
+        const { error: saidaError } = await supabase
+            .from('saidas')
+            .delete()
+            .eq('user_id', user.id)
+            .ilike('observacoes', `%${marker}%`);
+
+        if (saidaError) return { success: false, error: 'Erro ao excluir despesa vinculada' };
+
         const { error } = await supabase.from('folha_pagamento').delete().eq('id', id).eq('user_id', user.id);
         if (error) return { success: false, error: 'Erro ao excluir pagamento' };
         revalidatePath('/folha-pagamento');
+        revalidatePath('/saidas');
+        revalidatePath('/dashboard');
         return { success: true, data: undefined };
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };

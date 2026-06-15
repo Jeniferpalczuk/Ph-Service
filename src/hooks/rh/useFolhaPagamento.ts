@@ -58,6 +58,7 @@ export function useCreatePagamento() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: folhaKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: ['saidas'] });
         },
     });
 }
@@ -74,6 +75,7 @@ export function useUpdatePagamento() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: folhaKeys.lists() });
             queryClient.invalidateQueries({ queryKey: folhaKeys.detail(data.id) });
+            queryClient.invalidateQueries({ queryKey: ['saidas'] });
         },
     });
 }
@@ -90,6 +92,7 @@ export function useDeletePagamento() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: folhaKeys.lists() });
             queryClient.invalidateQueries({ queryKey: folhaKeys.all });
+            queryClient.invalidateQueries({ queryKey: ['saidas'] });
         },
     });
 }

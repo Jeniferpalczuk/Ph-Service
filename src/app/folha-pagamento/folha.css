@@ -193,6 +193,165 @@
     font-weight: 700;
 }
 
+.folha-row-subtitle {
+    color: #64748b;
+    font-size: 0.78rem;
+    margin-top: 0.2rem;
+}
+
+.folha-check-button {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.folha-check-button:hover {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.folha-check-button.checked {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.folha-modal {
+    max-width: 760px;
+    width: 95%;
+}
+
+.folha-modal-subtitle {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+.folha-paycheck-card {
+    background: linear-gradient(135deg, #0f172a 0%, #164e63 100%);
+    border-radius: 14px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.folha-paycheck-card span {
+    color: #bae6fd;
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.folha-paycheck-card strong {
+    display: block;
+    font-size: 2rem;
+    line-height: 1.1;
+    margin-top: 0.25rem;
+}
+
+.folha-paid-toggle {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 0.5rem;
+    padding: 0.65rem 0.9rem;
+}
+
+.folha-paid-toggle input {
+    accent-color: #10b981;
+    width: 18px;
+    height: 18px;
+}
+
+.folha-paid-toggle span {
+    color: #ffffff;
+    font-size: 0.85rem;
+}
+
+.folha-inline-action {
+    background: transparent;
+    border: none;
+    color: #0284c7;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 0.45rem;
+    padding: 0;
+    text-align: left;
+}
+
+.folha-calculation-strip {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding: 1rem;
+}
+
+.folha-calculation-strip span {
+    color: #64748b;
+    font-weight: 700;
+}
+
+.folha-calculation-strip strong {
+    color: #0f766e;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.modern-form textarea {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    color: #1e293b;
+    font: inherit;
+    padding: 0.75rem 1rem;
+    resize: vertical;
+    width: 100%;
+}
+
+@media (max-width: 720px) {
+    .folha-page {
+        padding: 1rem;
+    }
+
+    .folha-header,
+    .folha-filters-container,
+    .folha-paycheck-card,
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .folha-header,
+    .folha-filters-container,
+    .folha-paycheck-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+
 .col-descontos {
     color: #64748b;
     font-weight: 600;

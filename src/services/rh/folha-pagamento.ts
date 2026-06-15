@@ -18,6 +18,7 @@ function dbToPagamento(row: Record<string, unknown>): PagamentoFuncionario {
         formaPagamento: row.forma_pagamento as PaymentMethod,
         statusPagamento: row.status_pagamento as PaymentStatus,
         dataPagamento: parseDBDate(row.data_pagamento as string)!,
+        periodoReferencia: row.periodo_referencia as string | undefined,
         observacoes: row.observacoes as string | undefined,
         createdAt: new Date(row.created_at as string),
         updatedAt: new Date(row.updated_at as string),
@@ -176,17 +177,23 @@ export async function getFolhaStats(
 
     if (error) throw new Error(`Erro ao buscar stats da folha: ${error.message}`);
 
-    const pagamentos = data || [];
+    type FolhaStatsRow = {
+        valor: string | number | null;
+        descontos: string | number | null;
+        status_pagamento: PaymentStatus;
+    };
+
+    const pagamentos = (data || []) as FolhaStatsRow[];
 
     return {
         totalPago: pagamentos
-            .filter((p: any) => p.status_pagamento === 'pago')
-            .reduce((sum: any, p: any) => sum + parseFloat(p.valor as string || '0'), 0),
+            .filter((p) => p.status_pagamento === 'pago')
+            .reduce((sum, p) => sum + Number(p.valor || 0), 0),
         totalPendente: pagamentos
-            .filter((p: any) => p.status_pagamento === 'pendente')
-            .reduce((sum: any, p: any) => sum + parseFloat(p.valor as string || '0'), 0),
+            .filter((p) => p.status_pagamento === 'pendente')
+            .reduce((sum, p) => sum + Number(p.valor || 0), 0),
         totalDescontos: pagamentos
-            .reduce((sum: any, p: any) => sum + parseFloat(p.descontos as string || '0'), 0),
+            .reduce((sum, p) => sum + Number(p.descontos || 0), 0),
         quantidadePagamentos: pagamentos.length,
     };
 }

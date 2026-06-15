@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   LuTrendingUp,
@@ -8,10 +8,7 @@ import {
   LuDollarSign,
   LuUtensils,
   LuChevronRight,
-  LuArrowUpRight,
   LuCalendar,
-  LuClock,
-  LuUser,
   LuActivity,
   LuMoon,
   LuSun,
@@ -38,6 +35,18 @@ import { useUrlFilters } from '@/hooks/useUrlFilters';
 import { useApp } from '@/context/AppContext';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import './dashboard.css';
+
+type MarmitaSize = 'P' | 'M' | 'G' | 'PF';
+
+type RecentActivity = {
+  id: string;
+  title: string;
+  detail: string;
+  time: Date;
+  icon: string;
+  color: string;
+  textColor: string;
+};
 
 export default function DashboardPage() {
   const { getParam, setParams } = useUrlFilters();
@@ -124,13 +133,10 @@ export default function DashboardPage() {
         const saidasP = rawData.saidas
           .filter(s => new Date(s.data).getMonth() === i)
           .reduce((sum, s) => sum + s.valor, 0);
-        const folhaP = rawData.folha
-          .filter(f => new Date(f.dataPagamento || f.createdAt).getMonth() === i)
-          .reduce((sum, f) => sum + f.valor, 0);
         const caixaSaidas = rawData.caixa
           .filter(c => new Date(c.data).getMonth() === i)
           .reduce((sum, c) => sum + c.saidas, 0);
-        val = boletosP + saidasP + folhaP + caixaSaidas;
+        val = boletosP + saidasP + caixaSaidas;
       } else {
         const d = i + 1;
         const boletosP = rawData.boletos
@@ -139,13 +145,10 @@ export default function DashboardPage() {
         const saidasP = rawData.saidas
           .filter(s => new Date(s.data).getDate() === d)
           .reduce((sum, s) => sum + s.valor, 0);
-        const folhaP = rawData.folha
-          .filter(f => new Date(f.dataPagamento || f.createdAt).getDate() === d)
-          .reduce((sum, f) => sum + f.valor, 0);
         const caixaSaidas = rawData.caixa
           .filter(c => new Date(c.data).getDate() === d)
           .reduce((sum, c) => sum + c.saidas, 0);
-        val = boletosP + saidasP + folhaP + caixaSaidas;
+        val = boletosP + saidasP + caixaSaidas;
       }
       return { val };
     });
@@ -202,22 +205,22 @@ export default function DashboardPage() {
     if (isLoading) return [];
     const boletosVal = rawData.boletos.filter(b => b.statusPagamento === 'pago').reduce((s, b) => s + b.valor, 0);
     const fornecedoresVal = rawData.saidas.filter(s => s.categoria === 'fornecedores').reduce((s, b) => s + b.valor, 0);
-    const outrosVal = rawData.saidas.filter(s => s.categoria !== 'fornecedores').reduce((s, b) => s + b.valor, 0);
-    const folhaVal = rawData.folha.reduce((s, b) => s + b.valor, 0);
+    const funcionariosVal = rawData.saidas.filter(s => s.categoria === 'funcionarios').reduce((s, b) => s + b.valor, 0);
+    const outrosVal = rawData.saidas.filter(s => !['fornecedores', 'funcionarios'].includes(s.categoria)).reduce((s, b) => s + b.valor, 0);
     
     const data = [
       { name: 'Boletos', value: boletosVal, color: '#4f46e5' },
       { name: 'Fornecedores', value: fornecedoresVal, color: '#f59e0b' },
+      { name: 'Funcionários', value: funcionariosVal, color: '#10b981' },
       { name: 'Outros', value: outrosVal, color: '#06b6d4' },
-      { name: 'Taxas', value: folhaVal, color: '#10b981' },
     ].filter(d => d.value > 0);
     
     if (data.length === 0) {
       return [
         { name: 'Boletos', value: 1389.78, color: '#4f46e5' },
         { name: 'Fornecedores', value: 397.08, color: '#f59e0b' },
-        { name: 'Outros', value: 198.54, color: '#06b6d4' },
-        { name: 'Taxas', value: 0, color: '#10b981' }
+        { name: 'Funcionários', value: 0, color: '#10b981' },
+        { name: 'Outros', value: 198.54, color: '#06b6d4' }
       ];
     }
     return data;
@@ -264,15 +267,18 @@ export default function DashboardPage() {
   // Top Marmita sizes mapped to horizontal bars
   const topMarmitas = useMemo(() => {
     if (isLoading) return [];
-    const counts: any = { P: 0, M: 0, G: 0, PF: 0 };
+    const counts: Record<MarmitaSize, number> = { P: 0, M: 0, G: 0, PF: 0 };
     rawData.marmitas.forEach(m => {
-      if (counts[m.tamanho] !== undefined) counts[m.tamanho] += (m.quantidade || 0);
+      if (m.tamanho in counts) counts[m.tamanho as MarmitaSize] += (m.quantidade || 0);
     });
-    const labels: any = { P: 'Marmita Pequena', M: 'Marmita Média', G: 'Marmita Grande', PF: 'Prato Feito' };
-    const colors: any = { P: '#6366f1', M: '#3b82f6', G: '#10b981', PF: '#f59e0b' };
+    const labels: Record<MarmitaSize, string> = { P: 'Marmita Pequena', M: 'Marmita Média', G: 'Marmita Grande', PF: 'Prato Feito' };
+    const colors: Record<MarmitaSize, string> = { P: '#6366f1', M: '#3b82f6', G: '#10b981', PF: '#f59e0b' };
 
     const data = Object.entries(counts)
-      .map(([key, value]: any) => ({ name: labels[key], value, color: colors[key] }))
+      .map(([key, value]) => {
+        const size = key as MarmitaSize;
+        return { name: labels[size], value, color: colors[size] };
+      })
       .sort((a, b) => b.value - a.value);
 
     const totalVal = data.reduce((s, d) => s + d.value, 0);
@@ -288,9 +294,9 @@ export default function DashboardPage() {
   }, [isLoading, rawData]);
 
   // Dynamic Recent Activities list
-  const recentActivities = useMemo(() => {
+  const recentActivities = useMemo<RecentActivity[]>(() => {
     if (isLoading) return [];
-    const activities: any[] = [];
+    const activities: RecentActivity[] = [];
     
     rawData.marmitas.slice(0, 5).forEach(m => {
       activities.push({
@@ -588,7 +594,7 @@ export default function DashboardPage() {
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
                 <Tooltip
                   contentStyle={{ borderRadius: '12px', border: 'none', background: '#1e293b', color: '#fff', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  formatter={(value: any, name: any) => [`R$ ${parseFloat(value).toFixed(2)}`, name]}
+                  formatter={(value: unknown, name: unknown) => [`R$ ${Number(value).toFixed(2)}`, String(name)]}
                 />
                 <Area type="monotone" dataKey="Receita" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" name="Receita" />
                 <Area type="monotone" dataKey="Despesas" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorExpense)" name="Despesas" />
@@ -661,7 +667,7 @@ export default function DashboardPage() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: any) => `R$ ${parseFloat(value).toFixed(2)}`} />
+                    <Tooltip formatter={(value: unknown) => `R$ ${Number(value).toFixed(2)}`} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
