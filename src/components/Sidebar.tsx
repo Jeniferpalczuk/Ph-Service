@@ -14,8 +14,7 @@ import {
     LuUsers,
     LuSettings,
     LuLogOut,
-    LuBell,
-    LuSearch
+    LuBell
 } from 'react-icons/lu';
 import { useBoletosStats } from '@/hooks/financeiro/useBoletos';
 import './Sidebar.css';

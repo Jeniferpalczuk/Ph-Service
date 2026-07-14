@@ -153,7 +153,7 @@ export async function marcarBoletoPagoAction(
         if (idError) return idError;
 
         const supabase = await createClient();
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('boletos')
             .update({
                 status_pagamento: 'pago',
@@ -161,15 +161,21 @@ export async function marcarBoletoPagoAction(
                 updated_at: new Date().toISOString(),
             })
             .eq('id', id)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('[marcarBoletoPagoAction] DB Error:', error);
-            return { success: false, error: 'Erro ao marcar boleto como pago' };
+            if (error.code === 'PGRST116') {
+                return { success: false, error: 'Boleto não encontrado para este usuário' };
+            }
+            return { success: false, error: `Erro ao marcar boleto como pago: ${error.message}` };
         }
 
         revalidatePath('/boletos');
-        return { success: true, data: { id } };
+        revalidatePath('/dashboard');
+        return { success: true, data: { id: data.id } };
 
     } catch (err) {
         console.error('[marcarBoletoPagoAction] Error:', err);

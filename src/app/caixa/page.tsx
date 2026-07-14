@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { FechamentoCaixa } from '@/types';
 import {
     useCaixaList,
@@ -24,14 +23,19 @@ import {
 } from 'react-icons/lu';
 import '../shared-modern.css';
 
+function getTodayInputDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 /**
  * CaixaPage - Fase 4 (Performance & UX)
  * 
  * Migrada para React Query com Skeletons e Toast.
  */
 export default function CaixaPage() {
-    const { user } = useAuth();
-
     // Hooks do Caixa
     const createCaixaMutation = useCreateCaixa();
     const deleteCaixaMutation = useDeleteCaixa();
@@ -42,13 +46,13 @@ export default function CaixaPage() {
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterTurno, setFilterTurno] = useState<any>('all');
+    const [filterTurno, setFilterTurno] = useState<'manha' | 'tarde' | 'all'>('all');
     const [page, setPage] = useState(1);
 
     // Fetch Caixa via React Query
     const lastDay = new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate().toString().padStart(2, '0');
 
-    const { data: caixaData, isLoading: isLoadingCaixa, isError: isErrorCaixa, error: errorCaixa } = useCaixaList({
+    const { data: caixaData, isLoading: isLoadingCaixa } = useCaixaList({
         page,
         search: searchTerm,
         startDate: `${selectedMonth}-01`,
@@ -70,7 +74,7 @@ export default function CaixaPage() {
     const [editingItem, setEditingItem] = useState<FechamentoCaixa | null>(null);
 
     const [formData, setFormData] = useState({
-        data: new Date().toISOString().split('T')[0],
+        data: getTodayInputDate(),
         funcionario: '',
         turno: 'manha' as 'manha' | 'tarde',
         saidas: '',
@@ -84,7 +88,7 @@ export default function CaixaPage() {
 
     const resetForm = () => {
         setFormData({
-            data: new Date().toISOString().split('T')[0],
+            data: getTodayInputDate(),
             funcionario: '',
             turno: 'manha',
             saidas: '',
@@ -139,7 +143,7 @@ export default function CaixaPage() {
             try {
                 await deleteCaixaMutation.mutateAsync(id);
                 toast.success('Fechamento excluído');
-            } catch (err) {
+            } catch {
                 toast.error('Erro ao excluir');
             }
         }
@@ -188,7 +192,7 @@ export default function CaixaPage() {
                 </div>
                 <div className="modern-filter-group">
                     <label>Turno:</label>
-                    <select value={filterTurno} onChange={e => setFilterTurno(e.target.value)}>
+                    <select value={filterTurno} onChange={e => setFilterTurno(e.target.value as 'manha' | 'tarde' | 'all')}>
                         <option value="all">Todos</option>
                         <option value="manha">Manhã</option>
                         <option value="tarde">Tarde</option>
@@ -281,7 +285,7 @@ export default function CaixaPage() {
                                 </div>
                                 <div className="form-group">
                                     <label>Turno *</label>
-                                    <select value={formData.turno} onChange={e => setFormData({ ...formData, turno: e.target.value as any })}>
+                                    <select value={formData.turno} onChange={e => setFormData({ ...formData, turno: e.target.value as 'manha' | 'tarde' })}>
                                         <option value="manha">Manhã</option>
                                         <option value="tarde">Tarde</option>
                                     </select>
@@ -328,3 +332,4 @@ export default function CaixaPage() {
         </div>
     );
 }
+

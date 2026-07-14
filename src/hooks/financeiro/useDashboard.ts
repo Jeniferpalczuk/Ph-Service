@@ -67,10 +67,11 @@ export function useDashboardStatistics(year: number, month: string | 'all') {
         // 2. Despesas
         const despesasModulo = sData.reduce((sum, s) => sum + s.valor, 0);
         const saidasFechamento = cData.reduce((sum, f) => sum + f.saidas, 0);
+        const valesLancados = vData.reduce((sum, v) => sum + v.valor, 0);
         const folhaFilter = fData.filter(p => p.statusPagamento === 'pago').reduce((sum, p) => sum + p.valor, 0);
         const boletosPagos = bData.filter(b => b.statusPagamento === 'pago').reduce((sum, b) => sum + b.valor, 0);
 
-        const totalDespesas = despesasModulo + saidasFechamento + boletosPagos;
+        const totalDespesas = despesasModulo + saidasFechamento + valesLancados + folhaFilter + boletosPagos;
 
         // 3. Saldo
         const saldoCaixa = faturamentoTotal - totalDespesas;

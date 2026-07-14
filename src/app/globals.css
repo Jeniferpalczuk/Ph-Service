@@ -606,8 +606,71 @@ tr:hover {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .app-layout {
+    display: block;
+  }
+
+  .main-container {
+    min-height: 100vh;
+    height: auto;
+    overflow: visible;
+  }
+
   .main-content {
-    padding: var(--spacing-md);
+    padding: 1rem 1rem calc(6rem + env(safe-area-inset-bottom));
+    overflow: visible;
+  }
+
+  .content-inner {
+    max-width: 100%;
+  }
+
+  .modern-page,
+  .folha-page {
+    padding: 1rem !important;
+  }
+
+  .modern-header,
+  .folha-header,
+  .modern-filters-container,
+  .folha-filters-container {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  .modern-header-title,
+  .folha-header-title {
+    font-size: 1.8rem !important;
+    line-height: 1.15;
+  }
+
+  .modern-header-badges,
+  .folha-header-badges {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .modern-table-container,
+  .folha-table-container,
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modern-table,
+  .folha-modern-table,
+  table {
+    min-width: 720px;
+  }
+
+  .modal-content {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr !important;
   }
 }
 

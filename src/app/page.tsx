@@ -133,10 +133,16 @@ export default function DashboardPage() {
         const saidasP = rawData.saidas
           .filter(s => new Date(s.data).getMonth() === i)
           .reduce((sum, s) => sum + s.valor, 0);
+        const valesP = rawData.vales
+          .filter(v => new Date(v.data).getMonth() === i)
+          .reduce((sum, v) => sum + v.valor, 0);
+        const folhaP = rawData.folha
+          .filter(f => f.statusPagamento === 'pago' && new Date(f.dataPagamento || f.createdAt).getMonth() === i)
+          .reduce((sum, f) => sum + f.valor, 0);
         const caixaSaidas = rawData.caixa
           .filter(c => new Date(c.data).getMonth() === i)
           .reduce((sum, c) => sum + c.saidas, 0);
-        val = boletosP + saidasP + caixaSaidas;
+        val = boletosP + saidasP + valesP + folhaP + caixaSaidas;
       } else {
         const d = i + 1;
         const boletosP = rawData.boletos
@@ -145,10 +151,16 @@ export default function DashboardPage() {
         const saidasP = rawData.saidas
           .filter(s => new Date(s.data).getDate() === d)
           .reduce((sum, s) => sum + s.valor, 0);
+        const valesP = rawData.vales
+          .filter(v => new Date(v.data).getDate() === d)
+          .reduce((sum, v) => sum + v.valor, 0);
+        const folhaP = rawData.folha
+          .filter(f => f.statusPagamento === 'pago' && new Date(f.dataPagamento || f.createdAt).getDate() === d)
+          .reduce((sum, f) => sum + f.valor, 0);
         const caixaSaidas = rawData.caixa
           .filter(c => new Date(c.data).getDate() === d)
           .reduce((sum, c) => sum + c.saidas, 0);
-        val = boletosP + saidasP + caixaSaidas;
+        val = boletosP + saidasP + valesP + folhaP + caixaSaidas;
       }
       return { val };
     });
@@ -206,12 +218,16 @@ export default function DashboardPage() {
     const boletosVal = rawData.boletos.filter(b => b.statusPagamento === 'pago').reduce((s, b) => s + b.valor, 0);
     const fornecedoresVal = rawData.saidas.filter(s => s.categoria === 'fornecedores').reduce((s, b) => s + b.valor, 0);
     const funcionariosVal = rawData.saidas.filter(s => s.categoria === 'funcionarios').reduce((s, b) => s + b.valor, 0);
+    const valesVal = rawData.vales.reduce((s, b) => s + b.valor, 0);
+    const folhaVal = rawData.folha.filter(f => f.statusPagamento === 'pago').reduce((s, b) => s + b.valor, 0);
     const outrosVal = rawData.saidas.filter(s => !['fornecedores', 'funcionarios'].includes(s.categoria)).reduce((s, b) => s + b.valor, 0);
     
     const data = [
       { name: 'Boletos', value: boletosVal, color: '#4f46e5' },
       { name: 'Fornecedores', value: fornecedoresVal, color: '#f59e0b' },
       { name: 'Funcionários', value: funcionariosVal, color: '#10b981' },
+      { name: 'Vales', value: valesVal, color: '#f43f5e' },
+      { name: 'Pagamentos', value: folhaVal, color: '#0ea5e9' },
       { name: 'Outros', value: outrosVal, color: '#06b6d4' },
     ].filter(d => d.value > 0);
     
@@ -220,6 +236,7 @@ export default function DashboardPage() {
         { name: 'Boletos', value: 1389.78, color: '#4f46e5' },
         { name: 'Fornecedores', value: 397.08, color: '#f59e0b' },
         { name: 'Funcionários', value: 0, color: '#10b981' },
+        { name: 'Vales', value: 0, color: '#f43f5e' },
         { name: 'Outros', value: 198.54, color: '#06b6d4' }
       ];
     }

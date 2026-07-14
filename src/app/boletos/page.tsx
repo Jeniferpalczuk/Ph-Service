@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useState, useMemo } from 'react';
 import { MoneyInput } from '@/components/MoneyInput';
 import { PaymentStatus, Boleto } from '@/types';
 import {
@@ -13,7 +12,7 @@ import {
     useBoletosStats
 } from '@/hooks/financeiro/useBoletos';
 import { useFornecedoresDropdown } from '@/hooks/cadastros/useDropdown';
-import { Skeleton, TableSkeleton } from '@/components/ui/Skeleton';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
 import {
@@ -33,8 +32,6 @@ import '../shared-modern.css';
  * Migrada para React Query com Skeletons e Toast.
  */
 export default function BoletosPage() {
-    const { user } = useAuth();
-
     // Filter States
     const [selectedMonth, setSelectedMonth] = useState(() => {
         const now = new Date();
@@ -75,7 +72,7 @@ export default function BoletosPage() {
         endDate: `${selectedMonth}-${new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate().toString().padStart(2, '0')}`,
     });
 
-    const boletos = boletosData?.data ?? [];
+    const boletos = useMemo(() => boletosData?.data ?? [], [boletosData?.data]);
     const totalPages = boletosData?.totalPages ?? 1;
 
     // Parcelamento state
@@ -93,18 +90,15 @@ export default function BoletosPage() {
 
     const [parcelasDates, setParcelasDates] = useState<string[]>([]);
 
-    useEffect(() => {
-        if (isParcelado && formData.dataVencimento) {
-            const dates = [];
-            const dataBase = new Date(formData.dataVencimento);
-            for (let i = 0; i < numeroParcelas; i++) {
-                const d = new Date(dataBase);
-                d.setMonth(d.getMonth() + i);
-                dates.push(d.toISOString().split('T')[0]);
-            }
-            setParcelasDates(dates);
-        }
-    }, [isParcelado, numeroParcelas, formData.dataVencimento]);
+    const buildParcelasDates = (baseDate: string, total: number) => {
+        if (!baseDate) return [];
+
+        return Array.from({ length: total }, (_, index) => {
+            const date = new Date(`${baseDate}T12:00:00`);
+            date.setMonth(date.getMonth() + index);
+            return date.toISOString().split('T')[0];
+        });
+    };
 
     const handleParcelaDateChange = (index: number, newDate: string) => {
         const newDates = [...parcelasDates];
@@ -238,7 +232,7 @@ export default function BoletosPage() {
             try {
                 await deleteBoletoMutation.mutateAsync(id);
                 toast.success('Boleto excluído');
-            } catch (err) {
+            } catch {
                 toast.error('Erro ao excluir boleto');
             }
         }
@@ -250,7 +244,7 @@ export default function BoletosPage() {
                 await marcarPagoMutation.mutateAsync({ id: boleto.id });
                 toast.success('Boleto marcado como pago!');
             } catch (err) {
-                toast.error('Erro ao processar pagamento.');
+                toast.error(err instanceof Error ? err.message : 'Erro ao processar pagamento.');
             }
         }
     };
@@ -432,14 +426,22 @@ export default function BoletosPage() {
                                     </div>
                                     <div className="form-group">
                                         <label>Vencimento</label>
-                                        <input type="date" required value={formData.dataVencimento} onChange={e => setFormData({ ...formData, dataVencimento: e.target.value })} />
+                                        <input type="date" required value={formData.dataVencimento} onChange={e => {
+                                            const dataVencimento = e.target.value;
+                                            setFormData({ ...formData, dataVencimento });
+                                            if (isParcelado) setParcelasDates(buildParcelasDates(dataVencimento, numeroParcelas));
+                                        }} />
                                     </div>
                                 </div>
 
                                 {!editingBoleto && (
                                     <div className="parcelamento-section" style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '12px' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 700 }}>
-                                            <input type="checkbox" checked={isParcelado} onChange={e => setIsParcelado(e.target.checked)} />
+                                            <input type="checkbox" checked={isParcelado} onChange={e => {
+                                                const checked = e.target.checked;
+                                                setIsParcelado(checked);
+                                                setParcelasDates(checked ? buildParcelasDates(formData.dataVencimento, numeroParcelas) : []);
+                                            }} />
                                             Parcelar Título?
                                         </label>
                                         {isParcelado && (
@@ -447,7 +449,11 @@ export default function BoletosPage() {
                                                 <div className="grid-2">
                                                     <div className="form-group">
                                                         <label>Número de Parcelas</label>
-                                                        <select value={numeroParcelas} onChange={e => setNumeroParcelas(parseInt(e.target.value))}>
+                                                        <select value={numeroParcelas} onChange={e => {
+                                                            const total = parseInt(e.target.value);
+                                                            setNumeroParcelas(total);
+                                                            setParcelasDates(buildParcelasDates(formData.dataVencimento, total));
+                                                        }}>
                                                             {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => <option key={n} value={n}>{n}x</option>)}
                                                         </select>
                                                     </div>

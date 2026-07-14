@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import { FechamentoCaixa } from '@/types';
-import { PaginatedResult } from '../types';
+import { PaginatedResult, parseDBDate } from '../types';
 import { sanitizeSearch } from '@/lib/security';
 
 export interface CaixaQueryParams {
@@ -9,16 +9,33 @@ export interface CaixaQueryParams {
     search?: string;
     startDate?: string;
     endDate?: string;
-    turno?: 'manha' | 'tarde';
+    turno?: 'manha' | 'tarde' | 'all';
 }
 
+type CaixaRow = {
+    id: string;
+    data: string;
+    funcionario: string;
+    turno: FechamentoCaixa['turno'];
+    entrada_dinheiro?: number | null;
+    entrada_pix?: number | null;
+    entrada_credito?: number | null;
+    entrada_debito?: number | null;
+    entrada_alimentacao?: number | null;
+    saidas?: number | null;
+    observacoes?: string;
+    created_at: string;
+    updated_at: string;
+};
+
+type CaixaSummaryRow = Pick<CaixaRow, 'entrada_dinheiro' | 'entrada_pix' | 'entrada_credito' | 'entrada_debito' | 'entrada_alimentacao' | 'saidas'>;
 /**
  * Converte linha do banco para o tipo FechamentoCaixa
  */
-export function mapCaixaRow(row: any): FechamentoCaixa {
+export function mapCaixaRow(row: CaixaRow): FechamentoCaixa {
     return {
         id: row.id,
-        data: new Date(row.data),
+        data: parseDBDate(row.data)!,
         funcionario: row.funcionario,
         turno: row.turno,
         entradas: {
@@ -59,7 +76,7 @@ export async function getFechamentosCaixa(params: CaixaQueryParams = {}): Promis
         query = query.lte('data', endDate);
     }
 
-    if (turno && turno !== 'all' as any) {
+    if (turno && turno !== 'all') {
         query = query.eq('turno', turno);
     }
 
@@ -93,7 +110,7 @@ export async function getCaixaSummary(startDate: string, endDate: string) {
 
     if (error) throw error;
 
-    const summary = (data || []).reduce((acc: any, row: any) => {
+    const summary = ((data || []) as CaixaSummaryRow[]).reduce((acc: { entradas: number; saidas: number }, row) => {
         acc.entradas += (row.entrada_dinheiro || 0) + (row.entrada_pix || 0) +
             (row.entrada_credito || 0) + (row.entrada_debito || 0) +
             (row.entrada_alimentacao || 0);
@@ -116,5 +133,6 @@ export async function getFechamentoById(id: string): Promise<FechamentoCaixa | n
         .single();
 
     if (error) return null;
-    return mapCaixaRow(data);
+    return mapCaixaRow(data as CaixaRow);
 }
+
