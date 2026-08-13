@@ -1,6 +1,6 @@
 .folha-page {
     animation: fadeIn var(--transition-base);
-    padding: 2rem;
+    padding: 1.5rem;
     background: #f8fafc;
     min-height: 100vh;
 }
@@ -8,7 +8,7 @@
 /* Header Section */
 .folha-header {
     background: #ffffff;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 16px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     display: flex;
@@ -25,7 +25,7 @@
 }
 
 .folha-header-subtitle {
-    font-size: 1rem;
+    font-size: 0.92rem;
     color: #64748b;
     font-weight: 600;
     display: flex;
@@ -34,10 +34,10 @@
 }
 
 .folha-header-title {
-    font-size: 2.5rem;
+    font-size: 2.05rem;
     font-weight: 800;
     color: #0f172a;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
 }
 
 .folha-header-badges {
@@ -256,7 +256,7 @@
 
 .folha-paycheck-card strong {
     display: block;
-    font-size: 2rem;
+    font-size: 1.65rem;
     line-height: 1.1;
     margin-top: 0.25rem;
 }

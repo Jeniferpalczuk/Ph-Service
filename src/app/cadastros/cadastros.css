@@ -2,7 +2,7 @@
 .cadastros-page {
     animation: fadeIn 0.4s ease-out;
     width: 100%;
-    padding: 2rem;
+    padding: 1.5rem;
     background: #f8fafc;
     min-height: 100vh;
 }
@@ -15,17 +15,17 @@
 }
 
 .page-header h2 {
-    font-size: 1.8rem;
+    font-size: 1.55rem;
     font-weight: 800;
     color: #0f172a;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
 }
 
 /* Tabs Navigation */
 .tabs-container {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     padding: 0.5rem;
     background: #f1f5f9;
     border-radius: 16px;
@@ -35,7 +35,7 @@
 }
 
 .tab-btn {
-    padding: 0.75rem 1.5rem;
+    padding: 0.65rem 1.1rem;
     background: transparent;
     border: none;
     border-radius: 12px;
@@ -43,7 +43,7 @@
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     white-space: nowrap;
 }
 
@@ -69,7 +69,7 @@
 }
 
 .list-header h3 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #334155;
     margin: 0;
@@ -87,7 +87,7 @@
 .grid-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.5rem;
+    gap: 1rem;
     padding: 0.5rem;
 }
 
@@ -96,13 +96,13 @@
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 20px;
-    padding: 1.5rem;
+    padding: 1.2rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.03);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 180px;
+    min-height: 160px;
     position: relative;
     overflow: hidden;
 }
@@ -116,7 +116,7 @@
 /* Distinct Styles for Suppliers (Fornecedores) */
 .entity-card.supplier-card {
     background: linear-gradient(145deg, #ffffff, #f8fafc);
-    border-left: 4px solid #f59e0b;
+    border-color: #fcd34d;
 }
 
 .entity-card.supplier-card:hover {
@@ -131,7 +131,7 @@
 
 .entity-info h4 {
     margin: 0 0 0.75rem 0;
-    font-size: 1.25rem;
+    font-size: 1.08rem;
     font-weight: 700;
     color: #1e293b;
     display: flex;
@@ -142,7 +142,7 @@
 .entity-info p {
     margin: 0 0 0.5rem 0;
     color: #64748b;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 500;
     display: flex;
     align-items: center;
@@ -238,7 +238,7 @@
 }
 
 .modal-header {
-    padding: 1.5rem 2rem;
+    padding: 1.25rem 1.5rem;
     border-bottom: 1px solid #f1f5f9;
     display: flex;
     justify-content: space-between;
@@ -249,12 +249,12 @@
 }
 
 .modal-body {
-    padding: 2rem;
+    padding: 1.5rem;
     overflow-y: auto;
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
 }
 
 .form-group label {
@@ -262,7 +262,7 @@
     margin-bottom: 0.5rem;
     font-weight: 700;
     color: #475569;
-    font-size: 0.9rem;
+    font-size: 0.84rem;
 }
 
 /* Standardized Inputs (Matching Shared Modern) */
@@ -275,7 +275,7 @@
     border: 1px solid #e2e8f0;
     background: #f8fafc;
     color: #1e293b;
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 500;
     transition: all 0.2s;
     font-family: inherit;
@@ -291,7 +291,7 @@
 }
 
 .modal-actions {
-    padding: 1.5rem 2rem;
+    padding: 1.25rem 1.5rem;
     background: #f8fafc;
     border-top: 1px solid #f1f5f9;
     border-bottom-left-radius: 24px;
@@ -442,13 +442,13 @@
 }
 
 .settings-module-content strong {
-    font-size: 1rem;
+    font-size: 0.92rem;
     color: #0f172a;
 }
 
 .settings-module-content small {
     color: #64748b;
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     line-height: 1.35;
 }
 

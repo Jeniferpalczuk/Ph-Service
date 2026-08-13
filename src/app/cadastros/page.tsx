@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Funcionario, Cliente, Fornecedor } from '@/types';
 import type { CreateClienteInput, UpdateClienteInput } from '@/lib/validations/clientes';
 import type { CreateFornecedorInput, UpdateFornecedorInput } from '@/lib/validations/fornecedores';
+import { isAdminUser } from '@/lib/admin';
 import { useAuth } from '@/context/AuthContext';
 import { MoneyInput } from '@/components/MoneyInput';
 import {
@@ -65,7 +66,7 @@ const adminModules = [
 
 export default function CadastrosPage() {
     const { user } = useAuth();
-    const isAdmin = user?.app_metadata?.role === 'adm' || user?.user_metadata?.role === 'adm';
+    const isAdmin = isAdminUser(user);
 
     // Inibindo o Contexto Legado (mantendo apenas para o que sobrar se houver)
     // const { ... } = useApp();

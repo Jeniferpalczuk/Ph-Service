@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminUser } from '@/lib/admin';
 import {
     LuLayoutDashboard,
     LuHandshake,
@@ -38,6 +39,7 @@ export default function Sidebar() {
     ];
 
     const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
+    const isAdmin = isAdminUser(user);
     const overdueCount = stats?.quantidadeVencido || 0;
 
     return (
@@ -55,7 +57,7 @@ export default function Sidebar() {
                 <div className="profile-info">
                     <span className="profile-name">{userName}</span>
                     <span className="profile-role">
-                        {user?.app_metadata?.role === 'adm' ? 'Administrador' : 'Operador'}
+                        {isAdmin ? 'Administrador' : 'Operador'}
                     </span>
                 </div>
             </div>

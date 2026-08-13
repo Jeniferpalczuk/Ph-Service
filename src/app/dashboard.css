@@ -20,16 +20,16 @@
 }
 
 .header-greeting-left h1 {
-    font-size: 1.8rem;
+    font-size: 1.55rem;
     font-weight: 800;
     color: #0f172a;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     margin-bottom: 0.25rem;
 }
 
 .header-greeting-left p {
     color: #64748b;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 500;
     margin: 0;
 }
@@ -215,10 +215,10 @@
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
 }
 
-.kpi-card.border-green { border-left: 4px solid #10b981; }
-.kpi-card.border-red { border-left: 4px solid #f43f5e; }
-.kpi-card.border-blue { border-left: 4px solid #3b82f6; }
-.kpi-card.border-purple { border-left: 4px solid #8b5cf6; }
+.kpi-card.border-green { border-color: rgba(16, 185, 129, 0.35); }
+.kpi-card.border-red { border-color: rgba(244, 63, 94, 0.35); }
+.kpi-card.border-blue { border-color: rgba(59, 130, 246, 0.35); }
+.kpi-card.border-purple { border-color: rgba(139, 92, 246, 0.35); }
 
 .kpi-card-inner {
     display: flex;
@@ -265,7 +265,7 @@
 }
 
 .kpi-value {
-    font-size: 1.4rem;
+    font-size: 1.22rem;
     font-weight: 800;
     color: #0f172a;
     margin-top: 2px;
@@ -313,7 +313,7 @@
 }
 
 .chart-card-header h3 {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 800;
     color: #1e293b;
     margin: 0;
@@ -552,7 +552,7 @@
 .bar-progress-fill {
     height: 100%;
     border-radius: 3px;
-    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.2s ease;
 }
 
 .view-all-marmitas-btn {

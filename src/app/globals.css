@@ -54,7 +54,7 @@
   --radius-full: 9999px;
 
   /* Spacing */
-  --spacing-main: 2rem;
+  --spacing-main: 1.5rem;
   --sidebar-width: 280px;
   --header-height: 80px;
 
@@ -103,7 +103,7 @@
 
 /* Base Styles */
 html {
-  font-size: 16px;
+  font-size: 15.5px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -161,26 +161,23 @@ h6 {
 }
 
 h1 {
-  font-size: 2rem;
-  /* Reduced from 2.5rem */
+  font-size: 1.85rem;
 }
 
 h2 {
-  font-size: 1.75rem;
-  /* Reduced from 2rem */
+  font-size: 1.6rem;
 }
 
 h3 {
-  font-size: 1.5rem;
-  /* Reduced from 1.75rem */
+  font-size: 1.35rem;
 }
 
 h4 {
-  font-size: 1.25rem;
+  font-size: 1.12rem;
 }
 
 h5 {
-  font-size: 1.125rem;
+  font-size: 1rem;
 }
 
 h6 {

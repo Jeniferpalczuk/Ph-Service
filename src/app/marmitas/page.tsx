@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { isAdminUser } from '@/lib/admin';
 import { Marmita } from '@/types';
 import {
     useMarmitasList,
@@ -28,6 +29,7 @@ import '../shared-modern.css';
 
 export default function MarmitasPage() {
     const { user } = useAuth();
+    const isAdmin = isAdminUser(user);
 
     // Hooks de React Query
     // Filter States
@@ -408,7 +410,7 @@ export default function MarmitasPage() {
                                             </td>
                                             <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                                 <button className="btn-modern-icon" onClick={() => openEditModal(item)}><LuPencil size={16} /></button>
-                                                {user?.role === 'adm' && (
+                                                {isAdmin && (
                                                     <button className="btn-modern-icon" onClick={(e) => handleDelete(item.id, e)} style={{ color: '#ef4444' }}><LuTrash2 size={16} /></button>
                                                 )}
                                             </td>
