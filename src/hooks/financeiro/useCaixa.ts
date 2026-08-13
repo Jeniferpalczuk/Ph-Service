@@ -57,6 +57,7 @@ export function useCreateCaixa() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: caixaKeys.lists() });
             queryClient.invalidateQueries({ queryKey: caixaKeys.all });
+            queryClient.invalidateQueries({ queryKey: ['saidas'] });
         },
     });
 }

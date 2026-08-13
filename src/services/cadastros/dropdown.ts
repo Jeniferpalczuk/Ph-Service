@@ -11,6 +11,17 @@ export interface DropdownOption {
     nome: string;
 }
 
+type DropdownRow = {
+    id: string;
+    nome: string;
+};
+
+type FuncionarioFolhaRow = DropdownRow & {
+    cargo?: string | null;
+    salario_base?: number | string | null;
+    ativo?: boolean | null;
+};
+
 /**
  * Busca todos os funcionários ATIVOS para selects.
  * Retorna apenas id + nome (query leve).
@@ -21,10 +32,11 @@ export async function getFuncionariosDropdown(): Promise<DropdownOption[]> {
         .from('funcionarios')
         .select('id, nome')
         .eq('ativo', true)
+        .is('data_demissao', null)
         .order('nome', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar funcionários: ${error.message}`);
-    return (data || []).map((row: any) => ({ id: row.id, nome: row.nome }));
+    return ((data || []) as DropdownRow[]).map((row) => ({ id: row.id, nome: row.nome }));
 }
 
 /**
@@ -44,14 +56,15 @@ export async function getFuncionariosFolhaDropdown(): Promise<FuncionarioFolhaOp
         .from('funcionarios')
         .select('id, nome, cargo, salario_base, ativo')
         .eq('ativo', true)
+        .is('data_demissao', null)
         .order('nome', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar funcionários: ${error.message}`);
-    return (data || []).map((row: any) => ({
+    return ((data || []) as FuncionarioFolhaRow[]).map((row) => ({
         id: row.id,
         nome: row.nome,
         cargo: row.cargo || '',
-        salarioBase: row.salario_base || 0,
+        salarioBase: Number(row.salario_base || 0),
         ativo: row.ativo ?? true,
     }));
 }
@@ -69,7 +82,7 @@ export async function getFornecedoresDropdown(): Promise<DropdownOption[]> {
         .order('nome', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar fornecedores: ${error.message}`);
-    return (data || []).map((row: any) => ({ id: row.id, nome: row.nome }));
+    return ((data || []) as DropdownRow[]).map((row) => ({ id: row.id, nome: row.nome }));
 }
 
 /**
@@ -85,5 +98,5 @@ export async function getClientesDropdown(): Promise<DropdownOption[]> {
         .order('nome', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar clientes: ${error.message}`);
-    return (data || []).map((row: any) => ({ id: row.id, nome: row.nome }));
+    return ((data || []) as DropdownRow[]).map((row) => ({ id: row.id, nome: row.nome }));
 }

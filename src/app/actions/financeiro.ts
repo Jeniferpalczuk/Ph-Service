@@ -9,7 +9,7 @@ import {
     createSaidaSchema, updateSaidaSchema, CreateSaidaInput, UpdateSaidaInput
 } from '@/lib/validations/saidas';
 import {
-    createCaixaSchema, updateCaixaSchema, CreateCaixaInput, UpdateCaixaInput
+    createCaixaSchema, CreateCaixaInput
 } from '@/lib/validations/caixa';
 import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
 
@@ -205,6 +205,12 @@ export async function createCaixaAction(input: CreateCaixaInput): Promise<Action
         }
 
         const supabase = await createClient();
+        const saidaDescricao = parsed.data.saidaDescricao?.trim() || null;
+        const fechamentoObservacoes = [
+            parsed.data.observacoes,
+            parsed.data.saidas > 0 && saidaDescricao ? `Saida lancada: ${saidaDescricao}` : null,
+        ].filter(Boolean).join(' | ') || null;
+
         const { data, error } = await supabase.from('fechamentos_caixa').insert({
             user_id: user.id,
             data: formatDateForDB(parsed.data.data),
@@ -216,14 +222,35 @@ export async function createCaixaAction(input: CreateCaixaInput): Promise<Action
             entrada_debito: parsed.data.entradas.debito,
             entrada_alimentacao: parsed.data.entradas.alimentacao,
             saidas: parsed.data.saidas,
-            observacoes: parsed.data.observacoes,
+            observacoes: fechamentoObservacoes,
         }).select('id').single();
 
         if (error) {
             console.error('[createCaixaAction] DB Error Full:', JSON.stringify(error, null, 2));
             return { success: false, error: `Erro ao criar fechamento: ${error.message} (${error.code})` };
         }
+
+        if (parsed.data.saidas > 0 && saidaDescricao) {
+            const { error: saidaError } = await supabase.from('saidas').insert({
+                user_id: user.id,
+                descricao: saidaDescricao,
+                valor: parsed.data.saidas,
+                data: formatDateForDB(parsed.data.data),
+                categoria: 'outros',
+                fornecedor: null,
+                forma_pagamento: 'dinheiro',
+                observacoes: `Lancada automaticamente pelo fechamento de caixa ${data.id} (${parsed.data.turno} - ${parsed.data.funcionario})`,
+            });
+
+            if (saidaError) {
+                console.error('[createCaixaAction] Saida DB Error Full:', JSON.stringify(saidaError, null, 2));
+                await supabase.from('fechamentos_caixa').delete().eq('id', data.id).eq('user_id', user.id);
+                return { success: false, error: `Erro ao criar saida vinculada ao fechamento: ${saidaError.message}` };
+            }
+        }
+
         revalidatePath('/caixa');
+        revalidatePath('/saidas');
         revalidatePath('/dashboard');
         return { success: true, data: { id: data.id } };
     } catch (err) {

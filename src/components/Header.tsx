@@ -1,8 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import {
     LuLayoutDashboard,
@@ -20,8 +20,7 @@ import './Header.css';
 
 export default function Header() {
     const pathname = usePathname();
-    const { theme, toggleTheme } = useApp();
-    const { logout, user } = useAuth();
+    const { logout } = useAuth();
 
     const menuItems = [
         { icon: <LuLayoutDashboard size={20} />, label: 'Dashboard', href: '/' },
@@ -32,14 +31,14 @@ export default function Header() {
         { icon: <LuDollarSign size={20} />, label: 'Vales', href: '/vales' },
         { icon: <LuUtensils size={20} />, label: 'Marmitas', href: '/marmitas' },
         { icon: <LuUsers size={20} />, label: 'Folha', href: '/folha-pagamento' },
-        { icon: <LuSettings size={20} />, label: 'Cadastros', href: '/cadastros' },
+        { icon: <LuSettings size={20} />, label: 'Configurações', href: '/cadastros' },
     ];
 
     return (
         <header className="header">
             <div className="header-container">
                 <div className="logo-section">
-                    <img src="/logo.png" alt="PH Service" className="logo-image" />
+                    <Image src="/ph-service-logo-new.png" alt="PH Service" width={52} height={52} className="logo-image" />
                 </div>
 
                 <nav className="header-nav">

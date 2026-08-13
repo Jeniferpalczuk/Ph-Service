@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { Funcionario, Cliente, Fornecedor } from '@/types';
+import type { CreateClienteInput, UpdateClienteInput } from '@/lib/validations/clientes';
+import type { CreateFornecedorInput, UpdateFornecedorInput } from '@/lib/validations/fornecedores';
 import { useAuth } from '@/context/AuthContext';
 import { MoneyInput } from '@/components/MoneyInput';
 import {
@@ -18,12 +21,19 @@ import {
     useUpdateFornecedor,
     useDeleteFornecedor,
 } from '@/hooks/cadastros';
-import { Skeleton, TableSkeleton, SkeletonStyles } from '@/components/ui/Skeleton';
 import { toast } from 'react-hot-toast';
 import {
     LuChefHat,
     LuBuilding2,
     LuTruck,
+    LuSettings,
+    LuHandshake,
+    LuBarcode,
+    LuCalculator,
+    LuTrendingDown,
+    LuDollarSign,
+    LuUtensils,
+    LuUsers,
     LuSearch,
     LuPlus,
     LuPencil,
@@ -35,6 +45,18 @@ import {
 } from 'react-icons/lu';
 import './cadastros.css';
 
+type CadastrosTab = 'configuracoes' | 'funcionarios' | 'clientes' | 'fornecedores';
+
+const adminModules = [
+    { label: 'Convênios', href: '/convenios', icon: LuHandshake, description: 'Clientes conveniados, fechamentos e cobranças.' },
+    { label: 'Boletos', href: '/boletos', icon: LuBarcode, description: 'Títulos, vencimentos, pagamentos e importação por PDF.' },
+    { label: 'Caixa', href: '/caixa', icon: LuCalculator, description: 'Fechamentos de turno, entradas e saídas do caixa.' },
+    { label: 'Saídas', href: '/saidas', icon: LuTrendingDown, description: 'Despesas avulsas e saídas lançadas pelo caixa.' },
+    { label: 'Vales', href: '/vales', icon: LuDollarSign, description: 'Adiantamentos e vales de funcionários.' },
+    { label: 'Marmitas', href: '/marmitas', icon: LuUtensils, description: 'Pedidos, entregas e recebimentos de marmitas.' },
+    { label: 'Pagamentos', href: '/folha-pagamento', icon: LuUsers, description: 'Folha e pagamentos de funcionários.' },
+];
+
 
 /**
  * - O hook `useFuncionariosList` busca apenas os dados necessários.
@@ -43,6 +65,7 @@ import './cadastros.css';
 
 export default function CadastrosPage() {
     const { user } = useAuth();
+    const isAdmin = user?.app_metadata?.role === 'adm' || user?.user_metadata?.role === 'adm';
 
     // Inibindo o Contexto Legado (mantendo apenas para o que sobrar se houver)
     // const { ... } = useApp();
@@ -50,7 +73,7 @@ export default function CadastrosPage() {
     // ========================================
     // UI State
     // ========================================
-    const [activeTab, setActiveTab] = useState<'funcionarios' | 'clientes' | 'fornecedores'>('funcionarios');
+    const [activeTab, setActiveTab] = useState<CadastrosTab>('configuracoes');
     const [searchTerm, setSearchTerm] = useState('');
 
     // Paginação para Funcionários
@@ -92,8 +115,8 @@ export default function CadastrosPage() {
     const updateFuncionarioMutation = useUpdateFuncionario();
     const deleteFuncionarioMutation = useDeleteFuncionario();
 
-    const funcionarios = funcionariosData?.data ?? [];
     const sortedFuncionarios = useMemo(() => {
+        const funcionarios = funcionariosData?.data ?? [];
         return [...funcionarios].sort((a, b) => {
             const aDemitido = !!a.dataDemissao;
             const bDemitido = !!b.dataDemissao;
@@ -101,7 +124,7 @@ export default function CadastrosPage() {
             if (!aDemitido && bDemitido) return -1;
             return a.nome.localeCompare(b.nome);
         });
-    }, [funcionarios]);
+    }, [funcionariosData?.data]);
     const totalPages = funcionariosData?.totalPages ?? 1;
     const totalFuncionarios = funcionariosData?.count ?? 0;
 
@@ -134,9 +157,7 @@ export default function CadastrosPage() {
     const [fornecPage, setFornecPage] = useState(1);
     const {
         data: fornecedoresData,
-        isLoading: isLoadingFornecedores,
         isError: isErrorFornecedores, // Adicionado estado de erro explícito
-        error: errorFornecedores,
     } = useFornecedoresList({
         page: fornecPage, // Usa paginação server-side
         pageSize: 20, // Paginação real
@@ -149,7 +170,6 @@ export default function CadastrosPage() {
 
     const fornecedores = fornecedoresData?.data ?? [];
     const totalFornecPages = fornecedoresData?.totalPages ?? 1; // Para controle da paginação
-    const totalFornecedoresCount = fornecedoresData?.count ?? 0;
 
     // ========================================
     // Handlers Funcionários (Usando Mutations)
@@ -243,10 +263,10 @@ export default function CadastrosPage() {
                 endereco: clienteData.endereco?.trim() || null,
             };
             if (editingCliente) {
-                await updateClienteMutation.mutateAsync({ id: editingCliente.id, updates: cleanedCliente as any });
+                await updateClienteMutation.mutateAsync({ id: editingCliente.id, updates: cleanedCliente as UpdateClienteInput });
                 toast.success('Cliente atualizado com sucesso!');
             } else {
-                await createClienteMutation.mutateAsync(cleanedCliente as any);
+                await createClienteMutation.mutateAsync(cleanedCliente as CreateClienteInput);
                 toast.success('Cliente cadastrado com sucesso!');
             }
             resetClienteForm();
@@ -291,10 +311,10 @@ export default function CadastrosPage() {
                 ativo: fornecData.ativo,
             };
             if (editingFornec) {
-                await updateFornecedorMutation.mutateAsync({ id: editingFornec.id, updates: cleanedFornec as any });
+                await updateFornecedorMutation.mutateAsync({ id: editingFornec.id, updates: cleanedFornec as UpdateFornecedorInput });
                 toast.success('Fornecedor atualizado com sucesso!');
             } else {
-                await createFornecedorMutation.mutateAsync(cleanedFornec as any);
+                await createFornecedorMutation.mutateAsync(cleanedFornec as CreateFornecedorInput);
                 toast.success('Fornecedor cadastrado com sucesso!');
             }
             resetFornecForm();
@@ -360,10 +380,13 @@ export default function CadastrosPage() {
     return (
         <div className="cadastros-page">
             <div className="page-header">
-                <h2>Cadastros Gerais</h2>
+                <h2>Configurações</h2>
             </div>
 
             <div className="tabs-container">
+                <button className={`tab-btn ${activeTab === 'configuracoes' ? 'active' : ''}`} onClick={() => { setActiveTab('configuracoes'); setSearchTerm(''); }}>
+                    <LuSettings size={18} /> Sistema
+                </button>
                 <button className={`tab-btn ${activeTab === 'funcionarios' ? 'active' : ''}`} onClick={() => { setActiveTab('funcionarios'); setSearchTerm(''); setFuncPage(1); }}>
                     <LuChefHat size={18} /> Funcionários
                 </button>
@@ -376,6 +399,7 @@ export default function CadastrosPage() {
             </div>
 
             {/* Barra de Pesquisa */}
+            {activeTab !== 'configuracoes' && (
             <div style={{ marginBottom: '1.5rem' }}>
                 <div style={{ position: 'relative', maxWidth: '400px' }}>
                     <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}><LuSearch size={18} /></span>
@@ -400,8 +424,42 @@ export default function CadastrosPage() {
                     />
                 </div>
             </div>
+            )}
 
             <div className="tab-content card">
+                {activeTab === 'configuracoes' && (
+                    <div className="settings-panel">
+                        <div className="list-header">
+                            <div>
+                                <h3>Área do Administrador</h3>
+                                <p className="settings-subtitle">Acesse rapidamente as áreas principais para ajustar e acompanhar o sistema.</p>
+                            </div>
+                        </div>
+
+                        {isAdmin ? (
+                            <div className="settings-grid">
+                                {adminModules.map((module) => {
+                                    const Icon = module.icon;
+                                    return (
+                                        <Link key={module.href} href={module.href} className="settings-module-card">
+                                            <span className="settings-module-icon"><Icon size={22} /></span>
+                                            <span className="settings-module-content">
+                                                <strong>{module.label}</strong>
+                                                <small>{module.description}</small>
+                                            </span>
+                                            <LuArrowRight size={18} />
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="settings-no-access">
+                                Seu usuário não está marcado como administrador.
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* FUNCIONARIOS TAB - COM REACT QUERY */}
                 {activeTab === 'funcionarios' && (
                     <div className="entity-list">
@@ -463,7 +521,7 @@ export default function CadastrosPage() {
                                                     </div>
                                                     <div className="entity-actions">
                                                         <button type="button" onClick={() => editFunc(f)} style={{ cursor: 'pointer' }} title="Editar"><LuPencil size={18} /></button>
-                                                        {user?.role === 'adm' && (
+                                                        {isAdmin && (
                                                             <button
                                                                 type="button"
                                                                 onClick={(e) => handleDeleteFunc(f.id, e)}
@@ -564,7 +622,7 @@ export default function CadastrosPage() {
                                                 </div>
                                                 <div className="entity-actions">
                                                     <button type="button" onClick={() => editCliente(c)} style={{ cursor: 'pointer' }} title="Editar"><LuPencil size={18} /></button>
-                                                    {user?.role === 'adm' && (
+                                                    {isAdmin && (
                                                         <button type="button" onClick={(e) => handleDeleteCliente(c.id, e)} style={{ cursor: 'pointer' }} title="Excluir"><LuTrash2 size={18} /></button>
                                                     )}
                                                 </div>
@@ -631,7 +689,7 @@ export default function CadastrosPage() {
                                     </div>
                                     <div className="entity-actions">
                                         <button type="button" onClick={() => editFornec(f)} title="Editar"><LuPencil size={18} /></button>
-                                        {user?.role === 'adm' && (
+                                        {isAdmin && (
                                             <button type="button" className="btn-delete" onClick={(e) => handleDeleteFornec(f.id, e)} title="Excluir"><LuTrash2 size={18} /></button>
                                         )}
                                     </div>
@@ -771,7 +829,7 @@ export default function CadastrosPage() {
                                 <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                     <div className="form-group">
                                         <label>Tipo de Cliente *</label>
-                                        <select value={clienteData.tipo} onChange={e => setClienteData({ ...clienteData, tipo: e.target.value } as any)}>
+                                        <select value={clienteData.tipo} onChange={e => setClienteData({ ...clienteData, tipo: e.target.value as Cliente['tipo'] })}>
                                             <option value="empresa">Empresa</option>
                                             <option value="pessoa_fisica">Pessoa Física (PF)</option>
                                         </select>

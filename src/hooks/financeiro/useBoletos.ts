@@ -12,8 +12,10 @@ import {
     updateBoletoAction,
     deleteBoletoAction,
     marcarBoletoPagoAction,
+    analisarBoletoPdfAction,
+    importarBoletosPdfAction,
 } from '@/app/actions/boletos';
-import { CreateBoletoInput, UpdateBoletoInput } from '@/lib/validations/boletos';
+import { CreateBoletoInput, ImportBoletoInput, UpdateBoletoInput } from '@/lib/validations/boletos';
 
 /**
  * Hooks: Boletos
@@ -28,7 +30,7 @@ export const boletosKeys = {
     list: (params: BoletosQueryParams) => [...boletosKeys.lists(), params] as const,
     details: () => [...boletosKeys.all, 'detail'] as const,
     detail: (id: string) => [...boletosKeys.details(), id] as const,
-    stats: (params?: any) => [...boletosKeys.all, 'stats', params] as const,
+    stats: (params?: { startDate?: string; endDate?: string }) => [...boletosKeys.all, 'stats', params] as const,
 };
 
 export function useBoletosList(params: BoletosQueryParams = {}) {
@@ -103,6 +105,41 @@ export function useDeleteBoleto() {
         },
         onSuccess: (id) => {
             queryClient.removeQueries({ queryKey: boletosKeys.detail(id) });
+            queryClient.invalidateQueries({ queryKey: boletosKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: boletosKeys.stats() });
+        },
+    });
+}
+
+export function useAnalisarBoletoPdf() {
+    return useMutation({
+        mutationFn: async (file: File) => {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const result = await analisarBoletoPdfAction(formData);
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+
+            return result.data;
+        },
+    });
+}
+
+export function useImportarBoletosPdf() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (input: ImportBoletoInput[]) => {
+            const result = await importarBoletosPdfAction(input);
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+
+            return result.data;
+        },
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: boletosKeys.lists() });
             queryClient.invalidateQueries({ queryKey: boletosKeys.stats() });
         },

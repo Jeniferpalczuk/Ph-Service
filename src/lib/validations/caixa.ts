@@ -12,7 +12,16 @@ export const createCaixaSchema = z.object({
         alimentacao: z.number().default(0),
     }),
     saidas: z.number().default(0),
+    saidaDescricao: z.string().max(200, 'Nome da saida deve ter no maximo 200 caracteres').optional().nullable(),
     observacoes: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+    if (data.saidas > 0 && !data.saidaDescricao?.trim()) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['saidaDescricao'],
+            message: 'Informe o nome da saida',
+        });
+    }
 });
 
 export const updateCaixaSchema = createCaixaSchema.partial();

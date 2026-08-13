@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -10,27 +11,22 @@ import {
     LuShieldCheck,
     LuMail,
     LuLock,
-    LuTriangleAlert,
-    LuInfo
+    LuTriangleAlert
 } from 'react-icons/lu';
 import './login.css';
 
 export default function LoginPage() {
-    const { signInWithGoogle, signInWithEmail, isAuthenticated, loading } = useAuth();
+    const { signInWithEmail, isAuthenticated, loading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [error, setError] = useState('');
+    const [error, setError] = useState(() =>
+        searchParams.get('error') === 'auth_callback_error' ? 'Erro ao autenticar. Tente novamente.' : ''
+    );
     const [isLoading, setIsLoading] = useState(false);
 
     // Form states
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-
-    useEffect(() => {
-        if (searchParams.get('error') === 'auth_callback_error') {
-            setError('Erro ao autenticar. Tente novamente.');
-        }
-    }, [searchParams]);
 
     useEffect(() => {
         if (!loading && isAuthenticated) {
@@ -39,26 +35,16 @@ export default function LoginPage() {
         }
     }, [isAuthenticated, loading, router]);
 
-    const handleGoogleLogin = async () => {
-        setError('');
-        setIsLoading(true);
-        try {
-            await signInWithGoogle();
-        } catch (err) {
-            setError('Erro ao conectar com Google. Tente novamente.');
-            setIsLoading(false);
-        }
-    };
-
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
         try {
             await signInWithEmail(email, password);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            setError(err.message === 'Invalid login credentials'
+            const message = err instanceof Error ? err.message : '';
+            setError(message === 'Invalid login credentials'
                 ? 'E-mail ou senha incorretos.'
                 : 'Erro ao entrar. Verifique seus dados.');
             setIsLoading(false);
@@ -91,6 +77,9 @@ export default function LoginPage() {
                     <div className="login-brand-content">
                         <div className="login-logo-area">
                             <div className="login-logo-glow"></div>
+                            <div className="login-logo">
+                                <Image src="/ph-service-logo-new.png" alt="PH Service" width={90} height={90} priority />
+                            </div>
                         </div>
 
                         <div className="login-hero">

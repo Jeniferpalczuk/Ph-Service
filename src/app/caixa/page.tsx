@@ -78,6 +78,7 @@ export default function CaixaPage() {
         funcionario: '',
         turno: 'manha' as 'manha' | 'tarde',
         saidas: '',
+        saidaDescricao: '',
         dinheiro: '',
         pix: '',
         credito: '',
@@ -92,6 +93,7 @@ export default function CaixaPage() {
             funcionario: '',
             turno: 'manha',
             saidas: '',
+            saidaDescricao: '',
             dinheiro: '',
             pix: '',
             credito: '',
@@ -122,6 +124,7 @@ export default function CaixaPage() {
                     alimentacao: Number(formData.alimentacao) || 0,
                 },
                 saidas: Number(formData.saidas) || 0,
+                saidaDescricao: formData.saidaDescricao || null,
                 observacoes: formData.observacoes || null
             };
 
@@ -164,6 +167,7 @@ export default function CaixaPage() {
     }, []);
 
     const saldoLiquido = (summary?.entradas || 0) - (summary?.saidas || 0);
+    const hasSaidaValue = (Number(formData.saidas) || 0) > 0;
 
     return (
         <div className="modern-page">
@@ -310,6 +314,18 @@ export default function CaixaPage() {
                                 <div className="form-group"><label>Saídas</label><MoneyInput value={formData.saidas} onChange={v => setFormData({ ...formData, saidas: v.toString() })} /></div>
                             </div>
 
+                            {hasSaidaValue && (
+                                <div className="form-group saida-descricao-field">
+                                    <label>Nome da saida *</label>
+                                    <input
+                                        required
+                                        value={formData.saidaDescricao}
+                                        onChange={e => setFormData({ ...formData, saidaDescricao: e.target.value })}
+                                        placeholder="Ex: compra de gelo, motoboy, material de limpeza"
+                                    />
+                                </div>
+                            )}
+
                             <div className="modal-actions" style={{ marginTop: '2rem' }}>
                                 <button type="button" className="btn-secondary" onClick={resetForm}>Cancelar</button>
                                 <button type="submit" className="btn-primary" disabled={createCaixaMutation.isPending}>
@@ -324,10 +340,15 @@ export default function CaixaPage() {
             <style jsx>{`
                 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
                 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+                .saida-descricao-field { margin-top: 1rem; }
                 .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; border-top: 1px solid #f1f5f9; }
                 .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
                 .status-badge.manha { background: #eff6ff; color: #1e40af; }
                 .status-badge.tarde { background: #fffbeb; color: #92400e; }
+                @media (max-width: 768px) {
+                    .grid-2,
+                    .grid-3 { grid-template-columns: 1fr; }
+                }
             `}</style>
         </div>
     );

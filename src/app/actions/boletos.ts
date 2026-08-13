@@ -2,8 +2,16 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { createBoletoSchema, updateBoletoSchema, CreateBoletoInput, UpdateBoletoInput } from '@/lib/validations/boletos';
+import {
+    createBoletoSchema,
+    updateBoletoSchema,
+    importBoletosSchema,
+    CreateBoletoInput,
+    UpdateBoletoInput,
+    ImportBoletoInput
+} from '@/lib/validations/boletos';
 import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
+import { BoletoPdfPreview, parseBoletosPdf } from '@/lib/boletos/pdf-import';
 
 /**
  * Server Actions - Boletos
@@ -52,6 +60,113 @@ export async function createBoletoAction(
 
     } catch (err) {
         console.error('[createBoletoAction] Error:', err);
+        return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };
+    }
+}
+
+export async function analisarBoletoPdfAction(
+    formData: FormData
+): Promise<ActionResult<{ fileName: string; boletos: BoletoPdfPreview[] }>> {
+    try {
+        await getAuthenticatedUser();
+
+        const file = formData.get('file');
+        if (!(file instanceof File)) {
+            return { success: false, error: 'Selecione um arquivo PDF' };
+        }
+
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (!isPdf) {
+            return { success: false, error: 'O arquivo precisa ser um PDF' };
+        }
+
+        const maxFileSize = 10 * 1024 * 1024;
+        if (file.size > maxFileSize) {
+            return { success: false, error: 'O PDF deve ter no máximo 10 MB' };
+        }
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const boletos = await parseBoletosPdf(buffer);
+
+        if (boletos.length === 0) {
+            return {
+                success: false,
+                error: 'Não encontrei dados de boleto no PDF. Verifique se o arquivo tem texto selecionável.'
+            };
+        }
+
+        return {
+            success: true,
+            data: {
+                fileName: file.name,
+                boletos,
+            }
+        };
+    } catch (err) {
+        console.error('[analisarBoletoPdfAction] Error:', err);
+        return {
+            success: false,
+            error: err instanceof Error ? err.message : 'Erro ao analisar PDF'
+        };
+    }
+}
+
+function dateFromISODate(value: string | null | undefined) {
+    if (!value) return null;
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0);
+}
+
+export async function importarBoletosPdfAction(
+    input: ImportBoletoInput[]
+): Promise<ActionResult<{ created: number; ids: string[] }>> {
+    try {
+        const user = await getAuthenticatedUser();
+
+        const parsed = importBoletosSchema.safeParse(input);
+        if (!parsed.success) {
+            const errorMessages = parsed.error.issues.map(e => e.message).join(', ');
+            return {
+                success: false,
+                error: errorMessages || 'Dados inválidos',
+                errors: parsed.error.format()
+            };
+        }
+
+        const rows = parsed.data.map((boleto) => ({
+            user_id: user.id,
+            cliente: boleto.cliente,
+            valor: boleto.valor,
+            banco: boleto.banco,
+            data_vencimento: formatDateForDB(dateFromISODate(boleto.dataVencimento)),
+            data_pagamento: formatDateForDB(dateFromISODate(boleto.dataPagamento)),
+            status_pagamento: boleto.statusPagamento,
+            observacoes: boleto.observacoes,
+        }));
+
+        const supabase = await createClient();
+        const { data, error } = await supabase
+            .from('boletos')
+            .insert(rows)
+            .select('id');
+
+        if (error) {
+            console.error('[importarBoletosPdfAction] DB Error:', error);
+            return { success: false, error: 'Erro ao importar boletos' };
+        }
+
+        revalidatePath('/boletos');
+        revalidatePath('/dashboard');
+        return {
+            success: true,
+            data: {
+                created: data?.length ?? rows.length,
+                ids: (data ?? []).map((row) => row.id as string),
+            }
+        };
+
+    } catch (err) {
+        console.error('[importarBoletosPdfAction] Error:', err);
         return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };
     }
 }

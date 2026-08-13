@@ -39,5 +39,40 @@ export const boletoSchema = z.object({
 export const createBoletoSchema = boletoSchema;
 export const updateBoletoSchema = boletoSchema.partial();
 
+const dateStringSchema = z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida');
+
+export const importBoletoSchema = z.object({
+    cliente: z
+        .string()
+        .min(2, 'Cliente deve ter pelo menos 2 caracteres')
+        .max(100, 'Cliente deve ter no máximo 100 caracteres')
+        .trim(),
+    valor: z
+        .number()
+        .min(0.01, 'Valor deve ser maior que zero')
+        .max(10000000, 'Valor muito alto'),
+    banco: z
+        .string()
+        .min(2, 'Banco deve ter pelo menos 2 caracteres')
+        .max(50, 'Banco deve ter no máximo 50 caracteres')
+        .trim(),
+    dataVencimento: dateStringSchema,
+    dataPagamento: dateStringSchema.optional().nullable(),
+    statusPagamento: z.enum(['pago', 'pendente']),
+    observacoes: z
+        .string()
+        .max(500, 'Observações devem ter no máximo 500 caracteres')
+        .optional()
+        .nullable(),
+});
+
+export const importBoletosSchema = z
+    .array(importBoletoSchema)
+    .min(1, 'Nenhum boleto selecionado para importar')
+    .max(50, 'Importe no máximo 50 boletos por vez');
+
 export type CreateBoletoInput = z.infer<typeof createBoletoSchema>;
 export type UpdateBoletoInput = z.infer<typeof updateBoletoSchema>;
+export type ImportBoletoInput = z.infer<typeof importBoletoSchema>;

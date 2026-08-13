@@ -63,6 +63,8 @@ export function useCreateFuncionario() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: funcionariosKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: ['dropdown', 'funcionarios'] });
+            queryClient.invalidateQueries({ queryKey: ['dropdown', 'funcionarios-folha'] });
         },
         onError: (error: Error) => {
             console.error('[useCreateFuncionario] Error:', error.message);
@@ -93,10 +95,10 @@ export function useUpdateFuncionario() {
             // Atualiza o cache de forma otimista (se tivermos a lista em cache)
             // Nota: Como a lista é paginada e complexa, invalidar é mais seguro,
             // mas aqui demonstramos o padrão para itens individuais.
-            queryClient.setQueryData(funcionariosKeys.detail(id), (old: any) => ({
+            queryClient.setQueryData<Funcionario | null>(funcionariosKeys.detail(id), (old) => ({
                 ...old,
                 ...updates,
-            }));
+            } as Funcionario));
 
             return { previousData };
         },
@@ -109,6 +111,8 @@ export function useUpdateFuncionario() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: funcionariosKeys.detail(data.id) });
             queryClient.invalidateQueries({ queryKey: funcionariosKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: ['dropdown', 'funcionarios'] });
+            queryClient.invalidateQueries({ queryKey: ['dropdown', 'funcionarios-folha'] });
         },
     });
 
@@ -131,6 +135,8 @@ export function useDeleteFuncionario() {
         onSuccess: (id) => {
             queryClient.removeQueries({ queryKey: funcionariosKeys.detail(id) });
             queryClient.invalidateQueries({ queryKey: funcionariosKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: ['dropdown', 'funcionarios'] });
+            queryClient.invalidateQueries({ queryKey: ['dropdown', 'funcionarios-folha'] });
         },
     });
 }

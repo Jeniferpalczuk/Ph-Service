@@ -76,7 +76,7 @@
     border: 2px solid var(--surface);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .topbar {
         height: auto;
         align-items: stretch;

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -33,7 +34,7 @@ export default function Sidebar() {
         { icon: <LuDollarSign size={22} />, label: 'Vales', href: '/vales' },
         { icon: <LuUtensils size={22} />, label: 'Marmitas', href: '/marmitas' },
         { icon: <LuUsers size={22} />, label: 'Folha', href: '/folha-pagamento' },
-        { icon: <LuSettings size={22} />, label: 'Cadastros', href: '/cadastros' },
+        { icon: <LuSettings size={22} />, label: 'Config.', href: '/cadastros' },
     ];
 
     const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
@@ -43,8 +44,7 @@ export default function Sidebar() {
         <aside className="sidebar">
             <div className="sidebar-header">
                 <div className="sidebar-logo">
-                    <span className="logo-dot"></span>
-                    <span className="logo-text">phservice<span className="logo-dot-end">.</span></span>
+                    <Image src="/ph-service-logo-new.png" alt="PH Service" width={132} height={132} className="sidebar-logo-image" priority />
                 </div>
             </div>
 

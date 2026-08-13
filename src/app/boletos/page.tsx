@@ -9,8 +9,12 @@ import {
     useUpdateBoleto,
     useDeleteBoleto,
     useMarcarBoletoPago,
-    useBoletosStats
+    useBoletosStats,
+    useAnalisarBoletoPdf,
+    useImportarBoletosPdf
 } from '@/hooks/financeiro/useBoletos';
+import type { BoletoPdfPreview } from '@/lib/boletos/pdf-import';
+import type { ImportBoletoInput } from '@/lib/validations/boletos';
 import { useFornecedoresDropdown } from '@/hooks/cadastros/useDropdown';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
@@ -22,7 +26,9 @@ import {
     LuTriangleAlert,
     LuPencil,
     LuTrash2,
-    LuX
+    LuX,
+    LuUpload,
+    LuFileText
 } from 'react-icons/lu';
 import '../shared-modern.css';
 
@@ -54,6 +60,8 @@ export default function BoletosPage() {
     const updateBoletoMutation = useUpdateBoleto();
     const deleteBoletoMutation = useDeleteBoleto();
     const marcarPagoMutation = useMarcarBoletoPago();
+    const analisarPdfMutation = useAnalisarBoletoPdf();
+    const importarPdfMutation = useImportarBoletosPdf();
     const { data: statsData } = useBoletosStats(statsParams);
 
     // Hooks de Cadastros (Migrados)
@@ -63,6 +71,10 @@ export default function BoletosPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
     const [showNotification, setShowNotification] = useState(true);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importFileName, setImportFileName] = useState('');
+    const [importPreview, setImportPreview] = useState<BoletoPdfPreview[]>([]);
+    const [selectedImportIds, setSelectedImportIds] = useState<string[]>([]);
 
     // Fetch Boletos via React Query
     const { data: boletosData, isLoading: isLoadingBoletos, isError: isErrorBoletos, error: errorBoletos } = useBoletosList({
@@ -89,6 +101,90 @@ export default function BoletosPage() {
     });
 
     const [parcelasDates, setParcelasDates] = useState<string[]>([]);
+
+    const resetImport = () => {
+        setShowImportModal(false);
+        setImportFileName('');
+        setImportPreview([]);
+        setSelectedImportIds([]);
+    };
+
+    const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+
+        if (!file) return;
+
+        try {
+            const result = await analisarPdfMutation.mutateAsync(file);
+            setImportFileName(result.fileName);
+            setImportPreview(result.boletos);
+            setSelectedImportIds(result.boletos.map((boleto) => boleto.tempId));
+            setShowImportModal(true);
+            toast.success(`${result.boletos.length} boleto(s) encontrado(s) no PDF`);
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Erro ao analisar PDF');
+        }
+    };
+
+    const updateImportPreview = (
+        tempId: string,
+        field: keyof Pick<BoletoPdfPreview, 'cliente' | 'valor' | 'banco' | 'dataVencimento' | 'dataPagamento' | 'statusPagamento' | 'observacoes'>,
+        value: string
+    ) => {
+        setImportPreview((current) => current.map((boleto) => {
+            if (boleto.tempId !== tempId) return boleto;
+
+            if (field === 'valor') {
+                return { ...boleto, valor: Number.parseFloat(value) || 0 };
+            }
+
+            if (field === 'dataPagamento' || field === 'observacoes') {
+                return { ...boleto, [field]: value || null };
+            }
+
+            if (field === 'statusPagamento') {
+                return { ...boleto, statusPagamento: value === 'pago' ? 'pago' : 'pendente' };
+            }
+
+            return { ...boleto, [field]: value };
+        }));
+    };
+
+    const toggleImportSelection = (tempId: string) => {
+        setSelectedImportIds((current) =>
+            current.includes(tempId)
+                ? current.filter((id) => id !== tempId)
+                : [...current, tempId]
+        );
+    };
+
+    const handleConfirmImport = async () => {
+        const selectedBoletos = importPreview.filter((boleto) => selectedImportIds.includes(boleto.tempId));
+
+        if (selectedBoletos.length === 0) {
+            toast.error('Selecione pelo menos um boleto para importar');
+            return;
+        }
+
+        const payload: ImportBoletoInput[] = selectedBoletos.map((boleto) => ({
+            cliente: boleto.cliente.trim(),
+            valor: boleto.valor,
+            banco: boleto.banco.trim(),
+            dataVencimento: boleto.dataVencimento,
+            dataPagamento: boleto.dataPagamento || null,
+            statusPagamento: boleto.statusPagamento,
+            observacoes: boleto.observacoes?.trim() || null,
+        }));
+
+        try {
+            const result = await importarPdfMutation.mutateAsync(payload);
+            toast.success(`${result.created} boleto(s) importado(s)`);
+            resetImport();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Erro ao importar boletos');
+        }
+    };
 
     const buildParcelasDates = (baseDate: string, total: number) => {
         if (!baseDate) return [];
@@ -302,7 +398,18 @@ export default function BoletosPage() {
                         </div>
                     </div>
                 </div>
-                <button className="btn-modern-primary" onClick={() => setShowModal(true)}><LuPlus size={18} /> Novo Boleto</button>
+                <div className="boletos-header-actions">
+                    <label className="btn-modern-secondary import-pdf-button">
+                        <LuUpload size={18} /> Importar PDF
+                        <input
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            onChange={handlePdfUpload}
+                            disabled={analisarPdfMutation.isPending}
+                        />
+                    </label>
+                    <button className="btn-modern-primary" onClick={() => setShowModal(true)}><LuPlus size={18} /> Novo Boleto</button>
+                </div>
             </div>
 
             <div className="modern-filters-container">
@@ -503,8 +610,141 @@ export default function BoletosPage() {
                 </div>
             )}
 
+            {showImportModal && (
+                <div className="modal-overlay" onClick={resetImport}>
+                    <div className="modal-content card import-modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div>
+                                <h2>Importar Boletos</h2>
+                                <p style={{ fontSize: '0.8rem', color: '#64748b' }}>{importFileName}</p>
+                            </div>
+                            <button className="modal-close" onClick={resetImport}><LuX size={20} /></button>
+                        </div>
+
+                        <div className="modal-body import-modal-body">
+                            <div className="import-summary">
+                                <div className="import-summary-icon"><LuFileText size={20} /></div>
+                                <div>
+                                    <strong>{importPreview.length} boleto(s) na prévia</strong>
+                                    <span>{selectedImportIds.length} selecionado(s)</span>
+                                </div>
+                            </div>
+
+                            <div className="import-table-wrapper">
+                                <table className="modern-table import-table">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Fornecedor</th>
+                                            <th>Banco</th>
+                                            <th>Valor</th>
+                                            <th>Data</th>
+                                            <th>Status</th>
+                                            <th>Avisos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {importPreview.map((boleto) => (
+                                            <tr key={boleto.tempId}>
+                                                <td>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedImportIds.includes(boleto.tempId)}
+                                                        onChange={() => toggleImportSelection(boleto.tempId)}
+                                                        aria-label={`Selecionar boleto de ${boleto.cliente}`}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        value={boleto.cliente}
+                                                        onChange={(e) => updateImportPreview(boleto.tempId, 'cliente', e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        value={boleto.banco}
+                                                        onChange={(e) => updateImportPreview(boleto.tempId, 'banco', e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="number"
+                                                        min="0.01"
+                                                        step="0.01"
+                                                        value={boleto.valor || ''}
+                                                        onChange={(e) => updateImportPreview(boleto.tempId, 'valor', e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="date"
+                                                        value={boleto.dataVencimento}
+                                                        onChange={(e) => updateImportPreview(boleto.tempId, 'dataVencimento', e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <select
+                                                        value={boleto.statusPagamento}
+                                                        onChange={(e) => updateImportPreview(boleto.tempId, 'statusPagamento', e.target.value)}
+                                                    >
+                                                        <option value="pendente">pendente</option>
+                                                        <option value="pago">pago</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <div className="import-warnings">
+                                                        <span className={`confidence-badge ${boleto.confidence >= 75 ? 'high' : boleto.confidence >= 45 ? 'medium' : 'low'}`}>
+                                                            {boleto.confidence}%
+                                                        </span>
+                                                        {boleto.warnings.length > 0 && (
+                                                            <span>{boleto.warnings.join(', ')}</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button type="button" className="btn-secondary" onClick={resetImport}>Cancelar</button>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={handleConfirmImport}
+                                disabled={importarPdfMutation.isPending}
+                            >
+                                {importarPdfMutation.isPending ? 'Importando...' : 'Confirmar Importação'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             <style jsx>{`
+                .boletos-header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end; }
+                .btn-modern-secondary { background: var(--surface); color: var(--text-primary); padding: 0.6rem 1.2rem; border-radius: 12px; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
+                .btn-modern-secondary:hover { background: var(--surface-hover); transform: translateY(-2px); }
+                .import-pdf-button input { display: none; }
+                .import-modal-content { max-width: 1100px !important; width: 96%; }
+                .import-modal-body { padding: 1.25rem; }
+                .import-summary { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border); border-radius: 12px; background: var(--background); margin-bottom: 1rem; }
+                .import-summary-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(79, 70, 229, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .import-summary strong { display: block; color: var(--text-primary); }
+                .import-summary span { display: block; color: var(--text-secondary); font-size: 0.85rem; }
+                .import-table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+                .import-table { min-width: 980px; }
+                .import-table th, .import-table td { padding: 0.75rem; vertical-align: middle; }
+                .import-table input, .import-table select { padding: 0.55rem 0.65rem; border-radius: 8px; font-size: 0.85rem; }
+                .import-table input[type="checkbox"] { width: 18px; height: 18px; }
+                .import-warnings { display: flex; flex-direction: column; gap: 0.35rem; min-width: 140px; font-size: 0.76rem; color: var(--text-secondary); }
+                .confidence-badge { width: max-content; padding: 0.2rem 0.45rem; border-radius: 6px; font-weight: 800; font-size: 0.72rem; }
+                .confidence-badge.high { background: #d1fae5; color: #065f46; }
+                .confidence-badge.medium { background: #fef3c7; color: #92400e; }
+                .confidence-badge.low { background: #fee2e2; color: #991b1b; }
                 .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; border-top: 1px solid #f1f5f9; }
                 .pagination button { padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; }
                 .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -515,6 +755,12 @@ export default function BoletosPage() {
                 .status-badge.vencido { background: #fee2e2; color: #b91c1c; }
                 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
                 .static-val { padding: 0.6rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 700; color: #0ea5e9; }
+                @media (max-width: 768px) {
+                    .boletos-header-actions { width: 100%; justify-content: stretch; }
+                    .boletos-header-actions button, .boletos-header-actions label { flex: 1; justify-content: center; }
+                    .import-modal-content { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; }
+                    .import-table { min-width: 900px; }
+                }
             `}</style>
         </div>
     );
