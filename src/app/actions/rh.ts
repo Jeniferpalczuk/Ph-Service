@@ -99,7 +99,7 @@ async function syncFolhaPagamentoSaida(
 // ===========================================
 // FOLHA DE PAGAMENTO
 // Alinhado com schema real do banco:
-// cargo_funcao, valor, descontos, faltas, forma_pagamento, status_pagamento
+// cargo_funcao, valor, descontos, forma_pagamento, status_pagamento, data_pagamento, observacoes
 // ===========================================
 
 export async function createFolhaPagamentoAction(input: CreateFolhaPagamentoInput): Promise<ActionResult<{ id: string }>> {
@@ -118,11 +118,9 @@ export async function createFolhaPagamentoAction(input: CreateFolhaPagamentoInpu
             cargo_funcao: parsed.data.cargoFuncao || null,
             valor: parsed.data.valor,
             descontos: parsed.data.descontos ?? 0,
-            faltas: parsed.data.faltas ?? 0,
             forma_pagamento: parsed.data.formaPagamento,
             status_pagamento: parsed.data.statusPagamento,
             data_pagamento: formatDateForDB(parsed.data.dataPagamento),
-            periodo_referencia: parsed.data.periodoReferencia || null,
             observacoes: parsed.data.observacoes || null,
         }).select('id').single();
 
@@ -169,11 +167,9 @@ export async function updateFolhaPagamentoAction(id: string, input: UpdateFolhaP
         if (parsed.data.cargoFuncao !== undefined) updateData.cargo_funcao = parsed.data.cargoFuncao;
         if (parsed.data.valor !== undefined) updateData.valor = parsed.data.valor;
         if (parsed.data.descontos !== undefined) updateData.descontos = parsed.data.descontos;
-        if (parsed.data.faltas !== undefined) updateData.faltas = parsed.data.faltas;
         if (parsed.data.formaPagamento !== undefined) updateData.forma_pagamento = parsed.data.formaPagamento;
         if (parsed.data.statusPagamento !== undefined) updateData.status_pagamento = parsed.data.statusPagamento;
         if (parsed.data.dataPagamento !== undefined) updateData.data_pagamento = formatDateForDB(parsed.data.dataPagamento);
-        if (parsed.data.periodoReferencia !== undefined) updateData.periodo_referencia = parsed.data.periodoReferencia;
         if (parsed.data.observacoes !== undefined) updateData.observacoes = parsed.data.observacoes;
 
         const { data, error } = await supabase.from('folha_pagamento')
@@ -187,7 +183,7 @@ export async function updateFolhaPagamentoAction(id: string, input: UpdateFolhaP
 
         const { data: folhaAtualizada, error: folhaError } = await supabase
             .from('folha_pagamento')
-            .select('funcionario, valor, forma_pagamento, status_pagamento, data_pagamento, periodo_referencia, observacoes')
+            .select('funcionario, valor, forma_pagamento, status_pagamento, data_pagamento, observacoes')
             .eq('id', id)
             .eq('user_id', user.id)
             .single();
@@ -203,8 +199,8 @@ export async function updateFolhaPagamentoAction(id: string, input: UpdateFolhaP
             formaPagamento: folhaAtualizada.forma_pagamento,
             statusPagamento: folhaAtualizada.status_pagamento,
             dataPagamento: new Date(`${folhaAtualizada.data_pagamento}T12:00:00`),
-            periodoReferencia: folhaAtualizada.periodo_referencia,
-            observacoes: folhaAtualizada.observacoes,
+            periodoReferencia: parsed.data.periodoReferencia,
+            observacoes: parsed.data.observacoes ?? folhaAtualizada.observacoes,
         });
 
         revalidatePath('/folha-pagamento');

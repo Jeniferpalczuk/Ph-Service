@@ -142,8 +142,8 @@ export default function SaidasPage() {
                 toast.success('Saída registrada!');
             }
             resetForm();
-        } catch {
-            toast.error('Erro ao processar solicitação.');
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Erro ao processar solicitação.');
         }
     };
 

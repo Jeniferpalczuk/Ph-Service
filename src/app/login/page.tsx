@@ -42,7 +42,6 @@ export default function LoginPage() {
         try {
             await signInWithEmail(email, password);
         } catch (err: unknown) {
-            console.error(err);
             const message = err instanceof Error ? err.message : '';
             setError(message === 'Invalid login credentials'
                 ? 'E-mail ou senha incorretos.'

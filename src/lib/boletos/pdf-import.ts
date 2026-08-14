@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { PDFParse } from 'pdf-parse';
 
 export type BoletoPdfPreview = {
@@ -36,6 +38,16 @@ const KNOWN_BANKS = [
 
 const DATE_PATTERN = /(\d{2}[\/.-]\d{2}[\/.-]\d{4})/g;
 const MONEY_PATTERN = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/g;
+
+let pdfWorkerConfigured = false;
+
+function ensurePdfWorker() {
+    if (pdfWorkerConfigured) return;
+
+    const workerPath = join(process.cwd(), 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs');
+    PDFParse.setWorker(pathToFileURL(workerPath).toString());
+    pdfWorkerConfigured = true;
+}
 
 function normalizeWhitespace(value: string) {
     return value.replace(/\r/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
@@ -222,6 +234,8 @@ function splitPotentialBoletos(text: string) {
 }
 
 export async function parseBoletosPdf(fileBuffer: Buffer): Promise<BoletoPdfPreview[]> {
+    ensurePdfWorker();
+
     const parser = new PDFParse({ data: new Uint8Array(fileBuffer) });
 
     try {

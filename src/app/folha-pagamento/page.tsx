@@ -198,7 +198,7 @@ export default function FolhaPagamentoPage() {
             resetForm();
         } catch (err) {
             console.error('Erro ao processar folha:', err);
-            toast.error('Erro ao processar folha.');
+            toast.error(err instanceof Error ? err.message : 'Erro ao processar folha.');
         }
     };
 

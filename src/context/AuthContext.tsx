@@ -69,7 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             password,
         });
         if (error) {
-            console.error('Error signing in with email:', error);
             throw error;
         }
         router.push('/');

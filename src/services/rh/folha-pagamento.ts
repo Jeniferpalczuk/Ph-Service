@@ -103,7 +103,6 @@ export async function createPagamento(
             cargo_funcao: pagamento.cargoFuncao,
             valor: pagamento.valor,
             descontos: pagamento.descontos,
-            faltas: pagamento.faltas,
             forma_pagamento: pagamento.formaPagamento,
             status_pagamento: pagamento.statusPagamento,
             data_pagamento: formatDateForDB(pagamento.dataPagamento),
@@ -124,7 +123,6 @@ export async function updatePagamento(id: string, updates: Partial<PagamentoFunc
     if (updates.cargoFuncao !== undefined) updateData.cargo_funcao = updates.cargoFuncao;
     if (updates.valor !== undefined) updateData.valor = updates.valor;
     if (updates.descontos !== undefined) updateData.descontos = updates.descontos;
-    if (updates.faltas !== undefined) updateData.faltas = updates.faltas;
     if (updates.formaPagamento !== undefined) updateData.forma_pagamento = updates.formaPagamento;
     if (updates.statusPagamento !== undefined) updateData.status_pagamento = updates.statusPagamento;
     if (updates.dataPagamento !== undefined) updateData.data_pagamento = formatDateForDB(updates.dataPagamento);
