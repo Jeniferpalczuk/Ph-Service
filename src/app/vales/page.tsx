@@ -1,19 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { Vale, ValeStatus } from '@/types';
 import {
     useValesList,
     useCreateVale,
     useUpdateVale,
     useDeleteVale,
-    useQuitarVale,
-    useTotalValesPendentes
 } from '@/hooks/rh/useVales';
 import { useFuncionariosDropdown } from '@/hooks/cadastros/useDropdown';
 import { MoneyInput } from '@/components/MoneyInput';
-import { Skeleton, TableSkeleton } from '@/components/ui/Skeleton';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
 import {
@@ -31,8 +28,6 @@ import '../shared-modern.css';
  * Migrada para React Query com Skeletons e Toast.
  */
 export default function ValesPage() {
-    const { user } = useAuth();
-
     // Hooks de Vales (Migrados)
     const createValeMutation = useCreateVale();
     const updateValeMutation = useUpdateVale();
@@ -54,7 +49,7 @@ export default function ValesPage() {
         endDate: `${selectedMonth}-${new Date(Number(selectedMonth.split('-')[0]), Number(selectedMonth.split('-')[1]), 0).getDate().toString().padStart(2, '0')}`,
     });
 
-    const vales = valesData?.data ?? [];
+    const vales = useMemo(() => valesData?.data ?? [], [valesData?.data]);
     const totalPages = valesData?.totalPages ?? 1;
 
     // Fetch Funcionários
@@ -151,7 +146,7 @@ export default function ValesPage() {
             try {
                 await deleteValeMutation.mutateAsync(id);
                 toast.success('Vale excluído');
-            } catch (err) {
+            } catch {
                 toast.error('Erro ao excluir vale');
             }
         }
@@ -315,7 +310,7 @@ export default function ValesPage() {
 
                             <div className="form-group" style={{ marginTop: '1rem' }}>
                                 <label>Status *</label>
-                                <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
+                                <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as ValeStatus })}>
                                     <option value="aberto">Aberto</option>
                                     <option value="quitado">Quitado</option>
                                 </select>

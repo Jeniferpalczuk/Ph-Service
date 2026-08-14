@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { PaymentStatus, ClosingType, Convenio } from '@/types';
 import {
     useConveniosList,
@@ -16,11 +15,9 @@ import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
 import {
     LuPlus,
-    LuSearch,
     LuCheck,
     LuClock,
     LuTriangleAlert,
-    LuEraser,
     LuPencil,
     LuTrash2,
     LuX
@@ -31,8 +28,6 @@ import '../shared-modern.css';
  * ConveniosPage - Fase 5 (Full CRUD & React Query)
  */
 export default function ConveniosPage() {
-    const { user } = useAuth();
-
     // Hooks do Financeiro (Migrados)
     const createConvenioMutation = useCreateConvenio();
     const updateConvenioMutation = useUpdateConvenio();
@@ -51,7 +46,7 @@ export default function ConveniosPage() {
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterStatus, setFilterStatus] = useState<PaymentStatus | 'todos'>('todos');
+    const filterStatus: PaymentStatus | 'todos' = 'todos';
     const [page, setPage] = useState(1);
 
     // Fetch Convênios via React Query
@@ -63,7 +58,7 @@ export default function ConveniosPage() {
         status: filterStatus === 'todos' ? 'all' : filterStatus
     });
 
-    const convenios = conveniosData?.data ?? [];
+    const convenios = useMemo(() => conveniosData?.data ?? [], [conveniosData?.data]);
     const totalPages = conveniosData?.totalPages ?? 1;
 
     // Form state
@@ -201,7 +196,7 @@ export default function ConveniosPage() {
             try {
                 await deleteConvenioMutation.mutateAsync(id);
                 toast.success('Convênio excluído');
-            } catch (err) {
+            } catch {
                 toast.error('Erro ao excluir convênio');
             }
         }
@@ -348,7 +343,7 @@ export default function ConveniosPage() {
                                 <div className="grid-2">
                                     <div className="form-group">
                                         <label>Tipo de Fechamento *</label>
-                                        <select required value={formData.tipoFechamento} onChange={e => setFormData({ ...formData, tipoFechamento: e.target.value as any })}>
+                                        <select required value={formData.tipoFechamento} onChange={e => setFormData({ ...formData, tipoFechamento: e.target.value as ClosingType })}>
                                             <option value="mensal">Mensal</option>
                                             <option value="quinzenal">Quinzenal</option>
                                             <option value="semanal">Semanal</option>
@@ -386,7 +381,7 @@ export default function ConveniosPage() {
                                 <div className="grid-2">
                                     <div className="form-group">
                                         <label>Status *</label>
-                                        <select value={formData.statusPagamento} onChange={e => setFormData({ ...formData, statusPagamento: e.target.value as any })}>
+                                        <select value={formData.statusPagamento} onChange={e => setFormData({ ...formData, statusPagamento: e.target.value as PaymentStatus })}>
                                             <option value="pendente">Pendente</option>
                                             <option value="pago">Pago</option>
                                             <option value="vencido">Vencido</option>

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Convenio, PaymentStatus, ClosingType } from '@/types';
+import { Attachment, Convenio, PaymentStatus, ClosingType } from '@/types';
 import { PaginatedResult, BaseQueryParams, DateRangeParams, formatDateForDB, parseDBDate } from '../types';
 import { sanitizeSearch } from '@/lib/security';
 
@@ -22,7 +22,7 @@ function dbToConvenio(row: Record<string, unknown>): Convenio {
         notaFiscal: row.nota_fiscal as string | undefined,
         enviadoPara: row.enviado_para as string | undefined,
         observacoes: row.observacoes as string | undefined,
-        anexos: (row.anexos as any[]) || [],
+        anexos: (row.anexos as Attachment[] | null) || [],
         createdAt: new Date(row.created_at as string),
         updatedAt: new Date(row.updated_at as string),
     };

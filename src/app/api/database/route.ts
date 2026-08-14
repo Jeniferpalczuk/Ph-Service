@@ -6,12 +6,17 @@ export const dynamic = 'force-dynamic'; // Disable caching
 
 const DB_PATH = path.join(process.cwd(), 'db.json');
 
+type DatabaseSnapshot = {
+    [key: string]: unknown;
+    theme?: 'light' | 'dark';
+};
+
 // Helper para ler BD
-async function getDB() {
+async function getDB(): Promise<DatabaseSnapshot> {
     try {
         const data = await fs.readFile(DB_PATH, 'utf-8');
-        return JSON.parse(data);
-    } catch (e) {
+        return JSON.parse(data) as DatabaseSnapshot;
+    } catch {
         // Se falhar (arquivo não existe), retorna objeto vazio ou padrão
         return {
             convenios: [], boletos: [], caixa: [], saidas: [], vales: [],
@@ -22,7 +27,7 @@ async function getDB() {
 }
 
 // Helper para salvar
-async function saveDB(data: any) {
+async function saveDB(data: DatabaseSnapshot) {
     await fs.writeFile(DB_PATH, JSON.stringify(data, null, 2));
 }
 
@@ -33,7 +38,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
+        const body = await req.json() as DatabaseSnapshot;
         /*
           Esperamos body no formato:
           { collection: 'marmitas', data: [...] }
@@ -44,7 +49,7 @@ export async function POST(req: Request) {
 
         let updated = false;
 
-        if (body.collection) {
+        if (typeof body.collection === 'string') {
             currentDB[body.collection] = body.data;
             updated = true;
         }

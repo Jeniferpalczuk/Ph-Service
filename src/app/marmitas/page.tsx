@@ -6,7 +6,6 @@ import { isAdminUser } from '@/lib/admin';
 import { Marmita } from '@/types';
 import {
     useMarmitasList,
-    useCreateMarmita,
     useCreateMarmitasLote,
     useUpdateMarmita,
     useDeleteMarmita
@@ -26,6 +25,21 @@ import {
     LuCircleCheck
 } from 'react-icons/lu';
 import '../shared-modern.css';
+
+type MarmitaSize = 'P' | 'M' | 'G' | 'PF';
+type MarmitaCalcField = 'qtd' | 'unit' | 'total';
+type MarmitaFormKey = `${MarmitaCalcField}${MarmitaSize}`;
+type MarmitaFormData = {
+    cliente: string;
+    dataEntrega: string;
+} & Record<MarmitaFormKey, string>;
+
+const marmitaTypes: { key: MarmitaSize; label: string }[] = [
+    { key: 'P', label: 'Pequena' },
+    { key: 'M', label: 'Média' },
+    { key: 'G', label: 'Grande' },
+    { key: 'PF', label: 'Prato Feito' },
+];
 
 export default function MarmitasPage() {
     const { user } = useAuth();
@@ -68,7 +82,7 @@ export default function MarmitasPage() {
         return months;
     }, []);
 
-    const marmitas = marmitasData?.data ?? [];
+    const marmitas = useMemo(() => marmitasData?.data ?? [], [marmitasData?.data]);
 
     const [showModal, setShowModal] = useState(false);
 
@@ -81,7 +95,7 @@ export default function MarmitasPage() {
     const [editData, setEditData] = useState({ cliente: '', qtd: '', valorUnitario: '', valorTotal: '', dataEntrega: '' });
 
     // Form State (Lançamento Diário)
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<MarmitaFormData>({
         cliente: '',
         dataEntrega: new Date().toISOString().split('T')[0],
         qtdP: '', unitP: '', totalP: '',
@@ -109,18 +123,14 @@ export default function MarmitasPage() {
         return '';
     };
 
-    const handleCalcChange = (field: string, value: string, type: 'P' | 'M' | 'G' | 'PF') => {
+    const handleCalcChange = (field: Exclude<MarmitaCalcField, 'total'>, value: string, type: MarmitaSize) => {
         const prev = { ...formData };
-        // @ts-ignore
         prev[`${field}${type}`] = value;
-        const qKey = `qtd${type}`;
-        const uKey = `unit${type}`;
-        const tKey = `total${type}`;
-        // @ts-ignore
+        const qKey: MarmitaFormKey = `qtd${type}`;
+        const uKey: MarmitaFormKey = `unit${type}`;
+        const tKey: MarmitaFormKey = `total${type}`;
         const q = prev[qKey];
-        // @ts-ignore
         const u = prev[uKey];
-        // @ts-ignore
         prev[tKey] = calcTotal(q, u);
         setFormData(prev);
     };
@@ -175,9 +185,9 @@ export default function MarmitasPage() {
             try {
                 await deleteMutation.mutateAsync(id);
                 toast.success('Lançamento excluído!');
-            } catch (err) {
-                toast.error('Erro ao excluir lançamento.');
-            }
+        } catch {
+            toast.error('Erro ao excluir lançamento.');
+        }
         }
     };
 
@@ -209,7 +219,7 @@ export default function MarmitasPage() {
                 await Promise.all(itemsToDelete.map(item => deleteMutation.mutateAsync(item.id)));
                 toast.success('Lançamentos do dia excluídos!');
                 setSelectedDateDetails(null);
-            } catch (err) {
+            } catch {
                 toast.error('Erro ao excluir lançamentos do dia.');
             }
         }
@@ -248,7 +258,7 @@ export default function MarmitasPage() {
                 setShowEditModal(false);
                 setEditingItem(null);
                 setSelectedDateDetails(null);
-            } catch (err) {
+            } catch {
                 toast.error('Erro ao atualizar lançamento.');
             }
         }
@@ -427,19 +437,12 @@ export default function MarmitasPage() {
             )}
 
             {showModal && (() => {
-                const marmitaTypes = [
-                    { key: 'P', label: 'Pequena' },
-                    { key: 'M', label: 'Média' },
-                    { key: 'G', label: 'Grande' },
-                    { key: 'PF', label: 'Prato Feito' },
-                ];
-
                 const grandTotal = marmitaTypes.reduce((sum, t) => {
-                    return sum + (parseFloat((formData as any)[`total${t.key}`]) || 0);
+                    return sum + (parseFloat(formData[`total${t.key}`]) || 0);
                 }, 0);
 
                 const totalQtdModal = marmitaTypes.reduce((sum, t) => {
-                    return sum + (parseInt((formData as any)[`qtd${t.key}`]) || 0);
+                    return sum + (parseInt(formData[`qtd${t.key}`]) || 0);
                 }, 0);
 
                 return (
@@ -498,9 +501,9 @@ export default function MarmitasPage() {
                                     {/* Cards de Tamanho */}
                                     <div className="marmita-types-grid">
                                         {marmitaTypes.map(t => {
-                                            const qtdVal = (formData as any)[`qtd${t.key}`];
-                                            const unitVal = (formData as any)[`unit${t.key}`];
-                                            const totalVal = (formData as any)[`total${t.key}`];
+                                            const qtdVal = formData[`qtd${t.key}`];
+                                            const unitVal = formData[`unit${t.key}`];
+                                            const totalVal = formData[`total${t.key}`];
                                             const hasValue = (parseInt(qtdVal) || 0) > 0;
 
                                             return (
@@ -529,7 +532,7 @@ export default function MarmitasPage() {
                                                             min="0"
                                                             placeholder="0"
                                                             value={qtdVal}
-                                                            onChange={e => handleCalcChange('qtd', e.target.value, t.key as any)}
+                                                            onChange={e => handleCalcChange('qtd', e.target.value, t.key)}
                                                             className="marmita-card-input marmita-card-input--qty"
                                                         />
                                                     </div>
@@ -544,7 +547,7 @@ export default function MarmitasPage() {
                                                                 step="0.01"
                                                                 placeholder="0,00"
                                                                 value={unitVal}
-                                                                onChange={e => handleCalcChange('unit', e.target.value, t.key as any)}
+                                                                onChange={e => handleCalcChange('unit', e.target.value, t.key)}
                                                                 className="marmita-card-input"
                                                             />
                                                         </div>

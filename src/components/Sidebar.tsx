@@ -1,10 +1,13 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useApp } from '@/context/AppContext';
 import { isAdminUser } from '@/lib/admin';
+import type { AppModuleKey } from '@/lib/modules';
 import {
     LuLayoutDashboard,
     LuHandshake,
@@ -16,25 +19,34 @@ import {
     LuUsers,
     LuSettings,
     LuLogOut,
-    LuBell
+    LuBell,
 } from 'react-icons/lu';
 import { useBoletosStats } from '@/hooks/financeiro/useBoletos';
 import './Sidebar.css';
 
+const moduleIcons: Record<AppModuleKey, ReactNode> = {
+    convenios: <LuHandshake size={22} />,
+    boletos: <LuBarcode size={22} />,
+    caixa: <LuCalculator size={22} />,
+    saidas: <LuTrendingDown size={22} />,
+    vales: <LuDollarSign size={22} />,
+    marmitas: <LuUtensils size={22} />,
+    pagamentos: <LuUsers size={22} />,
+};
+
 export default function Sidebar() {
     const pathname = usePathname();
     const { logout, user } = useAuth();
+    const { visibleModules } = useApp();
     const { data: stats } = useBoletosStats();
 
     const menuItems = [
         { icon: <LuLayoutDashboard size={22} />, label: 'Dashboard', href: '/' },
-        { icon: <LuHandshake size={22} />, label: 'Convênios', href: '/convenios' },
-        { icon: <LuBarcode size={22} />, label: 'Boletos', href: '/boletos' },
-        { icon: <LuCalculator size={22} />, label: 'Caixa', href: '/caixa' },
-        { icon: <LuTrendingDown size={22} />, label: 'Saídas', href: '/saidas' },
-        { icon: <LuDollarSign size={22} />, label: 'Vales', href: '/vales' },
-        { icon: <LuUtensils size={22} />, label: 'Marmitas', href: '/marmitas' },
-        { icon: <LuUsers size={22} />, label: 'Folha', href: '/folha-pagamento' },
+        ...visibleModules.map((module) => ({
+            icon: moduleIcons[module.key],
+            label: module.shortLabel,
+            href: module.href,
+        })),
         { icon: <LuSettings size={22} />, label: 'Config.', href: '/cadastros' },
     ];
 

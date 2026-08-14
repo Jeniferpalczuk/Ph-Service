@@ -1,9 +1,12 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useApp } from '@/context/AppContext';
+import type { AppModuleKey } from '@/lib/modules';
 import {
     LuLayoutDashboard,
     LuHandshake,
@@ -14,23 +17,32 @@ import {
     LuUtensils,
     LuUsers,
     LuSettings,
-    LuLogOut
+    LuLogOut,
 } from 'react-icons/lu';
 import './Header.css';
+
+const moduleIcons: Record<AppModuleKey, ReactNode> = {
+    convenios: <LuHandshake size={20} />,
+    boletos: <LuBarcode size={20} />,
+    caixa: <LuCalculator size={20} />,
+    saidas: <LuTrendingDown size={20} />,
+    vales: <LuDollarSign size={20} />,
+    marmitas: <LuUtensils size={20} />,
+    pagamentos: <LuUsers size={20} />,
+};
 
 export default function Header() {
     const pathname = usePathname();
     const { logout } = useAuth();
+    const { visibleModules } = useApp();
 
     const menuItems = [
         { icon: <LuLayoutDashboard size={20} />, label: 'Dashboard', href: '/' },
-        { icon: <LuHandshake size={20} />, label: 'Convênios', href: '/convenios' },
-        { icon: <LuBarcode size={20} />, label: 'Boletos', href: '/boletos' },
-        { icon: <LuCalculator size={20} />, label: 'Caixa', href: '/caixa' },
-        { icon: <LuTrendingDown size={20} />, label: 'Saídas', href: '/saidas' },
-        { icon: <LuDollarSign size={20} />, label: 'Vales', href: '/vales' },
-        { icon: <LuUtensils size={20} />, label: 'Marmitas', href: '/marmitas' },
-        { icon: <LuUsers size={20} />, label: 'Folha', href: '/folha-pagamento' },
+        ...visibleModules.map((module) => ({
+            icon: moduleIcons[module.key],
+            label: module.shortLabel,
+            href: module.href,
+        })),
         { icon: <LuSettings size={20} />, label: 'Configurações', href: '/cadastros' },
     ];
 

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Saida, ExpenseCategory, PaymentMethod } from '@/types';
+import { Attachment, Saida, ExpenseCategory, PaymentMethod } from '@/types';
 import { PaginatedResult, BaseQueryParams, DateRangeParams, formatDateForDB, parseDBDate } from '../types';
 import { sanitizeSearch } from '@/lib/security';
 
@@ -17,7 +17,7 @@ function dbToSaida(row: Record<string, unknown>): Saida {
         data: parseDBDate(row.data as string)!,
         fornecedor: row.fornecedor as string | undefined,
         observacoes: row.observacoes as string | undefined,
-        anexos: (row.anexos as any[]) || [],
+        anexos: (row.anexos as Attachment[] | null) || [],
         createdAt: new Date(row.created_at as string),
         updatedAt: new Date(row.updated_at as string),
     };
@@ -142,5 +142,7 @@ export async function getSaidasTotal(startDate: string, endDate: string): Promis
 
     if (error) throw new Error(`Erro ao buscar total de saídas: ${error.message}`);
 
-    return (data || []).reduce((sum: any, item: any) => sum + parseFloat(item.valor as string || '0'), 0);
+    return ((data || []) as { valor: string | number | null }[]).reduce((sum, item) => {
+        return sum + parseFloat(String(item.valor || '0'));
+    }, 0);
 }

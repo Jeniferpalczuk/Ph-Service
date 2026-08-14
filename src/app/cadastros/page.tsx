@@ -6,7 +6,9 @@ import { Funcionario, Cliente, Fornecedor } from '@/types';
 import type { CreateClienteInput, UpdateClienteInput } from '@/lib/validations/clientes';
 import type { CreateFornecedorInput, UpdateFornecedorInput } from '@/lib/validations/fornecedores';
 import { isAdminUser } from '@/lib/admin';
+import { APP_MODULES, type AppModuleKey } from '@/lib/modules';
 import { useAuth } from '@/context/AuthContext';
+import { useApp } from '@/context/AppContext';
 import { MoneyInput } from '@/components/MoneyInput';
 import {
     useFuncionariosList,
@@ -42,21 +44,27 @@ import {
     LuX,
     LuArrowLeft,
     LuArrowRight,
-    LuPhone
+    LuPhone,
+    LuEye,
+    LuEyeOff,
+    LuRotateCcw,
+    LuExternalLink,
+    LuShieldCheck,
+    LuPanelLeft
 } from 'react-icons/lu';
 import './cadastros.css';
 
 type CadastrosTab = 'configuracoes' | 'funcionarios' | 'clientes' | 'fornecedores';
 
-const adminModules = [
-    { label: 'Convênios', href: '/convenios', icon: LuHandshake, description: 'Clientes conveniados, fechamentos e cobranças.' },
-    { label: 'Boletos', href: '/boletos', icon: LuBarcode, description: 'Títulos, vencimentos, pagamentos e importação por PDF.' },
-    { label: 'Caixa', href: '/caixa', icon: LuCalculator, description: 'Fechamentos de turno, entradas e saídas do caixa.' },
-    { label: 'Saídas', href: '/saidas', icon: LuTrendingDown, description: 'Despesas avulsas e saídas lançadas pelo caixa.' },
-    { label: 'Vales', href: '/vales', icon: LuDollarSign, description: 'Adiantamentos e vales de funcionários.' },
-    { label: 'Marmitas', href: '/marmitas', icon: LuUtensils, description: 'Pedidos, entregas e recebimentos de marmitas.' },
-    { label: 'Pagamentos', href: '/folha-pagamento', icon: LuUsers, description: 'Folha e pagamentos de funcionários.' },
-];
+const moduleIcons: Record<AppModuleKey, typeof LuHandshake> = {
+    convenios: LuHandshake,
+    boletos: LuBarcode,
+    caixa: LuCalculator,
+    saidas: LuTrendingDown,
+    vales: LuDollarSign,
+    marmitas: LuUtensils,
+    pagamentos: LuUsers,
+};
 
 
 /**
@@ -66,7 +74,15 @@ const adminModules = [
 
 export default function CadastrosPage() {
     const { user } = useAuth();
+    const {
+        moduleVisibility,
+        visibleModules,
+        hiddenModuleCount,
+        setModuleVisibility,
+        resetModuleVisibility,
+    } = useApp();
     const isAdmin = isAdminUser(user);
+    const visibleModuleCount = visibleModules.length;
 
     // Inibindo o Contexto Legado (mantendo apenas para o que sobrar se houver)
     // const { ... } = useApp();
@@ -158,7 +174,6 @@ export default function CadastrosPage() {
     const [fornecPage, setFornecPage] = useState(1);
     const {
         data: fornecedoresData,
-        isError: isErrorFornecedores, // Adicionado estado de erro explícito
     } = useFornecedoresList({
         page: fornecPage, // Usa paginação server-side
         pageSize: 20, // Paginação real
@@ -430,31 +445,78 @@ export default function CadastrosPage() {
             <div className="tab-content card">
                 {activeTab === 'configuracoes' && (
                     <div className="settings-panel">
-                        <div className="list-header">
-                            <div>
-                                <h3>Área do Administrador</h3>
-                                <p className="settings-subtitle">Acesse rapidamente as áreas principais para ajustar e acompanhar o sistema.</p>
-                            </div>
-                        </div>
-
                         {isAdmin ? (
-                            <div className="settings-grid">
-                                {adminModules.map((module) => {
-                                    const Icon = module.icon;
-                                    return (
-                                        <Link key={module.href} href={module.href} className="settings-module-card">
-                                            <span className="settings-module-icon"><Icon size={22} /></span>
-                                            <span className="settings-module-content">
-                                                <strong>{module.label}</strong>
-                                                <small>{module.description}</small>
-                                            </span>
-                                            <LuArrowRight size={18} />
-                                        </Link>
-                                    );
-                                })}
+                            <div className="settings-admin">
+                                <div className="settings-admin-header">
+                                    <div>
+                                        <h3>Painel do Administrador</h3>
+                                        <p className="settings-subtitle">Controle de módulos, cadastros e atalhos operacionais do sistema.</p>
+                                    </div>
+                                    <button type="button" className="settings-reset-btn" onClick={resetModuleVisibility}>
+                                        <LuRotateCcw size={16} />
+                                        Restaurar padrão
+                                    </button>
+                                </div>
+
+                                <div className="settings-admin-layout">
+                                    <aside className="settings-summary-panel">
+                                        <div className="settings-summary-icon">
+                                            <LuShieldCheck size={22} />
+                                        </div>
+                                        <div>
+                                            <h4>Acesso liberado</h4>
+                                            <p>Administrador</p>
+                                        </div>
+                                        <div className="settings-summary-list">
+                                            <span><strong>{visibleModuleCount}</strong> visíveis no menu</span>
+                                            <span><strong>{hiddenModuleCount}</strong> ocultos</span>
+                                        </div>
+                                    </aside>
+
+                                    <div className="settings-module-table" aria-label="Visibilidade dos módulos">
+                                        <div className="settings-module-table-head">
+                                            <span>Módulo</span>
+                                            <span>Menu lateral</span>
+                                            <span>Acesso</span>
+                                        </div>
+
+                                        {APP_MODULES.map((module) => {
+                                            const Icon = moduleIcons[module.key];
+                                            const isVisible = moduleVisibility[module.key] !== false;
+
+                                            return (
+                                                <div key={module.key} className={`settings-module-row ${isVisible ? '' : 'is-hidden'}`}>
+                                                    <div className="settings-module-main">
+                                                        <span className="settings-module-icon"><Icon size={20} /></span>
+                                                        <span className="settings-module-content">
+                                                            <strong>{module.label}</strong>
+                                                            <small>{module.description}</small>
+                                                        </span>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        className={`settings-visibility-toggle ${isVisible ? 'is-on' : 'is-off'}`}
+                                                        aria-pressed={isVisible}
+                                                        onClick={() => setModuleVisibility(module.key, !isVisible)}
+                                                    >
+                                                        {isVisible ? <LuEye size={16} /> : <LuEyeOff size={16} />}
+                                                        <span>{isVisible ? 'Visível' : 'Oculto'}</span>
+                                                    </button>
+
+                                                    <Link href={module.href} className="settings-open-link">
+                                                        Abrir
+                                                        <LuExternalLink size={15} />
+                                                    </Link>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </div>
                         ) : (
                             <div className="settings-no-access">
+                                <LuPanelLeft size={18} />
                                 Seu usuário não está marcado como administrador.
                             </div>
                         )}

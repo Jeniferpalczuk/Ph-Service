@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { Saida, ExpenseCategory, PaymentMethod } from '@/types';
 import {
     useSaidasList,
@@ -10,7 +9,6 @@ import {
     useDeleteSaida,
     useSaidasTotal
 } from '@/hooks/financeiro/useSaidas';
-import { useFornecedoresDropdown } from '@/hooks/cadastros/useDropdown';
 import { MoneyInput } from '@/components/MoneyInput';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
@@ -30,8 +28,6 @@ import '../shared-modern.css';
  * Implementado CRUD completo via Server Actions + React Query.
  */
 export default function SaidasPage() {
-    const { user } = useAuth();
-
     // Hooks de Saídas
     const createSaidaMutation = useCreateSaida();
     const updateSaidaMutation = useUpdateSaida();
@@ -55,15 +51,11 @@ export default function SaidasPage() {
         endDate: `${selectedMonth}-${lastDay}`,
     });
 
-    const saidas = saidasData?.data ?? [];
+    const saidas = useMemo(() => saidasData?.data ?? [], [saidasData?.data]);
     const totalPages = saidasData?.totalPages ?? 1;
 
     // Fetch Totais
     const { data: totalSaidasVal } = useSaidasTotal(`${selectedMonth}-01`, `${selectedMonth}-${lastDay}`);
-
-    // Fetch Fornecedores
-    const { data: fornecedoresDD } = useFornecedoresDropdown();
-    const fornecedores = fornecedoresDD ?? [];
 
     const [showModal, setShowModal] = useState(false);
     const [editingSaida, setEditingSaida] = useState<Saida | null>(null);
@@ -150,7 +142,7 @@ export default function SaidasPage() {
                 toast.success('Saída registrada!');
             }
             resetForm();
-        } catch (err) {
+        } catch {
             toast.error('Erro ao processar solicitação.');
         }
     };
@@ -160,7 +152,7 @@ export default function SaidasPage() {
             try {
                 await deleteSaidaMutation.mutateAsync(id);
                 toast.success('Excluída com sucesso');
-            } catch (err) {
+            } catch {
                 toast.error('Erro ao excluir');
             }
         }
@@ -282,12 +274,12 @@ export default function SaidasPage() {
                                 <div className="form-group"><label>Valor *</label><MoneyInput required value={formData.valor} onChange={val => setFormData({ ...formData, valor: val.toString() })} /></div>
                                 <div className="form-group"><label>Data *</label><input type="date" required value={formData.data} onChange={e => setFormData({ ...formData, data: e.target.value })} /></div>
                                 <div className="form-group"><label>Categoria *</label>
-                                    <select value={formData.categoria} onChange={e => setFormData({ ...formData, categoria: e.target.value as any })}>
+                                    <select value={formData.categoria} onChange={e => setFormData({ ...formData, categoria: e.target.value as ExpenseCategory })}>
                                         {Object.entries(CATEGORY_MAP).map(([l, v]) => <option key={v} value={v}>{l}</option>)}
                                     </select>
                                 </div>
                                 <div className="form-group"><label>Pagamento *</label>
-                                    <select value={formData.formaPagamento} onChange={e => setFormData({ ...formData, formaPagamento: e.target.value as any })}>
+                                    <select value={formData.formaPagamento} onChange={e => setFormData({ ...formData, formaPagamento: e.target.value as PaymentMethod })}>
                                         {pagamentos.map(p => <option key={p} value={p}>{p.replace('_', ' ')}</option>)}
                                     </select>
                                 </div>

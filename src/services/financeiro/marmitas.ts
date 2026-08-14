@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { Marmita } from '@/types';
+import { Marmita, PaymentMethod, PaymentStatus } from '@/types';
 import { PaginatedResult } from '../types';
 import { sanitizeSearch } from '@/lib/security';
 
@@ -11,21 +11,21 @@ export interface MarmitasQueryParams {
     endDate?: string;
 }
 
-export function mapMarmitaRow(row: any): Marmita {
+export function mapMarmitaRow(row: Record<string, unknown>): Marmita {
     return {
-        id: row.id,
-        cliente: row.cliente,
-        tamanho: row.tamanho,
-        quantidade: row.quantidade,
-        valorUnitario: row.valor_unitario,
-        valorTotal: row.valor_total,
-        dataEntrega: new Date(row.data_entrega + 'T12:00:00'),
-        formaPagamento: row.forma_pagamento,
-        statusRecebimento: row.status_recebimento,
-        dataPagamento: row.data_pagamento ? new Date(row.data_pagamento + 'T12:00:00') : undefined,
-        observacoes: row.observacoes,
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
+        id: row.id as string,
+        cliente: row.cliente as string,
+        tamanho: row.tamanho as string,
+        quantidade: row.quantidade as number | undefined,
+        valorUnitario: row.valor_unitario as number | undefined,
+        valorTotal: Number(row.valor_total || 0),
+        dataEntrega: new Date(`${row.data_entrega as string}T12:00:00`),
+        formaPagamento: row.forma_pagamento as PaymentMethod,
+        statusRecebimento: row.status_recebimento as PaymentStatus,
+        dataPagamento: row.data_pagamento ? new Date(`${row.data_pagamento as string}T12:00:00`) : undefined,
+        observacoes: row.observacoes as string | undefined,
+        createdAt: new Date(row.created_at as string),
+        updatedAt: new Date(row.updated_at as string),
     };
 }
 

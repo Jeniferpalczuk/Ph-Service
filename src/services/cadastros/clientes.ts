@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 import { Cliente } from '@/types';
-import { PaginatedResult, BaseQueryParams, formatDateForDB } from '../types';
+import { PaginatedResult, BaseQueryParams } from '../types';
 import { sanitizeSearch } from '@/lib/security';
 
 /**
