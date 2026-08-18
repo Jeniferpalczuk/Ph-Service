@@ -1,5 +1,3 @@
-import { PDFParse } from 'pdf-parse';
-
 export type BoletoPdfPreview = {
     tempId: string;
     cliente: string;
@@ -222,7 +220,15 @@ function splitPotentialBoletos(text: string) {
 }
 
 export async function parseBoletosPdf(fileBuffer: Buffer): Promise<BoletoPdfPreview[]> {
-    const parser = new PDFParse({ data: new Uint8Array(fileBuffer) });
+    // The worker module installs the DOM APIs required by PDF.js in Node.js.
+    // Keep both imports lazy so unrelated Server Actions (such as closing the
+    // cash register) never evaluate pdf-parse during their module load.
+    const { CanvasFactory } = await import('pdf-parse/worker');
+    const { PDFParse } = await import('pdf-parse');
+    const parser = new PDFParse({
+        data: new Uint8Array(fileBuffer),
+        CanvasFactory,
+    });
 
     try {
         const result = await parser.getText();
