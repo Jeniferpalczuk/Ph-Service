@@ -211,4 +211,3 @@ Desenvolvido com ❤️ usando Next.js e TypeScript.
 
 **Versão**: 1.8  
 **Última atualização**: Dezembro 2025
-
