@@ -201,8 +201,9 @@ export default function CaixaPage() {
             try {
                 await deleteCaixaMutation.mutateAsync(id);
                 toast.success('Fechamento excluído');
-            } catch {
-                toast.error('Erro ao excluir');
+            } catch (err) {
+                console.error('Erro ao excluir fechamento:', err);
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir fechamento.');
             }
         }
     };

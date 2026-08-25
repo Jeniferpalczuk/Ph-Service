@@ -7,9 +7,6 @@ import {
     getCaixaSummary,
     CaixaQueryParams,
 } from '@/services/financeiro/caixa';
-import {
-    deleteCaixaAction,
-} from '@/app/actions/financeiro';
 import { CreateCaixaInput } from '@/lib/validations/caixa';
 
 export const caixaKeys = {
@@ -82,8 +79,23 @@ export function useDeleteCaixa() {
 
     return useMutation({
         mutationFn: async (id: string) => {
-            const result = await deleteCaixaAction(id);
-            if (!result.success) throw new Error(result.error);
+            const response = await fetch('/api/caixa', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                cache: 'no-store',
+                body: JSON.stringify({ id }),
+            });
+
+            const result = await response.json() as {
+                success: boolean;
+                error?: string;
+            };
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Erro ao excluir fechamento.');
+            }
+
             return id;
         },
         onSuccess: () => {
