@@ -33,9 +33,29 @@ export async function updateSession(request: NextRequest) {
     // supabase.auth.getUser(). A simple mistake could make it very hard to debug
     // issues with users being randomly logged out.
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    let user = null;
+    let authError: { status?: number; message?: string } | null = null;
+
+    try {
+        const result = await supabase.auth.getUser();
+        user = result.data.user;
+        authError = result.error;
+    } catch (error) {
+        // A falha do serviço de autenticação não deve virar um erro RSC genérico.
+        // O AuthGuard/Server Action ainda valida a sessão antes de expor dados.
+        console.warn('[supabase-middleware] Falha temporária ao validar a sessão:', error);
+        return supabaseResponse;
+    }
+
+    const authStatus = authError?.status ?? 0;
+    const isTransientAuthError = authStatus === 401 || authStatus === 429 || authStatus >= 500;
+
+    if (authError && isTransientAuthError) {
+        // Durante uma indisponibilidade/401 transitório, não redirecione uma
+        // Server Action para /login: isso faz o Next exibir apenas o digest.
+        console.warn('[supabase-middleware] Serviço de autenticação indisponível:', authError.message);
+        return supabaseResponse;
+    }
 
     // Redirect unauthenticated users to login page (except for login page itself)
     if (

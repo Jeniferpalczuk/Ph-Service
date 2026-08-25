@@ -26,7 +26,15 @@ export async function getAuthenticatedUser() {
     const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (error || !user) {
+    if (error) {
+        console.error('[getAuthenticatedUser] Falha ao validar a sessão:', error.message, error.status);
+        if (error.status === 401 || (error.status ?? 0) >= 500) {
+            throw new Error('Não foi possível validar sua sessão agora. Atualize a página e tente novamente.');
+        }
+        throw new Error('Não autorizado');
+    }
+
+    if (!user) {
         throw new Error('Não autorizado');
     }
 
