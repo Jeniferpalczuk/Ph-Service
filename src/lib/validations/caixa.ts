@@ -33,5 +33,7 @@ export const createCaixaSchema = caixaBaseSchema.superRefine((data, ctx) => {
 
 export const updateCaixaSchema = caixaBaseSchema.partial();
 
-export type CreateCaixaInput = z.infer<typeof createCaixaSchema>;
-export type UpdateCaixaInput = z.infer<typeof updateCaixaSchema>;
+// As Server Actions receive the raw payload, keep the input type here instead
+// of the transformed output type (the date may arrive as YYYY-MM-DD string).
+export type CreateCaixaInput = z.input<typeof createCaixaSchema>;
+export type UpdateCaixaInput = z.input<typeof updateCaixaSchema>;

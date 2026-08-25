@@ -165,11 +165,10 @@ export default function CaixaPage() {
         setFormErrors({});
 
         try {
-            const [y, m, d] = formData.data.split('-').map(Number);
-            const dataAjustada = new Date(y, m - 1, d, 12, 0, 0);
-
             const payload = {
-                data: dataAjustada,
+                // Envie a data como string para manter o payload da Server
+                // Action totalmente simples e serializável.
+                data: formData.data,
                 funcionario: formData.funcionario,
                 turno: formData.turno,
                 entradas: {
