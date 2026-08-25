@@ -1,18 +1,23 @@
 import { z } from 'zod';
 
+const valorCaixaSchema = z.number()
+    .refine(Number.isFinite, 'Informe um valor numérico válido')
+    .min(0, 'O valor não pode ser negativo')
+    .default(0);
+
 const caixaBaseSchema = z.object({
     data: z.date().or(z.string().transform(v => new Date(v))),
     funcionario: z.string().min(1, "O funcionário é obrigatório"),
     turno: z.enum(['manha', 'tarde']),
     entradas: z.object({
-        dinheiro: z.number().default(0),
-        pix: z.number().default(0),
-        credito: z.number().default(0),
-        debito: z.number().default(0),
-        alimentacao: z.number().default(0),
+        dinheiro: valorCaixaSchema,
+        pix: valorCaixaSchema,
+        credito: valorCaixaSchema,
+        debito: valorCaixaSchema,
+        alimentacao: valorCaixaSchema,
     }),
-    saidas: z.number().default(0),
-    saidaDescricao: z.string().max(200, 'Nome da saida deve ter no maximo 200 caracteres').optional().nullable(),
+    saidas: valorCaixaSchema,
+    saidaDescricao: z.string().max(200, 'O nome da saída deve ter no máximo 200 caracteres').optional().nullable(),
     observacoes: z.string().optional().nullable(),
 });
 
@@ -21,7 +26,7 @@ export const createCaixaSchema = caixaBaseSchema.superRefine((data, ctx) => {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['saidaDescricao'],
-            message: 'Informe o nome da saida',
+            message: 'Informe o nome da saída',
         });
     }
 });

@@ -30,6 +30,14 @@ function getTodayInputDate() {
     const day = String(today.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
+
+type CaixaFormErrors = {
+    data?: string;
+    funcionario?: string;
+    saidas?: string;
+    saidaDescricao?: string;
+};
+
 /**
  * CaixaPage - Fase 4 (Performance & UX)
  * 
@@ -67,11 +75,16 @@ export default function CaixaPage() {
     const { data: summary } = useCaixaSummary(`${selectedMonth}-01`, `${selectedMonth}-${lastDay}`);
 
     // Fetch Funcionários
-    const { data: funcionariosDD } = useFuncionariosDropdown();
+    const {
+        data: funcionariosDD,
+        isLoading: isLoadingFuncionarios,
+        isError: isFuncionariosError,
+    } = useFuncionariosDropdown();
     const employees = funcionariosDD ?? [];
 
     const [showModal, setShowModal] = useState(false);
     const [editingItem, setEditingItem] = useState<FechamentoCaixa | null>(null);
+    const [formErrors, setFormErrors] = useState<CaixaFormErrors>({});
 
     const [formData, setFormData] = useState({
         data: getTodayInputDate(),
@@ -102,11 +115,54 @@ export default function CaixaPage() {
             observacoes: ''
         });
         setEditingItem(null);
+        setFormErrors({});
         setShowModal(false);
+    };
+
+    const clearFormError = (field: keyof CaixaFormErrors) => {
+        setFormErrors(current => {
+            if (!current[field]) return current;
+            const next = { ...current };
+            delete next[field];
+            return next;
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const saidas = Number(formData.saidas) || 0;
+        const nextErrors: CaixaFormErrors = {};
+
+        if (!formData.data) {
+            nextErrors.data = 'Informe a data do fechamento.';
+        }
+
+        if (!formData.funcionario) {
+            nextErrors.funcionario = isFuncionariosError
+                ? 'Não foi possível carregar os funcionários. Atualize a página e tente novamente.'
+                : employees.length === 0
+                    ? 'Cadastre pelo menos um funcionário ativo antes de fechar o caixa.'
+                    : 'Selecione o funcionário responsável pelo fechamento.';
+        }
+
+        if (saidas < 0 || !Number.isFinite(saidas)) {
+            nextErrors.saidas = 'Informe uma saída válida.';
+        }
+
+        if (saidas > 0 && !formData.saidaDescricao.trim()) {
+            nextErrors.saidaDescricao = 'Informe o nome da saída.';
+        } else if (formData.saidaDescricao.length > 200) {
+            nextErrors.saidaDescricao = 'O nome da saída deve ter no máximo 200 caracteres.';
+        }
+
+        if (Object.keys(nextErrors).length > 0) {
+            setFormErrors(nextErrors);
+            toast.error('Revise os campos destacados antes de confirmar.');
+            return;
+        }
+
+        setFormErrors({});
 
         try {
             const [y, m, d] = formData.data.split('-').map(Number);
@@ -123,7 +179,7 @@ export default function CaixaPage() {
                     debito: Number(formData.debito) || 0,
                     alimentacao: Number(formData.alimentacao) || 0,
                 },
-                saidas: Number(formData.saidas) || 0,
+                saidas,
                 saidaDescricao: formData.saidaDescricao || null,
                 observacoes: formData.observacoes || null
             };
@@ -281,15 +337,27 @@ export default function CaixaPage() {
                             <button className="btn-close" onClick={resetForm}><LuX size={18} /></button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="modern-form">
+                        <form onSubmit={handleSubmit} className="modern-form" noValidate>
                             <div className="grid-2">
                                 <div className="form-group">
-                                    <label>Data *</label>
-                                    <input type="date" required value={formData.data} onChange={e => setFormData({ ...formData, data: e.target.value })} />
+                                    <label htmlFor="caixa-data">Data *</label>
+                                    <input
+                                        id="caixa-data"
+                                        type="date"
+                                        required
+                                        aria-invalid={Boolean(formErrors.data)}
+                                        aria-describedby={formErrors.data ? 'caixa-data-error' : undefined}
+                                        value={formData.data}
+                                        onChange={e => {
+                                            setFormData({ ...formData, data: e.target.value });
+                                            clearFormError('data');
+                                        }}
+                                    />
+                                    {formErrors.data && <span id="caixa-data-error" className="field-error" role="alert">{formErrors.data}</span>}
                                 </div>
                                 <div className="form-group">
-                                    <label>Turno *</label>
-                                    <select value={formData.turno} onChange={e => setFormData({ ...formData, turno: e.target.value as 'manha' | 'tarde' })}>
+                                    <label htmlFor="caixa-turno">Turno *</label>
+                                    <select id="caixa-turno" value={formData.turno} onChange={e => setFormData({ ...formData, turno: e.target.value as 'manha' | 'tarde' })}>
                                         <option value="manha">Manhã</option>
                                         <option value="tarde">Tarde</option>
                                     </select>
@@ -297,11 +365,41 @@ export default function CaixaPage() {
                             </div>
 
                             <div className="form-group">
-                                <label>Funcionário *</label>
-                                <select required value={formData.funcionario} onChange={e => setFormData({ ...formData, funcionario: e.target.value })}>
-                                    <option value="">Selecione...</option>
+                                <label htmlFor="caixa-funcionario">Funcionário *</label>
+                                <select
+                                    id="caixa-funcionario"
+                                    required
+                                    disabled={isLoadingFuncionarios || isFuncionariosError || employees.length === 0}
+                                    aria-invalid={Boolean(formErrors.funcionario)}
+                                    aria-describedby={formErrors.funcionario ? 'caixa-funcionario-error' : 'caixa-funcionario-hint'}
+                                    value={formData.funcionario}
+                                    onChange={e => {
+                                        setFormData({ ...formData, funcionario: e.target.value });
+                                        clearFormError('funcionario');
+                                    }}
+                                >
+                                    <option value="">
+                                        {isLoadingFuncionarios
+                                            ? 'Carregando funcionários...'
+                                            : isFuncionariosError
+                                                ? 'Não foi possível carregar'
+                                                : employees.length === 0
+                                                    ? 'Cadastre um funcionário ativo'
+                                                    : 'Selecione...'}
+                                    </option>
                                     {employees.map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
                                 </select>
+                                {formErrors.funcionario ? (
+                                    <span id="caixa-funcionario-error" className="field-error" role="alert">{formErrors.funcionario}</span>
+                                ) : (
+                                    <span id="caixa-funcionario-hint" className="field-hint">
+                                        {isFuncionariosError
+                                            ? 'Atualize a página para tentar carregar a lista novamente.'
+                                            : employees.length === 0 && !isLoadingFuncionarios
+                                                ? 'É necessário ter um funcionário ativo cadastrado.'
+                                                : 'Selecione quem está responsável pelo turno.'}
+                                    </span>
+                                )}
                             </div>
 
                             <div style={{ marginBottom: '1rem', fontWeight: 700, fontSize: '0.8rem', color: '#64748b' }}>ENTRADAS</div>
@@ -311,18 +409,41 @@ export default function CaixaPage() {
                                 <div className="form-group"><label>Debito</label><MoneyInput value={formData.debito} onChange={v => setFormData({ ...formData, debito: v.toString() })} /></div>
                                 <div className="form-group"><label>Credito</label><MoneyInput value={formData.credito} onChange={v => setFormData({ ...formData, credito: v.toString() })} /></div>
                                 <div className="form-group"><label>Alimentação</label><MoneyInput value={formData.alimentacao} onChange={v => setFormData({ ...formData, alimentacao: v.toString() })} /></div>
-                                <div className="form-group"><label>Saídas</label><MoneyInput value={formData.saidas} onChange={v => setFormData({ ...formData, saidas: v.toString() })} /></div>
+                                <div className="form-group">
+                                    <label htmlFor="caixa-saidas">Saídas</label>
+                                    <MoneyInput
+                                        id="caixa-saidas"
+                                        value={formData.saidas}
+                                        aria-invalid={Boolean(formErrors.saidas)}
+                                        aria-describedby={formErrors.saidas ? 'caixa-saidas-error' : undefined}
+                                        onChange={v => {
+                                            setFormData({ ...formData, saidas: v.toString() });
+                                            clearFormError('saidas');
+                                        }}
+                                    />
+                                    {formErrors.saidas && <span id="caixa-saidas-error" className="field-error" role="alert">{formErrors.saidas}</span>}
+                                </div>
                             </div>
 
                             {hasSaidaValue && (
                                 <div className="form-group saida-descricao-field">
-                                    <label>Nome da saida *</label>
+                                    <label htmlFor="caixa-saida-descricao">Nome da saída *</label>
                                     <input
+                                        id="caixa-saida-descricao"
                                         required
+                                        maxLength={200}
+                                        aria-invalid={Boolean(formErrors.saidaDescricao)}
+                                        aria-describedby="caixa-saida-descricao-hint"
                                         value={formData.saidaDescricao}
-                                        onChange={e => setFormData({ ...formData, saidaDescricao: e.target.value })}
+                                        onChange={e => {
+                                            setFormData({ ...formData, saidaDescricao: e.target.value });
+                                            clearFormError('saidaDescricao');
+                                        }}
                                         placeholder="Ex: compra de gelo, motoboy, material de limpeza"
                                     />
+                                    <span id="caixa-saida-descricao-hint" className={formErrors.saidaDescricao ? 'field-error' : 'field-hint'} role={formErrors.saidaDescricao ? 'alert' : undefined}>
+                                        {formErrors.saidaDescricao || 'Descreva o motivo da saída (até 200 caracteres).'}
+                                    </span>
                                 </div>
                             )}
 
@@ -341,6 +462,13 @@ export default function CaixaPage() {
                 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
                 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
                 .saida-descricao-field { margin-top: 1rem; }
+                .field-hint,
+                .field-error { display: block; margin-top: 0.35rem; font-size: 0.75rem; line-height: 1.35; }
+                .field-hint { color: #64748b; }
+                .field-error { color: #b91c1c; font-weight: 600; }
+                input[aria-invalid="true"],
+                select[aria-invalid="true"] { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12); }
+                select:disabled { cursor: not-allowed; opacity: 0.7; }
                 .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; border-top: 1px solid #f1f5f9; }
                 .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
                 .status-badge.manha { background: #eff6ff; color: #1e40af; }
