@@ -8,7 +8,6 @@ import {
     CaixaQueryParams,
 } from '@/services/financeiro/caixa';
 import {
-    createCaixaAction,
     deleteCaixaAction,
 } from '@/app/actions/financeiro';
 import { CreateCaixaInput } from '@/lib/validations/caixa';
@@ -50,8 +49,24 @@ export function useCreateCaixa() {
 
     return useMutation({
         mutationFn: async (input: CreateCaixaInput) => {
-            const result = await createCaixaAction(input);
-            if (!result.success) throw new Error(result.error);
+            const response = await fetch('/api/caixa', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                cache: 'no-store',
+                body: JSON.stringify(input),
+            });
+
+            const result = await response.json() as {
+                success: boolean;
+                data?: { id: string };
+                error?: string;
+            };
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Erro ao criar fechamento.');
+            }
+
             return result.data;
         },
         onSuccess: () => {
