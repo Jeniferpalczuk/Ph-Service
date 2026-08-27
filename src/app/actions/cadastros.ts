@@ -94,7 +94,7 @@ export async function createFornecedorAction(input: CreateFornecedorInput): Prom
             user_id: user.id,
             nome: parsed.data.nome,
             categoria: parsed.data.servico, // Map to categoria in DB
-            contato: parsed.data.telefone,   // Map to contato in DB
+            contato: parsed.data.telefone ?? '',   // Map to contato in DB (DB requires NOT NULL)
             ativo: parsed.data.ativo,
         }).select('id').single();
 
@@ -128,7 +128,7 @@ export async function updateFornecedorAction(id: string, input: UpdateFornecedor
         };
         if (parsed.data.nome !== undefined) updateData.nome = parsed.data.nome;
         if (parsed.data.servico !== undefined) updateData.categoria = parsed.data.servico; // Map to categoria in DB
-        if (parsed.data.telefone !== undefined) updateData.contato = parsed.data.telefone;   // Map to contato in DB
+        if (parsed.data.telefone !== undefined) updateData.contato = parsed.data.telefone ?? '';   // Map to contato in DB (DB requires NOT NULL)
         if (parsed.data.ativo !== undefined) updateData.ativo = parsed.data.ativo;
 
         const supabase = await createClient();
