@@ -11,7 +11,7 @@ import {
 import {
     createCaixaSchema, CreateCaixaInput
 } from '@/lib/validations/caixa';
-import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
+import { ActionResult, getAuthenticatedUser, formatDateForDB, formatDatabaseError, validateId } from './shared';
 
 // ===========================================
 // CONVÊNIOS
@@ -43,7 +43,10 @@ export async function createConvenioAction(input: CreateConvenioInput): Promise<
             observacoes: parsed.data.observacoes,
         }).select('id').single();
 
-        if (error) return { success: false, error: 'Erro ao criar convênio' };
+        if (error) {
+            console.error('[createConvenioAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar convênio') };
+        }
         revalidatePath('/convenios');
         return { success: true, data: { id: data.id } };
     } catch (err) {
@@ -81,7 +84,10 @@ export async function updateConvenioAction(id: string, input: UpdateConvenioInpu
             .update(updateConvenioData)
             .eq('id', id).eq('user_id', user.id).select('id').single();
 
-        if (error) return { success: false, error: 'Erro ao atualizar convênio' };
+        if (error) {
+            console.error('[updateConvenioAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar convênio') };
+        }
         revalidatePath('/convenios');
         return { success: true, data: { id: data.id } };
     } catch (err) {
@@ -95,8 +101,17 @@ export async function deleteConvenioAction(id: string): Promise<ActionResult<voi
         const idError = validateId(id);
         if (idError) return idError;
         const supabase = await createClient();
-        const { error } = await supabase.from('convenios').delete().eq('id', id).eq('user_id', user.id);
-        if (error) return { success: false, error: 'Erro ao excluir convênio' };
+        const { data, error } = await supabase.from('convenios')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
+        if (error) {
+            console.error('[deleteConvenioAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir convênio') };
+        }
+        if (!data) return { success: false, error: 'Convênio não encontrado ou não pertence ao usuário atual.' };
         revalidatePath('/convenios');
         return { success: true, data: undefined };
     } catch (err) {
@@ -131,7 +146,10 @@ export async function createSaidaAction(input: CreateSaidaInput): Promise<Action
             observacoes: parsed.data.observacoes,
         }).select('id').single();
 
-        if (error) return { success: false, error: 'Erro ao criar saída' };
+        if (error) {
+            console.error('[createSaidaAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar saída') };
+        }
         revalidatePath('/saidas');
         revalidatePath('/dashboard');
         return { success: true, data: { id: data.id } };
@@ -164,7 +182,10 @@ export async function updateSaidaAction(id: string, input: UpdateSaidaInput): Pr
             observacoes: parsed.data.observacoes,
         }).eq('id', id).eq('user_id', user.id).select('id').single();
 
-        if (error) return { success: false, error: 'Erro ao atualizar saída' };
+        if (error) {
+            console.error('[updateSaidaAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar saída') };
+        }
         revalidatePath('/saidas');
         revalidatePath('/dashboard');
         return { success: true, data: { id: data.id } };
@@ -179,8 +200,17 @@ export async function deleteSaidaAction(id: string): Promise<ActionResult<void>>
         const idError = validateId(id);
         if (idError) return idError;
         const supabase = await createClient();
-        const { error } = await supabase.from('saidas').delete().eq('id', id).eq('user_id', user.id);
-        if (error) return { success: false, error: 'Erro ao excluir saída' };
+        const { data, error } = await supabase.from('saidas')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
+        if (error) {
+            console.error('[deleteSaidaAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir saída') };
+        }
+        if (!data) return { success: false, error: 'Saída não encontrada ou não pertence ao usuário atual.' };
         revalidatePath('/saidas');
         revalidatePath('/dashboard');
         return { success: true, data: undefined };
@@ -227,7 +257,7 @@ export async function createCaixaAction(input: CreateCaixaInput): Promise<Action
 
         if (error) {
             console.error('[createCaixaAction] DB Error Full:', JSON.stringify(error, null, 2));
-            return { success: false, error: `Erro ao criar fechamento: ${error.message} (${error.code})` };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar fechamento') };
         }
 
         if (parsed.data.saidas > 0 && saidaDescricao) {
@@ -245,7 +275,10 @@ export async function createCaixaAction(input: CreateCaixaInput): Promise<Action
             if (saidaError) {
                 console.error('[createCaixaAction] Saida DB Error Full:', JSON.stringify(saidaError, null, 2));
                 await supabase.from('fechamentos_caixa').delete().eq('id', data.id).eq('user_id', user.id);
-                return { success: false, error: `Erro ao criar saida vinculada ao fechamento: ${saidaError.message}` };
+                return {
+                    success: false,
+                    error: formatDatabaseError(saidaError, 'Erro ao criar saída vinculada ao fechamento')
+                };
             }
         }
 
@@ -264,8 +297,17 @@ export async function deleteCaixaAction(id: string): Promise<ActionResult<void>>
         const idError = validateId(id);
         if (idError) return idError;
         const supabase = await createClient();
-        const { error } = await supabase.from('fechamentos_caixa').delete().eq('id', id).eq('user_id', user.id);
-        if (error) return { success: false, error: 'Erro ao excluir fechamento' };
+        const { data, error } = await supabase.from('fechamentos_caixa')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
+        if (error) {
+            console.error('[deleteCaixaAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir fechamento') };
+        }
+        if (!data) return { success: false, error: 'Fechamento não encontrado ou não pertence ao usuário atual.' };
         revalidatePath('/caixa');
         revalidatePath('/dashboard');
         return { success: true, data: undefined };

@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createValeSchema, updateValeSchema, CreateValeInput, UpdateValeInput } from '@/lib/validations/vales';
-import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
+import { ActionResult, getAuthenticatedUser, formatDateForDB, formatDatabaseError, validateId } from './shared';
 
 /**
  * Server Actions - Vales
@@ -44,7 +44,7 @@ export async function createValeAction(
 
         if (error) {
             console.error('[createValeAction] DB Error:', error);
-            return { success: false, error: 'Erro ao criar vale' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar vale') };
         }
 
         revalidatePath('/vales');
@@ -90,19 +90,21 @@ export async function updateValeAction(
         if (parsed.data.observacoes !== undefined) updateData.observacoes = parsed.data.observacoes;
 
         const supabase = await createClient();
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('vales')
             .update(updateData)
             .eq('id', id)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('[updateValeAction] DB Error:', error);
-            return { success: false, error: 'Erro ao atualizar vale' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar vale') };
         }
 
         revalidatePath('/vales');
-        return { success: true, data: { id } };
+        return { success: true, data: { id: data.id } };
 
     } catch (err) {
         console.error('[updateValeAction] Error:', err);
@@ -120,16 +122,20 @@ export async function deleteValeAction(
         if (idError) return idError;
 
         const supabase = await createClient();
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('vales')
             .delete()
             .eq('id', id)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('[deleteValeAction] DB Error:', error);
-            return { success: false, error: 'Erro ao deletar vale' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir vale') };
         }
+
+        if (!data) return { success: false, error: 'Vale não encontrado ou não pertence ao usuário atual.' };
 
         revalidatePath('/vales');
         return { success: true, data: null };
@@ -167,7 +173,7 @@ export async function quitarValeAction(
             return { success: false, error: 'Vale não encontrado' };
         }
 
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('vales')
             .update({
                 status: 'quitado',
@@ -179,16 +185,18 @@ export async function quitarValeAction(
                 updated_at: new Date().toISOString(),
             })
             .eq('id', id)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('[quitarValeAction] DB Error:', error);
-            return { success: false, error: 'Erro ao quitar vale' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao quitar vale') };
         }
 
         revalidatePath('/vales');
         revalidatePath('/folha-pagamento');
-        return { success: true, data: { id } };
+        return { success: true, data: { id: data.id } };
 
     } catch (err) {
         console.error('[quitarValeAction] Error:', err);
@@ -222,7 +230,7 @@ export async function quitarValesFuncionarioAction(
 
         if (fetchError) {
             console.error('[quitarValesFuncionarioAction] Fetch Error:', fetchError);
-            return { success: false, error: 'Erro ao buscar vales' };
+            return { success: false, error: formatDatabaseError(fetchError, 'Erro ao buscar vales') };
         }
 
         if (!valesPendentes || valesPendentes.length === 0) {
@@ -231,7 +239,7 @@ export async function quitarValesFuncionarioAction(
 
         // Quitar todos
         const ids = valesPendentes.map(v => v.id);
-        const { error: updateError } = await supabase
+        const { data: updatedVales, error: updateError } = await supabase
             .from('vales')
             .update({
                 status: 'quitado',
@@ -240,11 +248,16 @@ export async function quitarValesFuncionarioAction(
                 updated_at: new Date().toISOString(),
             })
             .in('id', ids)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .select('id');
 
         if (updateError) {
             console.error('[quitarValesFuncionarioAction] Update Error:', updateError);
-            return { success: false, error: 'Erro ao quitar vales' };
+            return { success: false, error: formatDatabaseError(updateError, 'Erro ao quitar vales') };
+        }
+
+        if ((updatedVales?.length ?? 0) !== ids.length) {
+            return { success: false, error: 'Nem todos os vales puderam ser atualizados para o usuário atual.' };
         }
 
         revalidatePath('/vales');

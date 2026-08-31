@@ -18,6 +18,48 @@ export type ActionResult<T> =
     | { success: true; data: T }
     | { success: false; error: string; errors?: z.ZodFormattedError<unknown> };
 
+type DatabaseError = {
+    code?: string;
+    message?: string;
+    details?: string | null;
+    hint?: string | null;
+};
+
+/**
+ * Converte erros do PostgREST em mensagens úteis para quem está usando o
+ * sistema. O código continua registrando o erro completo no servidor, mas o
+ * usuário recebe uma orientação objetiva quando o bloqueio é causado pelo
+ * RLS ou por um registro inexistente.
+ */
+export function formatDatabaseError(error: DatabaseError | null | undefined, fallback: string) {
+    if (!error) return fallback;
+
+    if (
+        error.code === '42501' ||
+        /row-level security|permission denied|not authorized/i.test(error.message ?? '')
+    ) {
+        return 'Permissão negada pelo banco. Verifique as políticas RLS do Supabase para esta tabela.';
+    }
+
+    if (error.code === 'PGRST116') {
+        return 'Registro não encontrado ou não pertence ao usuário atual.';
+    }
+
+    if (error.code === '23505') {
+        return 'Já existe um registro com esses dados.';
+    }
+
+    if (error.code === '23503') {
+        return 'Não é possível concluir porque este registro possui dados relacionados.';
+    }
+
+    if (error.code === '23502') {
+        return 'Faltam dados obrigatórios para concluir a operação.';
+    }
+
+    return error.message ? `${fallback}: ${error.message}` : fallback;
+}
+
 /**
  * Obtém o usuário autenticado do servidor.
  * Lança erro se não autenticado (tratado pelo catch da action).

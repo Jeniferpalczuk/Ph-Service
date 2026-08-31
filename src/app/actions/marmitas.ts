@@ -6,7 +6,7 @@ import {
     createMarmitaSchema, updateMarmitaSchema, CreateMarmitaInput, UpdateMarmitaInput,
     createMarmitasLoteSchema, CreateMarmitasLoteInput
 } from '@/lib/validations/marmitas';
-import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
+import { ActionResult, getAuthenticatedUser, formatDateForDB, formatDatabaseError, validateId } from './shared';
 
 export async function createMarmitaAction(input: CreateMarmitaInput): Promise<ActionResult<{ id: string }>> {
     try {
@@ -33,7 +33,10 @@ export async function createMarmitaAction(input: CreateMarmitaInput): Promise<Ac
             observacoes: parsed.data.observacoes,
         }).select('id').single();
 
-        if (error) return { success: false, error: 'Erro ao criar marmita' };
+        if (error) {
+            console.error('[createMarmitaAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar marmita') };
+        }
         revalidatePath('/marmitas');
         return { success: true, data: { id: data.id } };
     } catch (err) {
@@ -69,7 +72,7 @@ export async function createMarmitasLoteAction(input: CreateMarmitasLoteInput): 
 
         if (error) {
             console.error('[createMarmitasLoteAction] DB Error:', error);
-            return { success: false, error: `Erro ao criar marmitas em lote: ${error.message}` };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar marmitas em lote') };
         }
         revalidatePath('/marmitas');
         return { success: true, data: { count: inserts.length } };
@@ -105,7 +108,10 @@ export async function updateMarmitaAction(id: string, input: UpdateMarmitaInput)
             updated_at: new Date().toISOString(),
         }).eq('id', id).eq('user_id', user.id).select('id').single();
 
-        if (error) return { success: false, error: 'Erro ao atualizar marmita' };
+        if (error) {
+            console.error('[updateMarmitaAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar marmita') };
+        }
         revalidatePath('/marmitas');
         return { success: true, data: { id: data.id } };
     } catch (err) {
@@ -119,8 +125,17 @@ export async function deleteMarmitaAction(id: string): Promise<ActionResult<void
         const idError = validateId(id);
         if (idError) return idError;
         const supabase = await createClient();
-        const { error } = await supabase.from('marmitas').delete().eq('id', id).eq('user_id', user.id);
-        if (error) return { success: false, error: 'Erro ao excluir marmita' };
+        const { data, error } = await supabase.from('marmitas')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
+        if (error) {
+            console.error('[deleteMarmitaAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir marmita') };
+        }
+        if (!data) return { success: false, error: 'Marmita não encontrada ou não pertence ao usuário atual.' };
         revalidatePath('/marmitas');
         return { success: true, data: undefined };
     } catch (err) {

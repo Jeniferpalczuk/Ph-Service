@@ -6,7 +6,7 @@ import {
     createFolhaPagamentoSchema, CreateFolhaPagamentoInput,
     updateFolhaPagamentoSchema, UpdateFolhaPagamentoInput
 } from '@/lib/validations/folha-pagamento';
-import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
+import { ActionResult, getAuthenticatedUser, formatDateForDB, formatDatabaseError, validateId } from './shared';
 
 const FOLHA_SAIDA_MARKER_PREFIX = '[FOLHA_PAGAMENTO:';
 
@@ -63,7 +63,7 @@ async function syncFolhaPagamentoSaida(
             .eq('user_id', userId)
             .ilike('observacoes', `%${marker}%`);
 
-        if (error) throw new Error(`Erro ao remover despesa da folha: ${error.message}`);
+        if (error) throw new Error(formatDatabaseError(error, 'Erro ao remover despesa da folha'));
         return;
     }
 
@@ -75,16 +75,18 @@ async function syncFolhaPagamentoSaida(
         .ilike('observacoes', `%${marker}%`)
         .maybeSingle();
 
-    if (findError) throw new Error(`Erro ao buscar despesa da folha: ${findError.message}`);
+    if (findError) throw new Error(formatDatabaseError(findError, 'Erro ao buscar despesa da folha'));
 
     if (existing?.id) {
         const { error } = await supabase
             .from('saidas')
             .update({ ...payload, updated_at: new Date().toISOString() })
             .eq('id', existing.id)
-            .eq('user_id', userId);
+            .eq('user_id', userId)
+            .select('id')
+            .single();
 
-        if (error) throw new Error(`Erro ao atualizar despesa da folha: ${error.message}`);
+        if (error) throw new Error(formatDatabaseError(error, 'Erro ao atualizar despesa da folha'));
         return;
     }
 
@@ -93,7 +95,7 @@ async function syncFolhaPagamentoSaida(
         ...payload,
     });
 
-    if (error) throw new Error(`Erro ao criar despesa da folha: ${error.message}`);
+    if (error) throw new Error(formatDatabaseError(error, 'Erro ao criar despesa da folha'));
 }
 
 // ===========================================
@@ -126,7 +128,7 @@ export async function createFolhaPagamentoAction(input: CreateFolhaPagamentoInpu
 
         if (error) {
             console.error('[createFolhaPagamentoAction] DB Error:', JSON.stringify(error));
-            return { success: false, error: 'Erro ao registrar pagamento' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao registrar pagamento') };
         }
 
         await syncFolhaPagamentoSaida(supabase, user.id, data.id, {
@@ -178,7 +180,7 @@ export async function updateFolhaPagamentoAction(id: string, input: UpdateFolhaP
 
         if (error) {
             console.error('[updateFolhaPagamentoAction] DB Error:', JSON.stringify(error));
-            return { success: false, error: 'Erro ao atualizar pagamento' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar pagamento') };
         }
 
         const { data: folhaAtualizada, error: folhaError } = await supabase
@@ -190,7 +192,10 @@ export async function updateFolhaPagamentoAction(id: string, input: UpdateFolhaP
 
         if (folhaError) {
             console.error('[updateFolhaPagamentoAction] Sync Fetch Error:', JSON.stringify(folhaError));
-            return { success: false, error: 'Pagamento atualizado, mas houve erro ao sincronizar despesa' };
+            return {
+                success: false,
+                error: formatDatabaseError(folhaError, 'Pagamento atualizado, mas houve erro ao sincronizar despesa')
+            };
         }
 
         await syncFolhaPagamentoSaida(supabase, user.id, id, {
@@ -226,10 +231,22 @@ export async function deleteFolhaPagamentoAction(id: string): Promise<ActionResu
             .eq('user_id', user.id)
             .ilike('observacoes', `%${marker}%`);
 
-        if (saidaError) return { success: false, error: 'Erro ao excluir despesa vinculada' };
+        if (saidaError) {
+            console.error('[deleteFolhaPagamentoAction] Linked expense DB Error:', saidaError);
+            return { success: false, error: formatDatabaseError(saidaError, 'Erro ao excluir despesa vinculada') };
+        }
 
-        const { error } = await supabase.from('folha_pagamento').delete().eq('id', id).eq('user_id', user.id);
-        if (error) return { success: false, error: 'Erro ao excluir pagamento' };
+        const { data, error } = await supabase.from('folha_pagamento')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
+        if (error) {
+            console.error('[deleteFolhaPagamentoAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir pagamento') };
+        }
+        if (!data) return { success: false, error: 'Pagamento não encontrado ou não pertence ao usuário atual.' };
         revalidatePath('/folha-pagamento');
         revalidatePath('/saidas');
         revalidatePath('/dashboard');

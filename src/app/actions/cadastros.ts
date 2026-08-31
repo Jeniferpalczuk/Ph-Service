@@ -8,7 +8,7 @@ import {
 import {
     createFornecedorSchema, updateFornecedorSchema, CreateFornecedorInput, UpdateFornecedorInput
 } from '@/lib/validations/fornecedores';
-import { ActionResult, getAuthenticatedUser, validateId } from './shared';
+import { ActionResult, getAuthenticatedUser, formatDatabaseError, validateId } from './shared';
 
 // ===========================================
 // CLIENTES
@@ -33,7 +33,10 @@ export async function createClienteAction(input: CreateClienteInput): Promise<Ac
             ativo: parsed.data.ativo,
         }).select('id').single();
 
-        if (error) return { success: false, error: 'Erro ao criar cliente' };
+        if (error) {
+            console.error('[createClienteAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar cliente') };
+        }
         revalidatePath('/cadastros');
         return { success: true, data: { id: data.id } };
     } catch (err) {
@@ -64,13 +67,18 @@ export async function updateClienteAction(id: string, input: UpdateClienteInput)
         if (parsed.data.ativo !== undefined) updateData.ativo = parsed.data.ativo;
 
         const supabase = await createClient();
-        const { error } = await supabase.from('clientes')
+        const { data, error } = await supabase.from('clientes')
             .update(updateData)
-            .eq('id', id).eq('user_id', user.id);
+            .eq('id', id).eq('user_id', user.id)
+            .select('id')
+            .single();
 
-        if (error) return { success: false, error: 'Erro ao atualizar cliente' };
+        if (error) {
+            console.error('[updateClienteAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar cliente') };
+        }
         revalidatePath('/cadastros');
-        return { success: true, data: { id } };
+        return { success: true, data: { id: data.id } };
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };
     }
@@ -100,7 +108,7 @@ export async function createFornecedorAction(input: CreateFornecedorInput): Prom
 
         if (error) {
             console.error('[createFornecedorAction] DB Error:', error);
-            return { success: false, error: `Erro ao criar fornecedor: ${error.message}` };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar fornecedor') };
         }
         revalidatePath('/cadastros');
         return { success: true, data: { id: data.id } };
@@ -132,16 +140,18 @@ export async function updateFornecedorAction(id: string, input: UpdateFornecedor
         if (parsed.data.ativo !== undefined) updateData.ativo = parsed.data.ativo;
 
         const supabase = await createClient();
-        const { error } = await supabase.from('fornecedores')
+        const { data, error } = await supabase.from('fornecedores')
             .update(updateData)
-            .eq('id', id).eq('user_id', user.id);
+            .eq('id', id).eq('user_id', user.id)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('[updateFornecedorAction] DB Error:', error);
-            return { success: false, error: `Erro ao atualizar fornecedor: ${error.message}` };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar fornecedor') };
         }
         revalidatePath('/cadastros');
-        return { success: true, data: { id } };
+        return { success: true, data: { id: data.id } };
     } catch (err) {
         console.error('[updateFornecedorAction] Error:', err);
         return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };
@@ -154,8 +164,17 @@ export async function deleteClienteAction(id: string): Promise<ActionResult<void
         const idError = validateId(id);
         if (idError) return idError;
         const supabase = await createClient();
-        const { error } = await supabase.from('clientes').delete().eq('id', id).eq('user_id', user.id);
-        if (error) return { success: false, error: 'Erro ao excluir cliente' };
+        const { data, error } = await supabase.from('clientes')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
+        if (error) {
+            console.error('[deleteClienteAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir cliente') };
+        }
+        if (!data) return { success: false, error: 'Cliente não encontrado ou não pertence ao usuário atual.' };
         revalidatePath('/cadastros');
         return { success: true, data: undefined };
     } catch (err) {
@@ -169,8 +188,17 @@ export async function deleteFornecedorAction(id: string): Promise<ActionResult<v
         const idError = validateId(id);
         if (idError) return idError;
         const supabase = await createClient();
-        const { error } = await supabase.from('fornecedores').delete().eq('id', id).eq('user_id', user.id);
-        if (error) return { success: false, error: 'Erro ao excluir fornecedor' };
+        const { data, error } = await supabase.from('fornecedores')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
+        if (error) {
+            console.error('[deleteFornecedorAction] DB Error:', error);
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir fornecedor') };
+        }
+        if (!data) return { success: false, error: 'Fornecedor não encontrado ou não pertence ao usuário atual.' };
         revalidatePath('/cadastros');
         return { success: true, data: undefined };
     } catch (err) {

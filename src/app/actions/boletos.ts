@@ -10,7 +10,7 @@ import {
     UpdateBoletoInput,
     ImportBoletoInput
 } from '@/lib/validations/boletos';
-import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
+import { ActionResult, getAuthenticatedUser, formatDateForDB, formatDatabaseError, validateId } from './shared';
 import { BoletoPdfPreview, parseBoletosPdf } from '@/lib/boletos/pdf-import';
 
 /**
@@ -52,7 +52,7 @@ export async function createBoletoAction(
 
         if (error) {
             console.error('[createBoletoAction] DB Error:', error);
-            return { success: false, error: 'Erro ao criar boleto' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar boleto') };
         }
 
         revalidatePath('/boletos');
@@ -152,7 +152,7 @@ export async function importarBoletosPdfAction(
 
         if (error) {
             console.error('[importarBoletosPdfAction] DB Error:', error);
-            return { success: false, error: 'Erro ao importar boletos' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao importar boletos') };
         }
 
         revalidatePath('/boletos');
@@ -204,19 +204,21 @@ export async function updateBoletoAction(
         if (parsed.data.observacoes !== undefined) updateData.observacoes = parsed.data.observacoes;
 
         const supabase = await createClient();
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('boletos')
             .update(updateData)
             .eq('id', id)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('[updateBoletoAction] DB Error:', error);
-            return { success: false, error: 'Erro ao atualizar boleto' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar boleto') };
         }
 
         revalidatePath('/boletos');
-        return { success: true, data: { id } };
+        return { success: true, data: { id: data.id } };
 
     } catch (err) {
         console.error('[updateBoletoAction] Error:', err);
@@ -234,16 +236,20 @@ export async function deleteBoletoAction(
         if (idError) return idError;
 
         const supabase = await createClient();
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('boletos')
             .delete()
             .eq('id', id)
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('[deleteBoletoAction] DB Error:', error);
-            return { success: false, error: 'Erro ao deletar boleto' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir boleto') };
         }
+
+        if (!data) return { success: false, error: 'Boleto não encontrado ou não pertence ao usuário atual.' };
 
         revalidatePath('/boletos');
         return { success: true, data: null };
@@ -282,10 +288,7 @@ export async function marcarBoletoPagoAction(
 
         if (error) {
             console.error('[marcarBoletoPagoAction] DB Error:', error);
-            if (error.code === 'PGRST116') {
-                return { success: false, error: 'Boleto não encontrado para este usuário' };
-            }
-            return { success: false, error: `Erro ao marcar boleto como pago: ${error.message}` };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao marcar boleto como pago') };
         }
 
         revalidatePath('/boletos');

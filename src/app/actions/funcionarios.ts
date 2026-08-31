@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { createFuncionarioSchema, updateFuncionarioSchema, CreateFuncionarioInput, UpdateFuncionarioInput } from '@/lib/validations/funcionarios';
-import { ActionResult, getAuthenticatedUser, formatDateForDB, validateId } from './shared';
+import { ActionResult, getAuthenticatedUser, formatDateForDB, formatDatabaseError, validateId } from './shared';
 
 /**
  * Server Actions - Funcionários
@@ -58,7 +58,7 @@ export async function createFuncionarioAction(
 
         if (error) {
             console.error('[createFuncionarioAction] DB Error:', error);
-            return { success: false, error: 'Erro ao criar funcionário' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao criar funcionário') };
         }
 
         // 4. Revalidar cache
@@ -118,11 +118,13 @@ export async function updateFuncionarioAction(
         const { error } = await supabase
             .from('funcionarios')
             .update(updateData)
-            .eq('id', id).eq('user_id', user.id);
+            .eq('id', id).eq('user_id', user.id)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('[updateFuncionarioAction] DB Error:', error);
-            return { success: false, error: 'Erro ao atualizar funcionário' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar funcionário') };
         }
 
         // 6. Revalidar cache
@@ -152,14 +154,20 @@ export async function deleteFuncionarioAction(
 
         // 3. Delete no DB
         const supabase = await createClient();
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('funcionarios')
             .delete()
-            .eq('id', id).eq('user_id', user.id);
+            .eq('id', id).eq('user_id', user.id)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('[deleteFuncionarioAction] DB Error:', error);
-            return { success: false, error: 'Erro ao deletar funcionário' };
+            return { success: false, error: formatDatabaseError(error, 'Erro ao excluir funcionário') };
+        }
+
+        if (!data) {
+            return { success: false, error: 'Funcionário não encontrado ou não pertence ao usuário atual.' };
         }
 
         // 4. Revalidar cache
