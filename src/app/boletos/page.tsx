@@ -328,8 +328,8 @@ export default function BoletosPage() {
             try {
                 await deleteBoletoMutation.mutateAsync(id);
                 toast.success('Boleto excluído');
-            } catch {
-                toast.error('Erro ao excluir boleto');
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir boleto');
             }
         }
     };

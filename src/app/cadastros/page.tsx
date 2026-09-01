@@ -262,7 +262,7 @@ export default function CadastrosPage() {
                 toast.success('Funcionário excluído com sucesso!');
             } catch (err) {
                 console.error('Erro ao deletar:', err);
-                toast.error('Erro ao excluir funcionário.');
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir funcionário.');
             }
         }
     };
@@ -300,7 +300,7 @@ export default function CadastrosPage() {
                 toast.success('Cliente excluído com sucesso!');
             } catch (err) {
                 console.error('Erro ao excluir cliente:', err);
-                toast.error('Erro ao excluir cliente.');
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir cliente.');
             }
         }
     };
@@ -348,7 +348,7 @@ export default function CadastrosPage() {
                 toast.success('Fornecedor excluído com sucesso!');
             } catch (err) {
                 console.error('Erro ao excluir fornecedor:', err);
-                toast.error('Erro ao excluir fornecedor.');
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir fornecedor.');
             }
         }
     };

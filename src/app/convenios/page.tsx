@@ -196,8 +196,8 @@ export default function ConveniosPage() {
             try {
                 await deleteConvenioMutation.mutateAsync(id);
                 toast.success('Convênio excluído');
-            } catch {
-                toast.error('Erro ao excluir convênio');
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir convênio');
             }
         }
     };

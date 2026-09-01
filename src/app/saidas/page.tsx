@@ -152,8 +152,8 @@ export default function SaidasPage() {
             try {
                 await deleteSaidaMutation.mutateAsync(id);
                 toast.success('Excluída com sucesso');
-            } catch {
-                toast.error('Erro ao excluir');
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir');
             }
         }
     };

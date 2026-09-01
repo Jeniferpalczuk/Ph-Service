@@ -175,7 +175,7 @@ export default function MarmitasPage() {
             resetForm();
         } catch (err) {
             console.error(err);
-            toast.error('Erro ao salvar lançamento.');
+            toast.error(err instanceof Error ? err.message : 'Erro ao salvar lançamento.');
         }
     };
 
@@ -185,8 +185,8 @@ export default function MarmitasPage() {
             try {
                 await deleteMutation.mutateAsync(id);
                 toast.success('Lançamento excluído!');
-        } catch {
-            toast.error('Erro ao excluir lançamento.');
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Erro ao excluir lançamento.');
         }
         }
     };
@@ -219,8 +219,8 @@ export default function MarmitasPage() {
                 await Promise.all(itemsToDelete.map(item => deleteMutation.mutateAsync(item.id)));
                 toast.success('Lançamentos do dia excluídos!');
                 setSelectedDateDetails(null);
-            } catch {
-                toast.error('Erro ao excluir lançamentos do dia.');
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir lançamentos do dia.');
             }
         }
     };
@@ -258,8 +258,8 @@ export default function MarmitasPage() {
                 setShowEditModal(false);
                 setEditingItem(null);
                 setSelectedDateDetails(null);
-            } catch {
-                toast.error('Erro ao atualizar lançamento.');
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Erro ao atualizar lançamento.');
             }
         }
     };

@@ -214,8 +214,8 @@ export default function FolhaPagamentoPage() {
                 }
             });
             toast.success(nextPaid ? 'Pagamento enviado para despesas.' : 'Pagamento removido das despesas.');
-        } catch {
-            toast.error('Erro ao atualizar pagamento.');
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Erro ao atualizar pagamento.');
         }
     };
 
@@ -224,8 +224,8 @@ export default function FolhaPagamentoPage() {
             try {
                 await deletePagamentoMutation.mutateAsync(id);
                 toast.success('Pagamento excluído.');
-            } catch {
-                toast.error('Erro ao excluir pagamento.');
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir pagamento.');
             }
         }
     };

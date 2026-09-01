@@ -146,8 +146,8 @@ export default function ValesPage() {
             try {
                 await deleteValeMutation.mutateAsync(id);
                 toast.success('Vale excluído');
-            } catch {
-                toast.error('Erro ao excluir vale');
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Erro ao excluir vale');
             }
         }
     };
