@@ -652,3 +652,233 @@
     color: #991b1b;
     font-weight: 700;
 }
+
+/* ============================================================================
+   LAYOUT PASS — cadastros and configuration
+   ============================================================================ */
+.cadastros-page {
+    width: 100%;
+    min-height: auto;
+    padding: 0.25rem 0 2.5rem;
+    background: transparent;
+}
+
+.page-header {
+    min-height: 58px;
+    margin-bottom: 1.15rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.page-header h2 {
+    color: var(--text-primary);
+    font-size: clamp(1.45rem, 2.5vw, 1.85rem);
+}
+
+.tabs-container {
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+    padding: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-xs);
+}
+
+.tab-btn {
+    min-height: 40px;
+    padding: 0.6rem 0.95rem;
+    border-radius: 9px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.tab-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background: var(--primary-50);
+    color: var(--primary-700);
+    box-shadow: none;
+}
+
+.tab-content.card {
+    padding: 1.5rem;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.list-header {
+    min-height: 48px;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.9rem;
+    border-bottom-color: var(--border);
+}
+
+.list-header h3 {
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.list-header .btn-primary {
+    min-height: 42px;
+    border-radius: var(--radius-md);
+}
+
+.grid-list {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 1rem;
+    padding: 0;
+}
+
+.entity-card {
+    min-height: 164px;
+    padding: 1.1rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+}
+
+.entity-card:hover {
+    border-color: var(--primary-200);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+}
+
+.entity-card.supplier-card {
+    border-color: rgba(245, 158, 11, 0.28);
+    background: var(--surface);
+}
+
+.entity-info h4 {
+    margin-bottom: 0.6rem;
+    color: var(--text-primary);
+    font-size: 0.96rem;
+}
+
+.entity-info p {
+    margin-bottom: 0.45rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.entity-card .badge {
+    margin-bottom: 0.65rem;
+    border: 0;
+}
+
+.entity-actions {
+    gap: 0.4rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top-color: var(--border);
+}
+
+.entity-actions button {
+    width: 34px;
+    height: 34px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+}
+
+.entity-actions button:hover {
+    border-color: var(--primary-100);
+    background: var(--primary-50);
+    color: var(--primary-700);
+    transform: none;
+}
+
+.entity-actions button.btn-delete:hover {
+    border-color: rgba(220, 38, 38, 0.14);
+    background: var(--danger-50);
+    color: var(--danger-700);
+}
+
+.settings-admin {
+    gap: 1.25rem;
+}
+
+.settings-admin-header {
+    padding-bottom: 1rem;
+    border-bottom-color: var(--border);
+}
+
+.settings-admin-header h3,
+.settings-module-content strong,
+.settings-summary-panel h4 {
+    color: var(--text-primary);
+}
+
+.settings-subtitle,
+.settings-summary-panel p,
+.settings-module-content small {
+    color: var(--text-secondary);
+}
+
+.settings-admin-layout {
+    grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
+    gap: 1.25rem;
+}
+
+.settings-summary-panel {
+    gap: 0.8rem;
+    padding: 1.1rem;
+    border-color: var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--background);
+}
+
+.settings-module-table {
+    border-color: var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.settings-module-table-head {
+    background: var(--neutral-50);
+    color: var(--text-secondary);
+}
+
+.settings-module-row {
+    min-height: 72px;
+    border-top-color: var(--border);
+}
+
+.settings-visibility-toggle,
+.settings-open-link,
+.settings-reset-btn {
+    min-height: 38px;
+    border-radius: 9px;
+}
+
+@media (max-width: 768px) {
+    .cadastros-page {
+        padding: 0 0 1.5rem;
+    }
+
+    .tab-content.card {
+        padding: 1rem;
+        border-radius: var(--radius-lg);
+    }
+
+    .tabs-container {
+        width: 100%;
+    }
+
+    .tab-btn {
+        flex: 1 0 auto;
+    }
+
+    .list-header {
+        align-items: stretch;
+    }
+
+    .list-header .btn-primary {
+        width: 100%;
+    }
+
+    .settings-admin-layout {
+        gap: 1rem;
+    }
+}

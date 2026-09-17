@@ -57,8 +57,14 @@ export default function Sidebar() {
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
-                <div className="sidebar-logo">
-                    <Image src="/ph-service-logo-new.png" alt="PH Service" width={132} height={132} className="sidebar-logo-image" priority />
+                <div className="sidebar-brand">
+                    <div className="sidebar-logo">
+                        <Image src="/ph-service-logo-new.png" alt="PH Service" width={76} height={76} className="sidebar-logo-image" priority />
+                    </div>
+                    <div className="sidebar-brand-copy">
+                        <strong>PH Service</strong>
+                        <span>Gestão operacional</span>
+                    </div>
                 </div>
             </div>
 
@@ -74,7 +80,8 @@ export default function Sidebar() {
                 </div>
             </div>
 
-            <nav className="sidebar-nav">
+            <nav className="sidebar-nav" aria-label="Navegação principal">
+                <span className="sidebar-nav-label">Menu principal</span>
                 {menuItems.map((item) => (
                     <Link
                         key={item.href}

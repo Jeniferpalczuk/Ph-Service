@@ -45,7 +45,9 @@ export default function LoginPage() {
             const message = err instanceof Error ? err.message : '';
             setError(message === 'Invalid login credentials'
                 ? 'E-mail ou senha incorretos.'
-                : 'Erro ao entrar. Verifique seus dados.');
+                : message === 'Failed to fetch' || message === 'FetchError'
+                    ? 'O serviço de autenticação está indisponível. Tente novamente em instantes.'
+                    : 'Não foi possível entrar. Verifique os dados e tente novamente.');
             setIsLoading(false);
         }
     };

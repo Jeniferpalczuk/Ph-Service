@@ -10,10 +10,6 @@ import {
   LuChevronRight,
   LuCalendar,
   LuActivity,
-  LuMoon,
-  LuSun,
-  LuBell,
-  LuMaximize,
   LuChevronDown
 } from 'react-icons/lu';
 import {
@@ -32,7 +28,6 @@ import {
 } from 'recharts';
 import { useDashboardStatistics } from '@/hooks/financeiro/useDashboard';
 import { useUrlFilters } from '@/hooks/useUrlFilters';
-import { useApp } from '@/context/AppContext';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import './dashboard.css';
 
@@ -50,7 +45,6 @@ type RecentActivity = {
 
 export default function DashboardPage() {
   const { getParam, setParams } = useUrlFilters();
-  const { theme, toggleTheme } = useApp();
   const { user } = useAuth();
   const monthStr = getParam('month') || new Date().getMonth().toString();
   const year = Number(getParam('year')) || new Date().getFullYear();
@@ -424,12 +418,6 @@ export default function DashboardPage() {
             <LuChevronDown className="widget-chevron" size={16} />
           </div>
 
-          {/* Profile Actions */}
-          <div className="header-top-actions">
-            <button className="action-circle-btn" title="Notificações"><LuBell size={18} /><span className="badge-dot"></span></button>
-            <button className="action-circle-btn" onClick={toggleTheme} title="Alternar Tema">{theme === 'light' ? <LuMoon size={18} /> : <LuSun size={18} />}</button>
-            <button className="action-circle-btn" title="Tela Cheia"><LuMaximize size={18} /></button>
-          </div>
         </div>
       </div>
 

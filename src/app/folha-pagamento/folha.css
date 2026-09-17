@@ -480,6 +480,189 @@
     transition: all 0.2s;
 }
 
+/* ============================================================================
+   LAYOUT PASS — payroll surface
+   ============================================================================ */
+.folha-page {
+    width: 100%;
+    min-height: auto;
+    padding: 0.25rem 0 2.5rem;
+    background: transparent;
+}
+
+.folha-header {
+    min-height: 112px;
+    margin-bottom: 0;
+    padding: 1.5rem 1.75rem;
+    align-items: center;
+    gap: 1.5rem;
+    border-color: var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+}
+
+.folha-header-subtitle {
+    margin-bottom: 0.35rem;
+    color: var(--primary);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.folha-header-title {
+    color: var(--text-primary);
+    font-size: clamp(1.45rem, 2.5vw, 1.9rem);
+    line-height: 1.15;
+}
+
+.folha-header-badges {
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.folha-badge-summary {
+    min-height: 30px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.76rem;
+}
+
+.btn-novo-pagamento {
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 16px rgba(14, 165, 233, 0.16);
+}
+
+.folha-filters-container {
+    margin-bottom: 0;
+    padding: 1rem 1.25rem;
+    gap: 1rem;
+    border-color: var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-xs);
+}
+
+.filter-group {
+    min-width: 180px;
+    gap: 0.4rem;
+}
+
+.filter-group label {
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+}
+
+.filter-group select,
+.filter-group input {
+    min-height: 42px;
+    padding: 0.62rem 0.8rem;
+    border-color: var(--border);
+    border-radius: var(--radius-md);
+    background: var(--background);
+    font-size: 0.86rem;
+}
+
+.folha-table-container {
+    overflow-x: auto;
+    border-color: var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.folha-modern-table {
+    min-width: 760px;
+}
+
+.folha-modern-table th {
+    padding: 0.8rem 1.15rem;
+    background: var(--neutral-50);
+    color: var(--text-tertiary);
+    font-size: 0.68rem;
+}
+
+.folha-modern-table td {
+    padding: 0.95rem 1.15rem;
+    border-bottom-color: var(--border);
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+}
+
+.folha-modern-table tr:hover td {
+    background: var(--surface-hover);
+}
+
+.col-funcionario {
+    color: var(--text-primary);
+    font-size: 0.88rem;
+}
+
+.folha-row-subtitle {
+    color: var(--text-tertiary);
+    font-size: 0.74rem;
+}
+
+.folha-footer {
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-top-color: var(--border);
+    background: var(--neutral-50);
+}
+
+.folha-footer-totals {
+    gap: 1.5rem;
+}
+
+.btn-page,
+.btn-actions-trigger {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface);
+}
+
+.btn-page.active {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+@media (max-width: 900px) {
+    .folha-page {
+        padding: 0 0 1.5rem;
+    }
+
+    .folha-header,
+    .folha-filters-container {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .folha-header {
+        padding: 1.25rem;
+    }
+
+    .folha-header .btn-modern-primary,
+    .folha-header .btn-novo-pagamento {
+        width: 100%;
+    }
+
+    .folha-filters-container {
+        padding: 1rem;
+    }
+
+    .folha-header-badges {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .folha-badge-summary {
+        width: 100%;
+    }
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

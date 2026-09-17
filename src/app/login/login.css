@@ -680,3 +680,234 @@
         font-size: 1.75rem;
     }
 }
+
+/* ============================================================================
+   LAYOUT PASS — focused sign-in surface
+   ============================================================================ */
+.login-page {
+    min-height: 100dvh;
+    background: #0d1222;
+}
+
+.login-bg {
+    background:
+        radial-gradient(circle at 12% 18%, rgba(99, 102, 241, 0.24), transparent 34%),
+        radial-gradient(circle at 88% 82%, rgba(14, 165, 233, 0.16), transparent 32%),
+        #0d1222;
+    animation: none;
+}
+
+.login-orb {
+    opacity: 0.18;
+    filter: blur(90px);
+}
+
+.login-mesh {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 78%);
+}
+
+.login-wrapper {
+    max-width: 1220px;
+    gap: clamp(3rem, 8vw, 7rem);
+    padding: 2rem clamp(1.25rem, 5vw, 4rem);
+}
+
+.login-brand-content {
+    max-width: 500px;
+}
+
+.login-logo-area {
+    margin-bottom: 2.5rem;
+}
+
+.login-logo {
+    width: 78px;
+    height: 78px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+}
+
+.login-hero {
+    margin-bottom: 2.25rem;
+}
+
+.login-hero-title {
+    margin-bottom: 1.15rem;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: clamp(2rem, 4vw, 2.7rem);
+    line-height: 1.16;
+}
+
+.login-hero-gradient {
+    margin-top: 0.2rem;
+    font-size: clamp(2.3rem, 4.8vw, 3.3rem);
+    background: none;
+    color: #ffffff;
+    -webkit-text-fill-color: currentColor;
+    animation: none;
+}
+
+.login-hero-desc {
+    max-width: 42ch;
+    color: rgba(203, 213, 225, 0.76);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.login-features {
+    gap: 0.7rem;
+}
+
+.login-feature {
+    gap: 0.9rem;
+    padding: 0.9rem 1rem;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.login-feature:hover {
+    transform: translateX(4px);
+}
+
+.login-feature-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    color: #c7d2fe;
+}
+
+.login-feature-text h4 {
+    font-size: 0.92rem;
+}
+
+.login-feature-text p {
+    font-size: 0.8rem;
+}
+
+.login-form-section {
+    width: min(100%, 420px);
+}
+
+.login-card {
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--radius-2xl);
+    background: rgba(17, 24, 39, 0.78);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.28);
+}
+
+.login-card-glow {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), transparent 55%, rgba(14, 165, 233, 0.12));
+    animation: none;
+}
+
+.login-card-header {
+    margin-bottom: 1.75rem;
+    text-align: left;
+}
+
+.login-welcome-badge {
+    margin-bottom: 1rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+}
+
+.login-card-header h2 {
+    font-size: clamp(1.6rem, 3vw, 2rem);
+}
+
+.login-card-header p {
+    font-size: 0.88rem;
+}
+
+.login-card-body {
+    gap: 1.25rem;
+}
+
+.login-form-fields {
+    gap: 1rem;
+}
+
+.login-input-group {
+    gap: 0.4rem;
+}
+
+.login-input-group label {
+    margin-left: 0;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.78rem;
+}
+
+.login-input-wrapper input {
+    min-height: 46px;
+    padding: 0.75rem 0.9rem 0.75rem 2.75rem;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 0.92rem;
+}
+
+.login-submit-btn {
+    min-height: 46px;
+    margin-top: 0.35rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    box-shadow: 0 10px 22px rgba(var(--primary-rgb), 0.28);
+    font-size: 0.9rem;
+}
+
+.login-submit-btn:hover {
+    background: var(--primary-hover);
+    filter: none;
+    transform: translateY(-1px);
+}
+
+.login-error {
+    gap: 0.6rem;
+    padding: 0.8rem 0.9rem;
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+}
+
+.login-divider {
+    gap: 0.75rem;
+    padding: 0.25rem 0;
+}
+
+.login-divider span {
+    font-size: 0.68rem;
+}
+
+.login-card-footer {
+    margin-top: 1.5rem;
+    padding-top: 1.1rem;
+    font-size: 0.72rem;
+}
+
+@media (max-width: 1023px) {
+    .login-wrapper {
+        max-width: 560px;
+    }
+
+    .login-form-section {
+        width: 100%;
+    }
+
+    .login-card-header {
+        text-align: center;
+    }
+}
+
+@media (max-width: 640px) {
+    .login-wrapper {
+        padding: 1rem;
+    }
+
+    .login-card {
+        padding: 1.4rem;
+        border-radius: var(--radius-xl);
+    }
+}

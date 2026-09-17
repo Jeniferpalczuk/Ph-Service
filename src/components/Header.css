@@ -124,3 +124,37 @@
 
 
 }
+
+/* Refined fallback header */
+.header {
+    height: var(--header-height);
+    padding: 0 var(--spacing-main);
+    border-bottom-color: var(--border);
+    background: var(--surface);
+}
+
+.logo-image {
+    height: 42px;
+}
+
+.header-nav {
+    gap: 0.25rem;
+}
+
+.nav-item {
+    min-height: 42px;
+    gap: 0.25rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 9px;
+    font-size: 0.7rem;
+}
+
+.nav-item.active {
+    background: var(--primary-50);
+    color: var(--primary-700);
+}
+
+.logout-btn {
+    min-height: 40px;
+    border-radius: 9px;
+}

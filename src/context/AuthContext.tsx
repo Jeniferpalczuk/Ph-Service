@@ -19,6 +19,8 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const SESSION_TIMEOUT_MS = 5_000;
+const SESSION_TIMEOUT_MESSAGE = 'SUPABASE_SESSION_TIMEOUT';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -30,10 +32,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         // Get initial session
         const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
+            let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+            try {
+                const result = await Promise.race([
+                    supabase.auth.getSession(),
+                    new Promise<never>((_, reject) => {
+                        timeoutId = setTimeout(
+                            () => reject(new Error(SESSION_TIMEOUT_MESSAGE)),
+                            SESSION_TIMEOUT_MS
+                        );
+                    }),
+                ]);
+
+                const session = result.data.session;
+                setSession(session);
+                setUser(session?.user ?? null);
+            } catch (error) {
+                if (error instanceof Error && error.message === SESSION_TIMEOUT_MESSAGE) {
+                    console.warn(
+                        `[supabase-auth] A leitura da sessão excedeu ${SESSION_TIMEOUT_MS}ms; exibindo a tela de login.`
+                    );
+                } else {
+                    console.warn('[supabase-auth] Não foi possível carregar a sessão:', error);
+                }
+
+                setSession(null);
+                setUser(null);
+            } finally {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                }
+                setLoading(false);
+            }
         };
 
         getSession();
