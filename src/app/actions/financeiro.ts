@@ -29,7 +29,9 @@ export async function createConvenioAction(input: CreateConvenioInput): Promise<
         }
 
         const supabase = await createClient();
-        const { data, error } = await supabase.from('convenios').insert({
+        const id = crypto.randomUUID();
+        const { error } = await supabase.from('convenios').insert({
+            id,
             user_id: user.id,
             empresa_cliente: parsed.data.empresa,
             tipo_fechamento: parsed.data.tipoFechamento,
@@ -38,17 +40,19 @@ export async function createConvenioAction(input: CreateConvenioInput): Promise<
             periodo_referencia: parsed.data.periodoReferencia,
             data_fechamento: formatDateForDB(parsed.data.dataFechamento),
             data_vencimento: formatDateForDB(parsed.data.dataVencimento),
-            data_pagamento: formatDateForDB(parsed.data.dataPagamento),
+            data_pagamento: formatDateForDB(
+                parsed.data.dataPagamento ?? (parsed.data.statusPagamento === 'pago' ? new Date() : null)
+            ),
             status_pagamento: parsed.data.statusPagamento,
             observacoes: parsed.data.observacoes,
-        }).select('id').single();
+        });
 
         if (error) {
             console.error('[createConvenioAction] DB Error:', error);
             return { success: false, error: formatDatabaseError(error, 'Erro ao criar convênio') };
         }
         revalidatePath('/convenios');
-        return { success: true, data: { id: data.id } };
+        return { success: true, data: { id } };
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };
     }
@@ -76,20 +80,30 @@ export async function updateConvenioAction(id: string, input: UpdateConvenioInpu
         if (parsed.data.periodoReferencia !== undefined) updateConvenioData.periodo_referencia = parsed.data.periodoReferencia;
         if (parsed.data.dataFechamento !== undefined) updateConvenioData.data_fechamento = formatDateForDB(parsed.data.dataFechamento);
         if (parsed.data.dataVencimento !== undefined) updateConvenioData.data_vencimento = formatDateForDB(parsed.data.dataVencimento);
-        if (parsed.data.dataPagamento !== undefined) updateConvenioData.data_pagamento = formatDateForDB(parsed.data.dataPagamento);
         if (parsed.data.statusPagamento !== undefined) updateConvenioData.status_pagamento = parsed.data.statusPagamento;
+        if (parsed.data.dataPagamento !== undefined) {
+            updateConvenioData.data_pagamento = formatDateForDB(parsed.data.dataPagamento);
+        } else if (parsed.data.statusPagamento === 'pago') {
+            updateConvenioData.data_pagamento = formatDateForDB(new Date());
+        } else if (parsed.data.statusPagamento !== undefined) {
+            updateConvenioData.data_pagamento = null;
+        }
         if (parsed.data.observacoes !== undefined) updateConvenioData.observacoes = parsed.data.observacoes;
 
-        const { data, error } = await supabase.from('convenios')
-            .update(updateConvenioData)
-            .eq('id', id).eq('user_id', user.id).select('id').single();
+        const { count, error } = await supabase.from('convenios')
+            .update(updateConvenioData, { count: 'exact' })
+            .eq('id', id)
+            .eq('user_id', user.id);
 
         if (error) {
             console.error('[updateConvenioAction] DB Error:', error);
             return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar convênio') };
         }
+        if (count !== 1) {
+            return { success: false, error: 'Convênio não encontrado ou não pertence ao usuário atual.' };
+        }
         revalidatePath('/convenios');
-        return { success: true, data: { id: data.id } };
+        return { success: true, data: { id } };
     } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : 'Erro desconhecido' };
     }
@@ -101,17 +115,15 @@ export async function deleteConvenioAction(id: string): Promise<ActionResult<voi
         const idError = validateId(id);
         if (idError) return idError;
         const supabase = await createClient();
-        const { data, error } = await supabase.from('convenios')
-            .delete()
+        const { count, error } = await supabase.from('convenios')
+            .delete({ count: 'exact' })
             .eq('id', id)
-            .eq('user_id', user.id)
-            .select('id')
-            .single();
+            .eq('user_id', user.id);
         if (error) {
             console.error('[deleteConvenioAction] DB Error:', error);
             return { success: false, error: formatDatabaseError(error, 'Erro ao excluir convênio') };
         }
-        if (!data) return { success: false, error: 'Convênio não encontrado ou não pertence ao usuário atual.' };
+        if (count !== 1) return { success: false, error: 'Convênio não encontrado ou não pertence ao usuário atual.' };
         revalidatePath('/convenios');
         return { success: true, data: undefined };
     } catch (err) {

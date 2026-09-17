@@ -34,21 +34,23 @@ export async function createBoletoAction(
         }
 
         const supabase = await createClient();
-        const { data, error } = await supabase
+        const id = crypto.randomUUID();
+        const { error } = await supabase
             .from('boletos')
             .insert({
+                id,
                 user_id: user.id,
                 cliente: parsed.data.cliente,
                 valor: parsed.data.valor,
                 banco: parsed.data.banco,
                 data_vencimento: formatDateForDB(parsed.data.dataVencimento),
-                data_pagamento: formatDateForDB(parsed.data.dataPagamento),
+                data_pagamento: formatDateForDB(
+                    parsed.data.dataPagamento ?? (parsed.data.statusPagamento === 'pago' ? new Date() : null)
+                ),
                 status_pagamento: parsed.data.statusPagamento,
                 observacoes: parsed.data.observacoes,
                 convenio_id: parsed.data.convenioId,
-            })
-            .select('id')
-            .single();
+            });
 
         if (error) {
             console.error('[createBoletoAction] DB Error:', error);
@@ -56,7 +58,7 @@ export async function createBoletoAction(
         }
 
         revalidatePath('/boletos');
-        return { success: true, data: { id: data.id } };
+        return { success: true, data: { id } };
 
     } catch (err) {
         console.error('[createBoletoAction] Error:', err);
@@ -199,26 +201,33 @@ export async function updateBoletoAction(
         if (parsed.data.valor !== undefined) updateData.valor = parsed.data.valor;
         if (parsed.data.banco !== undefined) updateData.banco = parsed.data.banco;
         if (parsed.data.dataVencimento !== undefined) updateData.data_vencimento = formatDateForDB(parsed.data.dataVencimento);
-        if (parsed.data.dataPagamento !== undefined) updateData.data_pagamento = formatDateForDB(parsed.data.dataPagamento);
         if (parsed.data.statusPagamento !== undefined) updateData.status_pagamento = parsed.data.statusPagamento;
+        if (parsed.data.dataPagamento !== undefined) {
+            updateData.data_pagamento = formatDateForDB(parsed.data.dataPagamento);
+        } else if (parsed.data.statusPagamento === 'pago') {
+            updateData.data_pagamento = formatDateForDB(new Date());
+        } else if (parsed.data.statusPagamento !== undefined) {
+            updateData.data_pagamento = null;
+        }
         if (parsed.data.observacoes !== undefined) updateData.observacoes = parsed.data.observacoes;
 
         const supabase = await createClient();
-        const { data, error } = await supabase
+        const { count, error } = await supabase
             .from('boletos')
-            .update(updateData)
+            .update(updateData, { count: 'exact' })
             .eq('id', id)
-            .eq('user_id', user.id)
-            .select('id')
-            .single();
+            .eq('user_id', user.id);
 
         if (error) {
             console.error('[updateBoletoAction] DB Error:', error);
             return { success: false, error: formatDatabaseError(error, 'Erro ao atualizar boleto') };
         }
+        if (count !== 1) {
+            return { success: false, error: 'Boleto não encontrado ou não pertence ao usuário atual.' };
+        }
 
         revalidatePath('/boletos');
-        return { success: true, data: { id: data.id } };
+        return { success: true, data: { id } };
 
     } catch (err) {
         console.error('[updateBoletoAction] Error:', err);
@@ -236,20 +245,18 @@ export async function deleteBoletoAction(
         if (idError) return idError;
 
         const supabase = await createClient();
-        const { data, error } = await supabase
+        const { count, error } = await supabase
             .from('boletos')
-            .delete()
+            .delete({ count: 'exact' })
             .eq('id', id)
-            .eq('user_id', user.id)
-            .select('id')
-            .single();
+            .eq('user_id', user.id);
 
         if (error) {
             console.error('[deleteBoletoAction] DB Error:', error);
             return { success: false, error: formatDatabaseError(error, 'Erro ao excluir boleto') };
         }
 
-        if (!data) return { success: false, error: 'Boleto não encontrado ou não pertence ao usuário atual.' };
+        if (count !== 1) return { success: false, error: 'Boleto não encontrado ou não pertence ao usuário atual.' };
 
         revalidatePath('/boletos');
         return { success: true, data: null };
@@ -274,26 +281,27 @@ export async function marcarBoletoPagoAction(
         if (idError) return idError;
 
         const supabase = await createClient();
-        const { data, error } = await supabase
+        const { count, error } = await supabase
             .from('boletos')
             .update({
                 status_pagamento: 'pago',
                 data_pagamento: formatDateForDB(dataPagamento || new Date()),
                 updated_at: new Date().toISOString(),
-            })
+            }, { count: 'exact' })
             .eq('id', id)
-            .eq('user_id', user.id)
-            .select('id')
-            .single();
+            .eq('user_id', user.id);
 
         if (error) {
             console.error('[marcarBoletoPagoAction] DB Error:', error);
             return { success: false, error: formatDatabaseError(error, 'Erro ao marcar boleto como pago') };
         }
+        if (count !== 1) {
+            return { success: false, error: 'Boleto não encontrado ou não pertence ao usuário atual.' };
+        }
 
         revalidatePath('/boletos');
         revalidatePath('/dashboard');
-        return { success: true, data: { id: data.id } };
+        return { success: true, data: { id } };
 
     } catch (err) {
         console.error('[marcarBoletoPagoAction] Error:', err);
