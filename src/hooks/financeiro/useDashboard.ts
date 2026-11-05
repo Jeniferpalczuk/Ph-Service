@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useMarmitasList } from './useMarmitas';
 import { useBoletosList } from './useBoletos';
 import { useSaidasList } from './useSaidas';
@@ -8,115 +7,34 @@ import { useValesList } from '../rh/useVales';
 import { useFolhaPagamentoList } from '../rh/useFolhaPagamento';
 
 export function useDashboardStatistics(year: number, month: string | 'all') {
-    const isMonthAll = month === 'all';
-
-    let startDate: string;
-    let endDate: string;
-
-    if (isMonthAll) {
-        startDate = `${year}-01-01`;
-        endDate = `${year}-12-31`;
-    } else {
-        const monthInt = parseInt(month); // month is 0-indexed string from page.tsx (new Date().getMonth())
-        const dbMonth = (monthInt + 1).toString().padStart(2, '0');
-        const lastDay = new Date(year, monthInt + 1, 0).getDate();
-        const dbLastDay = lastDay.toString().padStart(2, '0');
-
-        startDate = `${year}-${dbMonth}-01`;
-        endDate = `${year}-${dbMonth}-${dbLastDay}`;
-    }
-
-    // Fetch all collections in parallel
-    // TODO: FASE 3 — Substituir por Server Actions de agregação (SUM, COUNT)
-    // para não carregar todos os registros no client. Ex: getDashboardStats()
+    const monthIndex = month === 'all' ? null : Number(month);
+    const startDate = monthIndex === null ? `${year}-01-01` : `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
+    const endDate = monthIndex === null ? `${year}-12-31`
+        : `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(new Date(year, monthIndex + 1, 0).getDate()).padStart(2, '0')}`;
     const queryParams = { startDate, endDate, pageSize: 2000 };
 
-    const { data: marmitas, isLoading: loadingMarmitas } = useMarmitasList(queryParams);
-    const { data: saidas, isLoading: loadingSaidas } = useSaidasList(queryParams);
-    const { data: boletos, isLoading: loadingBoletos } = useBoletosList(queryParams);
-    const { data: convenios, isLoading: loadingConvenios } = useConveniosList(queryParams);
-    const { data: caixa, isLoading: loadingCaixa } = useCaixaList(queryParams);
-    const { data: vales, isLoading: loadingVales } = useValesList(queryParams);
-    const { data: folha, isLoading: loadingFolha } = useFolhaPagamentoList(queryParams);
-
-    const isLoading = loadingMarmitas || loadingSaidas || loadingBoletos || loadingConvenios || loadingCaixa || loadingVales || loadingFolha;
-
-    const stats = useMemo(() => {
-        if (isLoading) return null;
-
-        const mData = marmitas?.data || [];
-        const sData = saidas?.data || [];
-        const bData = boletos?.data || [];
-        const convData = convenios?.data || [];
-        const cData = caixa?.data || [];
-        const vData = vales?.data || [];
-        const fData = folha?.data || [];
-
-        // 1. Faturamento
-        const faturamentoCaixa = cData.reduce((sum, f) => {
-            return sum + (f.entradas.dinheiro || 0) + (f.entradas.pix || 0) +
-                (f.entradas.credito || 0) + (f.entradas.debito || 0) + (f.entradas.alimentacao || 0);
-        }, 0);
-
-        const conveniosPagos = convData
-            .filter(c => c.statusPagamento === 'pago')
-            .reduce((sum, c) => sum + c.valorBoleto, 0);
-
-        const faturamentoTotal = faturamentoCaixa + conveniosPagos;
-
-        // 2. Despesas
-        const despesasModulo = sData.reduce((sum, s) => sum + s.valor, 0);
-        const saidasFechamento = cData.reduce((sum, f) => sum + f.saidas, 0);
-        const valesLancados = vData.reduce((sum, v) => sum + v.valor, 0);
-        const folhaFilter = fData.filter(p => p.statusPagamento === 'pago').reduce((sum, p) => sum + p.valor, 0);
-        const boletosPagos = bData.filter(b => b.statusPagamento === 'pago').reduce((sum, b) => sum + b.valor, 0);
-
-        const totalDespesas = despesasModulo + saidasFechamento + valesLancados + folhaFilter + boletosPagos;
-
-        // 3. Saldo
-        const saldoCaixa = faturamentoTotal - totalDespesas;
-
-        // 4. Marmitas
-        const receitaMarmitas = mData.reduce((sum, m) => sum + m.valorTotal, 0);
-
-        // 5. Convênios
-        const conveniosTotal = convData.reduce((sum, c) => sum + c.valorBoleto, 0);
-        const conveniosCount = convData.length;
-        const conveniosTicketMedio = conveniosCount > 0 ? conveniosTotal / conveniosCount : 0;
-
-        // 6. A Receber
-        const boletosPendentes = bData.filter(b => b.statusPagamento !== 'pago').reduce((sum, b) => sum + b.valor, 0);
-        const conveniosPendentes = convData.filter(c => c.statusPagamento !== 'pago').reduce((sum, c) => sum + c.valorBoleto, 0);
-        const totalAReceber = boletosPendentes + conveniosPendentes;
-
-        // 7. Vales Abertos
-        const valesAbertos = vData.filter(v => v.status !== 'quitado').reduce((sum, v) => sum + (v.valor - (v.valorPago || 0)), 0);
-
-        return {
-            faturamentoTotal,
-            totalDespesas,
-            saldoCaixa,
-            receitaMarmitas,
-            conveniosTotal,
-            conveniosCount,
-            conveniosTicketMedio,
-            totalAReceber,
-            valesAbertos,
-            folhaFilter
-        };
-    }, [isLoading, marmitas, saidas, boletos, convenios, caixa, vales, folha]);
+    const marmitas = useMarmitasList(queryParams);
+    const saidas = useSaidasList(queryParams);
+    const boletos = useBoletosList(queryParams);
+    const convenios = useConveniosList(queryParams);
+    const caixa = useCaixaList(queryParams);
+    const vales = useValesList(queryParams);
+    const folha = useFolhaPagamentoList(queryParams);
+    const queries = [marmitas, saidas, boletos, convenios, caixa, vales, folha];
 
     return {
-        stats,
-        isLoading,
+        isLoading: queries.some((query) => query.isLoading),
+        isError: queries.some((query) => query.isError),
+        hasPartialData: queries.some((query) => query.data && query.data.count > query.data.data.length),
+        retry: () => Promise.all(queries.filter((query) => query.isError).map((query) => query.refetch())),
         rawData: {
-            marmitas: marmitas?.data || [],
-            saidas: saidas?.data || [],
-            boletos: boletos?.data || [],
-            convenios: convenios?.data || [],
-            caixa: caixa?.data || [],
-            vales: vales?.data || [],
-            folha: folha?.data || []
-        }
+            marmitas: marmitas.data?.data || [],
+            saidas: saidas.data?.data || [],
+            boletos: boletos.data?.data || [],
+            convenios: convenios.data?.data || [],
+            caixa: caixa.data?.data || [],
+            vales: vales.data?.data || [],
+            folha: folha.data?.data || [],
+        },
     };
 }

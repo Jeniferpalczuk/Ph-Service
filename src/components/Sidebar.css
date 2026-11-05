@@ -384,6 +384,31 @@
     color: var(--primary);
 }
 
+[data-theme="dark"] .sidebar {
+    background: #101421;
+    border-color: #30364a;
+}
+
+[data-theme="dark"] .sidebar-nav-item.active {
+    color: #faf7ff;
+    background: #44336a;
+    border-color: #594582;
+}
+
+[data-theme="dark"] .sidebar-nav-item.active .nav-item-icon {
+    color: #e5d3ff;
+}
+
+[data-theme="dark"] .new-requests-card {
+    color: #f5f5fb;
+    background: #1a2030;
+    border-color: #30364a;
+}
+
+[data-theme="dark"] .new-requests-card .card-body p {
+    color: #b8c2d2;
+}
+
 .sidebar-footer {
     gap: 0.7rem;
     padding-top: 1rem;
