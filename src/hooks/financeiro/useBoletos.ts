@@ -85,7 +85,7 @@ export function useUpdateBoleto() {
             return result.data;
         },
         onSuccess: (data) => {
-            queryClient.setQueryData(boletosKeys.detail(data.id), data);
+            queryClient.invalidateQueries({ queryKey: boletosKeys.detail(data.id) });
             queryClient.invalidateQueries({ queryKey: boletosKeys.lists() });
             queryClient.invalidateQueries({ queryKey: boletosKeys.stats() });
         },

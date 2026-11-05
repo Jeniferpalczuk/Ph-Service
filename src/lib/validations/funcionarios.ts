@@ -40,7 +40,9 @@ export const funcionarioSchema = z.object({
 });
 
 export const createFuncionarioSchema = funcionarioSchema;
-export const updateFuncionarioSchema = funcionarioSchema.partial();
+export const updateFuncionarioSchema = funcionarioSchema.partial().extend({
+    ativo: funcionarioSchema.shape.ativo.removeDefault().optional(),
+});
 
 export type CreateFuncionarioInput = z.infer<typeof createFuncionarioSchema>;
 export type UpdateFuncionarioInput = z.infer<typeof updateFuncionarioSchema>;

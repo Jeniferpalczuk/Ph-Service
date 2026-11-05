@@ -35,7 +35,12 @@ export const folhaPagamentoSchema = z.object({
 });
 
 export const createFolhaPagamentoSchema = folhaPagamentoSchema;
-export const updateFolhaPagamentoSchema = folhaPagamentoSchema.partial();
+export const updateFolhaPagamentoSchema = folhaPagamentoSchema.partial().extend({
+    descontos: z.number().min(0).nullable().optional(),
+    faltas: z.number().min(0).nullable().optional(),
+    formaPagamento: folhaPagamentoSchema.shape.formaPagamento.removeDefault().optional(),
+    statusPagamento: folhaPagamentoSchema.shape.statusPagamento.removeDefault().optional(),
+});
 
 export type CreateFolhaPagamentoInput = z.infer<typeof createFolhaPagamentoSchema>;
 export type UpdateFolhaPagamentoInput = z.infer<typeof updateFolhaPagamentoSchema>;

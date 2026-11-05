@@ -37,7 +37,9 @@ export const valeSchema = z.object({
 });
 
 export const createValeSchema = valeSchema;
-export const updateValeSchema = valeSchema.partial();
+export const updateValeSchema = valeSchema.partial().extend({
+    status: valeSchema.shape.status.removeDefault().optional(),
+});
 
 export type CreateValeInput = z.infer<typeof createValeSchema>;
 export type UpdateValeInput = z.infer<typeof updateValeSchema>;

@@ -1,7 +1,3 @@
-import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { PDFParse } from 'pdf-parse';
-
 export type BoletoPdfPreview = {
     tempId: string;
     cliente: string;
@@ -38,16 +34,6 @@ const KNOWN_BANKS = [
 
 const DATE_PATTERN = /(\d{2}[\/.-]\d{2}[\/.-]\d{4})/g;
 const MONEY_PATTERN = /(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/g;
-
-let pdfWorkerConfigured = false;
-
-function ensurePdfWorker() {
-    if (pdfWorkerConfigured) return;
-
-    const workerPath = join(process.cwd(), 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs');
-    PDFParse.setWorker(pathToFileURL(workerPath).toString());
-    pdfWorkerConfigured = true;
-}
 
 function normalizeWhitespace(value: string) {
     return value.replace(/\r/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
@@ -234,9 +220,13 @@ function splitPotentialBoletos(text: string) {
 }
 
 export async function parseBoletosPdf(fileBuffer: Buffer): Promise<BoletoPdfPreview[]> {
-    ensurePdfWorker();
-
-    const parser = new PDFParse({ data: new Uint8Array(fileBuffer) });
+    // Install the Node DOM APIs before evaluating PDF.js. Keep these imports
+    // lazy: all Server Actions can share this module graph in production.
+    const { CanvasFactory, getData } = await import('pdf-parse/worker');
+    const { PDFParse } = await import('pdf-parse');
+    // The bundled worker also works when serverless tracing changes cwd/layout.
+    PDFParse.setWorker(getData());
+    const parser = new PDFParse({ data: new Uint8Array(fileBuffer), CanvasFactory });
 
     try {
         const result = await parser.getText();

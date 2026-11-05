@@ -94,7 +94,7 @@ export function useUpdateVale() {
             return result.data;
         },
         onSuccess: (data) => {
-            queryClient.setQueryData(valesKeys.detail(data.id), data);
+            queryClient.invalidateQueries({ queryKey: valesKeys.detail(data.id) });
             queryClient.invalidateQueries({ queryKey: valesKeys.lists() });
         },
     });

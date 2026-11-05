@@ -11,7 +11,7 @@ import {
     ImportBoletoInput
 } from '@/lib/validations/boletos';
 import { ActionResult, getAuthenticatedUser, formatDateForDB, formatDatabaseError, validateId } from './shared';
-import { BoletoPdfPreview, parseBoletosPdf } from '@/lib/boletos/pdf-import';
+import type { BoletoPdfPreview } from '@/lib/boletos/pdf-import';
 
 /**
  * Server Actions - Boletos
@@ -88,6 +88,8 @@ export async function analisarBoletoPdfAction(
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
+        // A PDF dependency must never prevent unrelated financial actions loading.
+        const { parseBoletosPdf } = await import('@/lib/boletos/pdf-import');
         const boletos = await parseBoletosPdf(buffer);
 
         if (boletos.length === 0) {

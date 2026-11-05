@@ -29,7 +29,9 @@ export const clienteSchema = z.object({
 });
 
 export const createClienteSchema = clienteSchema;
-export const updateClienteSchema = clienteSchema.partial();
+export const updateClienteSchema = clienteSchema.partial().extend({
+    ativo: clienteSchema.shape.ativo.removeDefault().optional(),
+});
 
 export type CreateClienteInput = z.infer<typeof createClienteSchema>;
 export type UpdateClienteInput = z.infer<typeof updateClienteSchema>;

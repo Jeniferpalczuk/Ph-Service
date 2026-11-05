@@ -21,7 +21,10 @@ export const marmitaSchema = z.object({
 });
 
 export const createMarmitaSchema = marmitaSchema;
-export const updateMarmitaSchema = marmitaSchema.partial();
+export const updateMarmitaSchema = marmitaSchema.partial().extend({
+    formaPagamento: marmitaSchema.shape.formaPagamento.removeDefault().optional(),
+    statusRecebimento: marmitaSchema.shape.statusRecebimento.removeDefault().optional(),
+});
 
 export type CreateMarmitaInput = z.infer<typeof createMarmitaSchema>;
 export type UpdateMarmitaInput = z.infer<typeof updateMarmitaSchema>;

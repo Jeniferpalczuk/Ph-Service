@@ -24,7 +24,9 @@ export const fornecedorSchema = z.object({
 });
 
 export const createFornecedorSchema = fornecedorSchema;
-export const updateFornecedorSchema = fornecedorSchema.partial();
+export const updateFornecedorSchema = fornecedorSchema.partial().extend({
+    ativo: fornecedorSchema.shape.ativo.removeDefault().optional(),
+});
 
 export type CreateFornecedorInput = z.infer<typeof createFornecedorSchema>;
 export type UpdateFornecedorInput = z.infer<typeof updateFornecedorSchema>;

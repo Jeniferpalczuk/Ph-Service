@@ -61,7 +61,8 @@ export function useUpdateConvenio() {
             return result.data;
         },
         onSuccess: (data) => {
-            queryClient.setQueryData(conveniosKeys.detail(data.id), data);
+            // The action returns only { id }, not the full cached Convenio.
+            queryClient.invalidateQueries({ queryKey: conveniosKeys.detail(data.id) });
             queryClient.invalidateQueries({ queryKey: conveniosKeys.lists() });
         },
     });

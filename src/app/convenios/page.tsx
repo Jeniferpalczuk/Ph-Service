@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { PaymentStatus, ClosingType, Convenio } from '@/types';
 import {
     useConveniosList,
@@ -10,6 +10,7 @@ import {
 } from '@/hooks/financeiro/useConvenios';
 import { useClientesDropdown } from '@/hooks/cadastros/useDropdown';
 import { MoneyInput } from '@/components/MoneyInput';
+import { createConvenioSchema } from '@/lib/validations/convenios';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
 import { toast } from 'react-hot-toast';
@@ -39,6 +40,9 @@ export default function ConveniosPage() {
 
     const [showModal, setShowModal] = useState(false);
     const [editingConvenio, setEditingConvenio] = useState<Convenio | null>(null);
+    const [formError, setFormError] = useState('');
+    const submitting = useRef(false);
+    const isSaving = createConvenioMutation.isPending || updateConvenioMutation.isPending;
 
     // Filter States
     const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -79,6 +83,8 @@ export default function ConveniosPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (submitting.current) return;
+        setFormError('');
 
         try {
             if (!formData.empresaCliente) {
@@ -121,7 +127,7 @@ export default function ConveniosPage() {
                 empresa: formData.empresaCliente,
                 tipoFechamento: formData.tipoFechamento,
                 banco: formData.banco,
-                periodoReferencia: formData.periodoReferencia || null,
+                periodoReferencia: formData.periodoReferencia,
                 dataFechamento: dataFechAjustada,
                 valor: valorNum,
                 dataVencimento: dataVencAjustada,
@@ -130,23 +136,41 @@ export default function ConveniosPage() {
                 observacoes: formData.observacoes || null,
             };
 
-            console.log('[handleSubmit] payload enviado:', payload);
+            const parsed = createConvenioSchema.safeParse(payload);
+            if (!parsed.success) {
+                setFormError(parsed.error.issues.map(issue => issue.message).join('. '));
+                return;
+            }
+            submitting.current = true;
 
             if (editingConvenio) {
-                await updateConvenioMutation.mutateAsync({ id: editingConvenio.id, updates: payload });
+                await updateConvenioMutation.mutateAsync({ id: editingConvenio.id, updates: parsed.data });
                 toast.success('Convênio atualizado!');
             } else {
-                await createConvenioMutation.mutateAsync(payload);
+                await createConvenioMutation.mutateAsync(parsed.data);
                 toast.success('Convênio criado!');
             }
+            // The list is filtered by due date; show the saved record's month.
+            setSelectedMonth(formData.dataVencimento.slice(0, 7));
+            setSearchTerm('');
+            setPage(1);
+            submitting.current = false;
             resetForm();
         } catch (err) {
             console.error('Erro ao salvar convênio:', err);
-            toast.error(err instanceof Error ? err.message : 'Erro ao salvar convênio.');
+            const message = err instanceof Error && !/Server Components render|unexpected response|Failed to fetch/i.test(err.message)
+                ? err.message
+                : 'Não foi possível salvar agora. Seus dados continuam no formulário. Tente novamente.';
+            setFormError(message);
+            toast.error(message);
+        } finally {
+            submitting.current = false;
         }
     };
 
     const resetForm = () => {
+        if (submitting.current) return;
+        setFormError('');
         setFormData({
             empresaCliente: '',
             tipoFechamento: 'mensal',
@@ -166,6 +190,7 @@ export default function ConveniosPage() {
     };
 
     const handleEdit = (convenio: Convenio) => {
+        setFormError('');
         setEditingConvenio(convenio);
 
         const toDateStr = (val: Date | string | undefined | null) => {
@@ -176,7 +201,7 @@ export default function ConveniosPage() {
         setFormData({
             empresaCliente: convenio.empresaCliente,
             tipoFechamento: convenio.tipoFechamento,
-            periodoReferencia: convenio.periodoReferencia,
+            periodoReferencia: convenio.periodoReferencia || '',
             dataFechamento: toDateStr(convenio.dataFechamento),
             valorBoleto: convenio.valorBoleto.toString(),
             banco: convenio.banco || '',
@@ -213,8 +238,15 @@ export default function ConveniosPage() {
                 label: d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
             });
         }
-        return months;
-    }, []);
+        if (!months.some(month => month.value === selectedMonth)) {
+            const [year, month] = selectedMonth.split('-').map(Number);
+            months.push({
+                value: selectedMonth,
+                label: new Date(year, month - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+            });
+        }
+        return months.sort((a, b) => b.value.localeCompare(a.value));
+    }, [selectedMonth]);
 
     const totalValor = useMemo(() => convenios.reduce((sum, c) => sum + c.valorBoleto, 0), [convenios]);
     const totalPago = useMemo(() => convenios.filter(c => c.statusPagamento === 'pago').length, [convenios]);
@@ -245,11 +277,11 @@ export default function ConveniosPage() {
                         type="text"
                         placeholder="Buscar por empresa ou período..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                     />
                 </div>
                 <div className="modern-filter-group">
-                    <label>Mês de Referência:</label>
+                    <label>Mês do vencimento:</label>
                     <select value={selectedMonth} onChange={e => { setSelectedMonth(e.target.value); setPage(1); }}>
                         {monthOptions.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
@@ -299,8 +331,8 @@ export default function ConveniosPage() {
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                    <button className="btn-modern-icon" onClick={() => handleEdit(convenio)}><LuPencil size={16} /></button>
-                                                    <button className="btn-modern-icon" onClick={(e) => handleDelete(convenio.id, e)}><LuTrash2 size={16} /></button>
+                                                    <button className="btn-modern-icon" aria-label={`Editar convênio de ${convenio.empresaCliente}`} onClick={() => handleEdit(convenio)}><LuPencil size={16} /></button>
+                                                    <button className="btn-modern-icon" aria-label={`Excluir convênio de ${convenio.empresaCliente}`} onClick={(e) => handleDelete(convenio.id, e)}><LuTrash2 size={16} /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -327,11 +359,12 @@ export default function ConveniosPage() {
                                 <h2>{editingConvenio ? 'Editar Convênio' : 'Novo Convênio'}</h2>
                                 <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Configure os dados do fechamento</p>
                             </div>
-                            <button className="modal-close" onClick={resetForm}><LuX size={20} /></button>
+                            <button className="modal-close" aria-label="Fechar formulário" disabled={isSaving} onClick={resetForm}><LuX size={20} /></button>
                         </div>
 
                         <form onSubmit={handleSubmit}>
-                            <div className="modal-body">
+                            <fieldset disabled={isSaving} className="modal-body" style={{ border: 0, margin: 0, minWidth: 0 }}>
+                                {formError && <p role="alert" className="form-error">{formError}</p>}
                                 <div className="form-group">
                                     <label>Empresa/Cliente *</label>
                                     <select required value={formData.empresaCliente} onChange={e => setFormData({ ...formData, empresaCliente: e.target.value })}>
@@ -398,12 +431,12 @@ export default function ConveniosPage() {
                                     <label>Observações</label>
                                     <textarea value={formData.observacoes} onChange={e => setFormData({ ...formData, observacoes: e.target.value })} rows={2} />
                                 </div>
-                            </div>
+                            </fieldset>
 
                             <div className="modal-actions">
-                                <button type="button" className="btn-secondary" onClick={resetForm}>Cancelar</button>
-                                <button type="submit" className="btn-primary" disabled={createConvenioMutation.isPending || updateConvenioMutation.isPending}>
-                                    Salvar Convênio
+                                <button type="button" className="btn-secondary" disabled={isSaving} onClick={resetForm}>Cancelar</button>
+                                <button type="submit" className="btn-primary" disabled={isSaving}>
+                                    {isSaving ? 'Salvando…' : 'Salvar Convênio'}
                                 </button>
                             </div>
                         </form>
