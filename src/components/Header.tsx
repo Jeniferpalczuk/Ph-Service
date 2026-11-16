@@ -16,6 +16,7 @@ import {
     LuDollarSign,
     LuUtensils,
     LuUsers,
+    LuUsersRound,
     LuSettings,
     LuLogOut,
 } from 'react-icons/lu';
@@ -43,6 +44,7 @@ export default function Header() {
             label: module.shortLabel,
             href: module.href,
         })),
+        { icon: <LuUsersRound size={20} />, label: 'Funcionários', href: '/funcionarios' },
         { icon: <LuSettings size={20} />, label: 'Configurações', href: '/cadastros' },
     ];
 

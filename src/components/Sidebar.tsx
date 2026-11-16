@@ -20,6 +20,7 @@ import {
     LuSettings,
     LuLogOut,
     LuBell,
+    LuUsersRound,
 } from 'react-icons/lu';
 import { useBoletosStats } from '@/hooks/financeiro/useBoletos';
 import './Sidebar.css';
@@ -47,6 +48,7 @@ export default function Sidebar() {
             label: module.shortLabel,
             href: module.href,
         })),
+        { icon: <LuUsersRound size={22} />, label: 'Funcionários', href: '/funcionarios' },
         { icon: <LuSettings size={22} />, label: 'Config.', href: '/cadastros' },
     ];
 
@@ -86,6 +88,7 @@ export default function Sidebar() {
                     <Link
                         key={item.href}
                         href={item.href}
+                        aria-current={pathname === item.href ? 'page' : undefined}
                         className={`sidebar-nav-item ${pathname === item.href ? 'active' : ''}`}
                     >
                         <span className="nav-item-icon">{item.icon}</span>

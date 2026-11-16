@@ -12,6 +12,7 @@ import {
     deleteClienteAction,
 } from '@/app/actions/cadastros';
 import { CreateClienteInput, UpdateClienteInput } from '@/lib/validations/clientes';
+import { dropdownKeys } from './useDropdown';
 
 
 
@@ -47,8 +48,11 @@ export function useCreateCliente() {
             if (!result.success) throw new Error(result.error);
             return result.data;
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: clientesKeys.lists() });
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: clientesKeys.lists() }),
+                queryClient.invalidateQueries({ queryKey: dropdownKeys.clientes }),
+            ]);
         },
     });
 }
@@ -62,9 +66,12 @@ export function useUpdateCliente() {
             if (!result.success) throw new Error(result.error);
             return result.data;
         },
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: clientesKeys.detail(data.id) });
-            queryClient.invalidateQueries({ queryKey: clientesKeys.lists() });
+        onSuccess: async (data) => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: clientesKeys.detail(data.id) }),
+                queryClient.invalidateQueries({ queryKey: clientesKeys.lists() }),
+                queryClient.invalidateQueries({ queryKey: dropdownKeys.clientes }),
+            ]);
         },
     });
 }
@@ -78,8 +85,11 @@ export function useDeleteCliente() {
             if (!result.success) throw new Error(result.error);
             return id;
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: clientesKeys.lists() });
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: clientesKeys.lists() }),
+                queryClient.invalidateQueries({ queryKey: dropdownKeys.clientes }),
+            ]);
         },
     });
 }

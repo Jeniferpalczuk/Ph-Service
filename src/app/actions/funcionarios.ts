@@ -62,7 +62,7 @@ export async function createFuncionarioAction(
         }
 
         // 4. Revalidar cache
-        revalidatePath('/cadastros');
+        revalidatePath('/funcionarios');
 
         return { success: true, data: { id: data.id } };
 
@@ -128,7 +128,7 @@ export async function updateFuncionarioAction(
         }
 
         // 6. Revalidar cache
-        revalidatePath('/cadastros');
+        revalidatePath('/funcionarios');
 
         return { success: true, data: { id } };
 
@@ -171,7 +171,7 @@ export async function deleteFuncionarioAction(
         }
 
         // 4. Revalidar cache
-        revalidatePath('/cadastros');
+        revalidatePath('/funcionarios');
 
         return { success: true, data: null };
 

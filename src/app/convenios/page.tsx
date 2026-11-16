@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { PaymentStatus, ClosingType, Convenio } from '@/types';
 import {
     useConveniosList,
@@ -35,10 +35,14 @@ export default function ConveniosPage() {
     const deleteConvenioMutation = useDeleteConvenio();
 
     // Hooks de Cadastros
-    const { data: clientesDD } = useClientesDropdown();
+    const { data: clientesDD, isPending: clientesLoading, isError: clientesError, refetch: refetchClientes } = useClientesDropdown();
     const clientes = clientesDD ?? [];
 
     const [showModal, setShowModal] = useState(false);
+    useEffect(() => {
+        // Also refresh records created in another tab when opening a closing.
+        if (showModal) void refetchClientes();
+    }, [showModal, refetchClientes]);
     const [editingConvenio, setEditingConvenio] = useState<Convenio | null>(null);
     const [formError, setFormError] = useState('');
     const submitting = useRef(false);
@@ -366,11 +370,14 @@ export default function ConveniosPage() {
                             <fieldset disabled={isSaving} className="modal-body" style={{ border: 0, margin: 0, minWidth: 0 }}>
                                 {formError && <p role="alert" className="form-error">{formError}</p>}
                                 <div className="form-group">
-                                    <label>Empresa/Cliente *</label>
-                                    <select required value={formData.empresaCliente} onChange={e => setFormData({ ...formData, empresaCliente: e.target.value })}>
-                                        <option value="">Selecione...</option>
+                                    <label htmlFor="convenio-cliente">Empresa/Cliente *</label>
+                                    <select id="convenio-cliente" required disabled={clientesLoading} value={formData.empresaCliente} onChange={e => setFormData({ ...formData, empresaCliente: e.target.value })}>
+                                        <option value="">{clientesLoading ? 'Carregando clientes...' : 'Selecione...'}</option>
+                                        {editingConvenio && formData.empresaCliente && !clientes.some(c => c.nome === formData.empresaCliente) && <option value={formData.empresaCliente}>{formData.empresaCliente} (cadastro anterior)</option>}
                                         {clientes.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
                                     </select>
+                                    {clientesError && <p role="alert" className="form-error">Não foi possível atualizar os clientes. <button type="button" onClick={() => refetchClientes()}>Tentar novamente</button></p>}
+                                    {!clientesLoading && !clientesError && clientes.length === 0 && <p>Nenhum cliente ativo encontrado. Cadastre ou ative um cliente em Configurações → Clientes / Empresas.</p>}
                                 </div>
 
                                 <div className="grid-2">

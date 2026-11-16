@@ -38,6 +38,28 @@ function dbToFuncionario(row: Record<string, unknown>): Funcionario {
 // ===========================================
 export interface FuncionariosQueryParams extends BaseQueryParams {
     ativo?: boolean | 'all';
+    situacao?: 'ativos' | 'desligados' | 'todos';
+    cargo?: string;
+}
+
+export async function getFuncionariosOverview() {
+    const supabase = createClient();
+    const cargos = new Set<string>();
+    let ativos = 0;
+    let desligados = 0;
+    // Read lightweight metadata in batches so counts and filters cover every page.
+    for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from('funcionarios')
+            .select('id,cargo,ativo,data_demissao').order('id').range(from, from + 999);
+        if (error) throw new Error('Não foi possível carregar os filtros de funcionários.');
+        for (const row of data ?? []) {
+            if (row.cargo) cargos.add(row.cargo);
+            if (row.ativo && !row.data_demissao) ativos++;
+            else desligados++;
+        }
+        if (!data || data.length < 1000) break;
+    }
+    return { ativos, desligados, total: ativos + desligados, cargos: [...cargos].sort((a, b) => a.localeCompare(b, 'pt-BR')) };
 }
 
 // ===========================================
@@ -64,6 +86,8 @@ export async function getFuncionarios(
         pageSize = 20,
         search = '',
         ativo = 'all',
+        situacao = 'todos',
+        cargo,
     } = params;
 
     // Base query
@@ -75,6 +99,9 @@ export async function getFuncionarios(
     if (ativo !== 'all') {
         query = query.eq('ativo', ativo);
     }
+    if (situacao === 'ativos') query = query.eq('ativo', true).is('data_demissao', null);
+    if (situacao === 'desligados') query = query.or('ativo.eq.false,ativo.is.null,data_demissao.not.is.null');
+    if (cargo) query = query.eq('cargo', cargo);
 
     if (search) {
         const safeSearch = sanitizeSearch(search);

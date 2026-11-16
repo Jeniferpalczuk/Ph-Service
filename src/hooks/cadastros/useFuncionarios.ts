@@ -4,6 +4,7 @@ import { PaginatedResult } from '@/services/types';
 import {
     getFuncionarios,
     getFuncionarioById,
+    getFuncionariosOverview,
     FuncionariosQueryParams,
 } from '@/services/cadastros/funcionarios';
 import {
@@ -34,6 +35,13 @@ export function useFuncionariosList(params: FuncionariosQueryParams = {}) {
     return useQuery<PaginatedResult<Funcionario>>({
         queryKey: funcionariosKeys.list(params),
         queryFn: () => getFuncionarios(params),
+    });
+}
+
+export function useFuncionariosOverview() {
+    return useQuery({
+        queryKey: [...funcionariosKeys.lists(), 'overview'],
+        queryFn: getFuncionariosOverview,
     });
 }
 
