@@ -191,7 +191,7 @@ export default function CadastrosPage() {
             const cleanedFornec = {
                 nome: fornecData.nome,
                 servico: fornecData.servico,
-                telefone: fornecData.telefone?.trim() || null,
+                telefone: fornecData.telefone?.trim() || '',
                 ativo: fornecData.ativo,
             };
             if (editingFornec) {

@@ -77,7 +77,7 @@ export async function createFornecedor(
         .insert({
             user_id: userId,
             nome: fornecedor.nome,
-            contato: fornecedor.telefone,
+            contato: fornecedor.telefone ?? '',
             categoria: fornecedor.servico,
             ativo: fornecedor.ativo ?? true,
             observacoes: fornecedor.observacoes,
@@ -94,7 +94,7 @@ export async function updateFornecedor(id: string, updates: Partial<Fornecedor>)
     const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
     if (updates.nome !== undefined) updateData.nome = updates.nome;
-    if (updates.telefone !== undefined) updateData.contato = updates.telefone;
+    if (updates.telefone !== undefined) updateData.contato = updates.telefone ?? '';
     if (updates.servico !== undefined) updateData.categoria = updates.servico;
     if (updates.ativo !== undefined) updateData.ativo = updates.ativo;
     if (updates.observacoes !== undefined) updateData.observacoes = updates.observacoes;
